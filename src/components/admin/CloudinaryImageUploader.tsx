@@ -21,7 +21,6 @@ export function CloudinaryImageUploader({ onUpload, folder = 'labelwink/products
         resourceType: 'image',
         clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
         maxFileSize: 5000000, // 5MB
-        transformation: [{ quality: 'auto', fetch_format: 'auto' }],
       }}
       onSuccess={(result) => {
         if (typeof result.info === 'object' && 'public_id' in result.info) {

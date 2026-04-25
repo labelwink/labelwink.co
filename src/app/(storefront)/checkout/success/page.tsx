@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { CheckCircle2, ShoppingBag, ArrowRight, Truck } from 'lucide-react';
 
 function SuccessContent() {
@@ -37,14 +37,10 @@ function SuccessContent() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Button asChild className="bg-charcoal hover:bg-charcoal/90 text-cream h-12 px-8 rounded-none uppercase tracking-widest font-semibold">
-          <Link href="/collections/all">Continue Shopping</Link>
-        </Button>
-        <Button asChild variant="outline" className="h-12 px-8 border-sage/40 hover:bg-sage/10 rounded-none uppercase tracking-widest font-semibold gap-2">
-          <Link href="/account">
-            View My Orders <ArrowRight className="w-4 h-4" />
-          </Link>
-        </Button>
+        <Link href="/collections/all" className={buttonVariants({ className: "bg-charcoal hover:bg-charcoal/90 text-cream h-12 px-8 rounded-none uppercase tracking-widest font-semibold" })}>Continue Shopping</Link>
+        <Link href="/account" className={buttonVariants({ variant: "outline", className: "h-12 px-8 border-sage/40 hover:bg-sage/10 rounded-none uppercase tracking-widest font-semibold gap-2 inline-flex items-center" })}>
+          View My Orders <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
 
       <div className="mt-16 pt-8 border-t border-sage/20 flex items-center justify-center gap-2 text-xs text-muted-foreground">

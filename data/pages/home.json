@@ -1,0 +1,74 @@
+{
+  "announcement_bar": {
+    "enabled": true,
+    "text": "Free Shipping on orders above ₹3499 🚚",
+    "color": "#1b3a34"
+  },
+  "hero": {
+    "headline": "",
+    "subheadline": "",
+    "cta_text": "Find Your Fit",
+    "cta_link": "/collections",
+    "image_url": "https://res.cloudinary.com/dcmbwtreb/image/upload/v1777125561/Landscape_Poster_1_qaqlh9.webp"
+  },
+  "category_links": [
+    {
+      "label": "Kurtis",
+      "icon_emoji": "👗",
+      "href": "/collections/kurtis",
+      "image_url": ""
+    },
+    {
+      "label": "Co-ord Sets",
+      "icon_emoji": "✨",
+      "href": "/collections/coord-sets",
+      "image_url": ""
+    },
+    {
+      "label": "Festive",
+      "icon_emoji": "🪔",
+      "href": "/collections/festive",
+      "image_url": ""
+    },
+    {
+      "label": "Casual",
+      "icon_emoji": "☕",
+      "href": "/collections/casual",
+      "image_url": ""
+    },
+    {
+      "label": "New Arrivals",
+      "icon_emoji": "🌟",
+      "href": "/collections/new-arrivals",
+      "image_url": ""
+    }
+  ],
+  "trending": {
+    "title": "What everyone's buying. See what's trending this week",
+    "product_ids": []
+  },
+  "brand_story": {
+    "pill_tag": "Our Story",
+    "headline": "Crafted for the modern Indian woman",
+    "body": "At Label Wink, we believe that every woman deserves to feel confident, comfortable, and completely herself. Our collections are thoughtfully designed to blend traditional craftsmanship with contemporary silhouettes — perfect for the woman who moves through life with grace and intention.",
+    "image_url": "https://res.cloudinary.com/dcmbwtreb/image/upload/v1777125561/Landscape_Poster_1_qaqlh9.webp"
+  },
+  "trust_badges": [
+    {
+      "icon": "🚚",
+      "text": "Free Shipping Above ₹3499"
+    },
+    {
+      "icon": "↩",
+      "text": "7-Day Easy Returns"
+    },
+    {
+      "icon": "✓",
+      "text": "100% Authentic Products"
+    },
+    {
+      "icon": "🔒",
+      "text": "Secure Payments"
+    }
+  ]
+}

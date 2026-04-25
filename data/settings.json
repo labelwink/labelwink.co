@@ -1,0 +1,30 @@
+{
+  "store_name": "Label Wink",
+  "tagline": "Wear Wink",
+  "logo_url": "",
+  "favicon_url": "/favicon.ico",
+  "contact_email": "support@labelwink.co",
+  "whatsapp": "",
+  "phone": "",
+  "address": "",
+  "currency_symbol": "₹",
+  "free_shipping_threshold": 3499,
+  "express_delivery_enabled": true,
+  "express_delivery_text": "Express Delivery",
+  "cod_enabled": true,
+  "low_stock_threshold": 5,
+  "announcement_bar_enabled": true,
+  "announcement_bar_text": "Free Shipping on orders above ₹3499 🚚",
+  "announcement_bar_color": "#1b3a34",
+  "ga_id": "",
+  "fb_pixel": "",
+  "meta_title_template": "{product} | Label Wink",
+  "default_meta_description": "Shop premium ethnic wear, kurtis and co-ord sets at Label Wink.",
+  "social": {
+    "instagram": "",
+    "facebook": "",
+    "pinterest": "",
+    "youtube": "",
+    "whatsapp": ""
+  }
+}

@@ -38,6 +38,7 @@ export function NewArrivals({ products }: NewArrivalsProps) {
                 basePrice={variant?.price || 0}
                 compareAtPrice={variant?.mrp || null}
                 publicId={primaryImage?.cloudinary_public_id}
+                image={primaryImage?.cloudinary_public_id || ''}
                 isNewArrival={product.tags?.includes('new')}
               />
             );

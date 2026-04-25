@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { Package, Heart, Star, ChevronRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -142,9 +142,12 @@ export default function AccountDashboard() {
           <div className="bg-white border border-dashed border-sage/40 rounded-none p-12 text-center">
             <Package className="w-10 h-10 mx-auto text-sage/40 mb-3" />
             <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-4">You haven't placed any orders yet.</p>
-            <Button asChild className="bg-teal text-cream rounded-none uppercase tracking-widest text-xs font-bold h-12 px-8">
-              <Link href="/collections/all">Start Your Collection</Link>
-            </Button>
+            <Link 
+              href="/collections/all"
+              className={buttonVariants({ className: "bg-teal text-cream rounded-none uppercase tracking-widest text-xs font-bold h-12 px-8" })}
+            >
+              Start Your Collection
+            </Link>
           </div>
         )}
       </div>

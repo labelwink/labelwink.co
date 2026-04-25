@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { Package, Download, Loader2, ChevronRight, Search } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 
 export default function AccountOrdersPage() {
@@ -107,9 +108,12 @@ export default function AccountOrdersPage() {
                     <div className="flex gap-6 flex-1">
                       <div className="w-24 h-32 bg-sage/10 rounded-none overflow-hidden flex-shrink-0 border border-sage/10">
                         {imageId ? (
-                          <img 
+                          <Image 
                             src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/w_200,h_260,c_fill/${imageId}`} 
-                            alt={product?.name} 
+                            alt={product?.name || 'Product'} 
+                            width={96}
+                            height={128}
+                            loading="lazy"
                             className="w-full h-full object-cover" 
                           />
                         ) : (
@@ -138,14 +142,19 @@ export default function AccountOrdersPage() {
                       </div>
                     </div>
 
-                    {/* Actions */}
                     <div className="flex flex-row md:flex-col gap-3 justify-end md:w-48">
-                      <Button asChild className="flex-1 bg-charcoal hover:bg-charcoal/90 text-cream rounded-none h-11 text-xs font-bold uppercase tracking-widest">
-                        <Link href={`/account/orders/${order.id}`}>Track Order</Link>
-                      </Button>
-                      <Button variant="outline" asChild className="flex-1 border-charcoal/20 hover:border-teal hover:text-teal rounded-none h-11 text-xs font-bold uppercase tracking-widest transition-all">
-                        <Link href={`/products/${order.order_items[0]?.product_variants?.products?.slug}`}>Buy Again</Link>
-                      </Button>
+                      <Link 
+                        href={`/account/orders/${order.id}`}
+                        className={buttonVariants({ className: "flex-1 bg-charcoal hover:bg-charcoal/90 text-cream rounded-none h-11 text-xs font-bold uppercase tracking-widest" })}
+                      >
+                        Track Order
+                      </Link>
+                      <Link 
+                        href={`/products/${order.order_items[0]?.product_variants?.products?.slug}`}
+                        className={buttonVariants({ variant: "outline", className: "flex-1 border-charcoal/20 hover:border-teal hover:text-teal rounded-none h-11 text-xs font-bold uppercase tracking-widest transition-all" })}
+                      >
+                        Buy Again
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -161,9 +170,12 @@ export default function AccountOrdersPage() {
           <div className="max-w-xs mx-auto">
             <h3 className="text-xl font-heading font-semibold text-charcoal mb-2">No Orders Found</h3>
             <p className="text-sm text-muted-foreground mb-8">It looks like you haven't started your fashion journey with us yet.</p>
-            <Button asChild className="w-full h-14 bg-teal text-cream rounded-none uppercase tracking-widest text-xs font-bold shadow-xl">
-              <Link href="/collections/all">Explore Collections</Link>
-            </Button>
+            <Link 
+              href="/collections/all"
+              className={buttonVariants({ className: "w-full h-14 bg-teal text-cream rounded-none uppercase tracking-widest text-xs font-bold shadow-xl flex items-center justify-center" })}
+            >
+              Explore Collections
+            </Link>
           </div>
         </div>
       )}

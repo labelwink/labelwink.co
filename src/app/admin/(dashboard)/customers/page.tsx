@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server'
-import { Users, Search, IndianRupee, ShoppingBag, Plus } from 'lucide-react'
+import { Users, Search, IndianRupee, ShoppingBag, Plus, Tag } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function CustomersPage({

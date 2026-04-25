@@ -11,9 +11,10 @@ interface Props {
   className?: string
   priority?: boolean
   sizes?: string
+  quality?: number | 'auto:best'
 }
 
-export function ProductImage({ publicId, alt, width, height, className, priority, sizes }: Props) {
+export function ProductImage({ publicId, alt, width, height, className, priority, sizes, quality = 'auto:best' }: Props) {
   // Check if it's a full URL instead of a Cloudinary Public ID
   const isFullUrl = publicId.startsWith('http')
 
@@ -26,6 +27,7 @@ export function ProductImage({ publicId, alt, width, height, className, priority
         height={height}
         className={className}
         priority={priority}
+        quality={typeof quality === 'number' ? quality : 100}
         sizes={sizes || "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"}
         loading={priority ? 'eager' : 'lazy'}
       />
@@ -42,7 +44,7 @@ export function ProductImage({ publicId, alt, width, height, className, priority
       priority={priority}
       sizes={sizes || "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"}
       format="auto"
-      quality="auto"
+      quality={quality as any}
       loading={priority ? 'eager' : 'lazy'}
     />
   )

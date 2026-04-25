@@ -1,6 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { AdminSidebar } from '@/components/admin/AdminSidebar'
+import { verifyAdminToken } from '@/lib/adminAuth'
+import { AdminSidebar, SidebarProvider } from '@/components/admin/AdminSidebar'
 import { AdminTopBar } from '@/components/admin/AdminTopBar'
 import type { Metadata } from 'next'
 
@@ -10,28 +11,25 @@ export const metadata: Metadata = {
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const cookieStore = await cookies()
+  const token = cookieStore.get('admin_session')?.value
 
-  if (!session) redirect('/account/login?redirect=/admin')
+  if (!token) redirect('/admin/login')
 
-  const { data: user } = await supabase
-    .from('users')
-    .select('role, name')
-    .eq('id', session.user.id)
-    .single()
-
-  if (!user || user.role !== 'admin') redirect('/')
+  const payload = await verifyAdminToken(token)
+  if (!payload) redirect('/admin/login')
 
   return (
-    <div className="flex h-screen bg-[#f8f7f5] overflow-hidden font-body">
-      <AdminSidebar />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <AdminTopBar userName={user.name || 'Admin'} />
-        <main className="flex-1 overflow-y-auto p-8">
-          {children}
-        </main>
+    <SidebarProvider>
+      <div className="flex h-screen bg-[#f9f9f9] overflow-hidden font-body">
+        <AdminSidebar />
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <AdminTopBar />
+          <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   )
 }

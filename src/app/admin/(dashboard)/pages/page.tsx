@@ -1,26 +1,37 @@
-import { createAdminClient } from '@/lib/supabase/server'
-import PagesClient from './PagesClient'
+import Link from 'next/link'
+import { FileText, HelpCircle, Phone, Home } from 'lucide-react'
 
-export default async function PagesAdminPage() {
-  const supabase = createAdminClient()
+const PAGES = [
+  { slug: 'home', label: 'Homepage', icon: Home, desc: 'Hero banner, announcement bar, brand story, trust badges' },
+  { slug: 'about', label: 'About Us', icon: FileText, desc: 'Company story, founder info, mission statement' },
+  { slug: 'faq', label: 'FAQ', icon: HelpCircle, desc: 'Frequently asked questions and answers' },
+  { slug: 'contact', label: 'Contact', icon: Phone, desc: 'Email, WhatsApp, phone, address, contact form settings' },
+]
 
-  const { data: pages, error } = await supabase
-    .from('pages_content')
-    .select('*')
-    .order('slug', { ascending: true })
+export const metadata = { title: 'Pages' }
 
-  if (error) {
-    return <div>Error loading pages: {error.message}</div>
-  }
-
+export default function PagesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-heading font-semibold text-charcoal">Pages Content</h1>
-        <p className="text-muted-foreground text-sm mt-1">Manage the content of your static pages like About, FAQ, and Home.</p>
+        <h1 className="text-2xl font-bold text-[#1a1a1a]">Pages</h1>
+        <p className="text-[#6b7280] text-sm mt-0.5">Edit content for storefront pages</p>
       </div>
-
-      <PagesClient initialPages={pages || []} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {PAGES.map(p => (
+          <Link key={p.slug} href={`/admin/pages/${p.slug}`}
+            className="bg-white border border-[#e5e7eb] rounded-xl p-6 hover:border-[#1b3a34] hover:shadow-md transition-all group">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-[#1b3a34]/10 rounded-full flex items-center justify-center text-[#1b3a34] group-hover:bg-[#1b3a34] group-hover:text-white transition-colors">
+                <p.icon size={18} />
+              </div>
+              <h2 className="font-semibold text-[#1a1a1a]">{p.label}</h2>
+            </div>
+            <p className="text-sm text-[#6b7280]">{p.desc}</p>
+            <span className="inline-block mt-3 text-sm text-[#1b3a34] font-medium group-hover:underline">Edit Page →</span>
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }

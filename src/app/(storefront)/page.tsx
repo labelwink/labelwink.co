@@ -3,50 +3,62 @@ import { Hero } from "@/components/home/Hero";
 import { TrustStrip } from "@/components/home/TrustStrip";
 import { CategoryHighlights } from "@/components/home/CategoryHighlights";
 import { NewArrivals } from "@/components/home/NewArrivals";
-import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { NewsletterSignup } from "@/components/home/NewsletterSignup";
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 export default async function Home() {
   const supabase = createClient();
   
-  if (!supabase || typeof supabase.from !== 'function') {
-    console.error('Failed to initialize Supabase client:', supabase);
-    throw new Error('Supabase client initialization failed');
+  // Read home data
+  let homeData;
+  try {
+    const raw = readFileSync(join(process.cwd(), 'data', 'pages', 'home.json'), 'utf-8');
+    homeData = JSON.parse(raw);
+  } catch (error) {
+    homeData = {
+      hero: { title: "Grace In Every Thread", cta_text: "EXPLORE", cta_link: "/collections", image_url: "" },
+      trending: { product_ids: [] },
+      trust_badges: []
+    };
   }
 
-  // Fetch CMS-driven data in parallel
+  // Build product query for trending/new arrivals based on product_ids
+  let trendingQuery = supabase.from('products')
+    .select('*, product_variants(*), product_images(*)')
+    .eq('visible', true);
+
+  if (homeData.trending?.product_ids && homeData.trending.product_ids.length > 0) {
+    trendingQuery = trendingQuery.in('id', homeData.trending.product_ids);
+  } else {
+    trendingQuery = trendingQuery.order('created_at', { ascending: false }).limit(8);
+  }
+
   const [
-    { data: banners },
-    { data: announcements },
-    { data: sections },
     { data: settings },
     { data: categories },
     { data: newArrivals },
   ] = await Promise.all([
-    supabase.from('banners').select('*').eq('is_active', true).eq('position', 'hero').order('sort_order'),
-    supabase.from('announcements').select('*').eq('is_active', true).order('sort_order'),
-    supabase.from('homepage_sections').select('*').eq('is_active', true).order('sort_order'),
     supabase.from('site_settings').select('*'),
     supabase.from('categories').select('*').eq('is_active', true).order('sort_order').limit(4),
-    supabase.from('products')
-      .select('*, product_variants(*), product_images(*)')
-      .eq('is_active', true)
-      .contains('tags', ['new'])
-      .order('created_at', { ascending: false })
-      .limit(8),
+    trendingQuery
   ]);
 
   const freeShippingThreshold = settings?.find(s => s.key === 'free_shipping_threshold')?.value?.amount ?? 999;
-  const announcementSpeed = settings?.find(s => s.key === 'announcement_bar_speed')?.value?.ms ?? 3000;
+
+  // Construct banner for Hero using homeData.hero
+  const banners = [{
+    id: 'hero-1',
+    title: homeData.hero.headline || homeData.hero.title || '',
+    cta_text: homeData.hero.cta_text,
+    cta_link: homeData.hero.cta_link,
+    cloudinary_public_id: homeData.hero.image_url || 'labelwink/banners/hero_default',
+    subheadline: homeData.hero.subheadline
+  }];
 
   return (
     <main className="flex flex-col min-h-screen">
-      {/* Only render sections that admin has activated */}
-      {announcements && announcements.length > 0 && (
-        <AnnouncementBar items={announcements} speed={announcementSpeed} />
-      )}
-      
-      <Hero banners={banners || []} />
+      <Hero banners={banners as any} />
 
       <TrustStrip threshold={freeShippingThreshold} />
 

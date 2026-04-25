@@ -1,13 +1,18 @@
-import { createClient } from '@/lib/supabase/server'
 import Image from 'next/image'
+import { readFileSync } from 'fs'
+import { join } from 'path'
+
+function getAboutData() {
+  try {
+    const raw = readFileSync(join(process.cwd(), 'data', 'pages', 'about.json'), 'utf-8')
+    return JSON.parse(raw)
+  } catch {
+    return { sections: [] }
+  }
+}
 
 export default async function AboutPage() {
-  const supabase = createClient()
-  const { data: page } = await supabase
-    .from('pages_content')
-    .select('*')
-    .eq('slug', 'about')
-    .single()
+  const page = getAboutData()
 
   const sections = page?.sections || []
   const hero = sections.find((s: any) => s.type === 'hero')

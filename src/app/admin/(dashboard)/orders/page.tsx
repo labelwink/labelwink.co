@@ -1,241 +1,133 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { 
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  getPaginationRowModel,
-  SortingState,
-  getSortedRowModel,
-  ColumnFiltersState,
-  getFilteredRowModel,
-} from "@tanstack/react-table";
-import { Search, MoreHorizontal, ArrowUpDown, Loader2, Package, Clock, CheckCircle2, Truck, XCircle } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { Search } from 'lucide-react'
 
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuGroup,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+const STATUS_TABS = ['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
+const STATUS_BADGE: Record<string, string> = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  processing: 'bg-blue-100 text-blue-800',
+  shipped: 'bg-orange-100 text-orange-800',
+  delivered: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-800',
+}
 
-type Order = {
-  id: string;
-  customer_name: string;
-  email: string;
-  total: number;
-  status: string;
-  payment_status: string;
-  created_at: string;
-};
+export default function OrdersPage() {
+  const [orders, setOrders] = useState<any[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [status, setStatus] = useState('')
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
 
-const statusConfig: any = {
-  pending: { icon: Clock, color: 'text-yellow-600 bg-yellow-100', label: 'Pending' },
-  processing: { icon: Package, color: 'text-blue-600 bg-blue-100', label: 'Processing' },
-  shipped: { icon: Truck, color: 'text-purple-600 bg-purple-100', label: 'Shipped' },
-  delivered: { icon: CheckCircle2, color: 'text-green-600 bg-green-100', label: 'Delivered' },
-  cancelled: { icon: XCircle, color: 'text-red-600 bg-red-100', label: 'Cancelled' },
-};
+  const fetchOrders = async () => {
+    setLoading(true)
+    const params = new URLSearchParams({ page: String(page) })
+    if (status) params.set('status', status)
+    if (search) params.set('search', search)
+    const res = await fetch(`/api/admin/orders?${params}`)
+    const data = await res.json()
+    setOrders(data.orders || [])
+    setTotal(data.total || 0)
+    setTotalPages(data.totalPages || 0)
+    setLoading(false)
+  }
 
-export const columns: ColumnDef<Order>[] = [
-  {
-    accessorKey: "id",
-    header: "Order ID",
-    cell: ({ row }) => <span className="font-mono text-xs uppercase">#{row.getValue("id")?.toString().slice(-6)}</span>,
-  },
-  {
-    accessorKey: "customer_name",
-    header: "Customer",
-  },
-  {
-    accessorKey: "created_at",
-    header: ({ column }) => (
-      <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")} className="p-0 hover:bg-transparent font-semibold">
-        Date <ArrowUpDown className="ml-2 h-4 w-4" />
-      </Button>
-    ),
-    cell: ({ row }) => new Date(row.getValue("created_at")).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
-  },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ row }) => {
-      const status = row.getValue("status") as string;
-      const config = statusConfig[status] || statusConfig.pending;
-      const Icon = config.icon;
-      return (
-        <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${config.color}`}>
-          <Icon className="w-3 h-3" />
-          {config.label}
-        </span>
-      );
-    }
-  },
-  {
-    accessorKey: "total",
-    header: () => <div className="text-right">Amount</div>,
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("total"))
-      const formatted = new Intl.NumberFormat("en-IN", {
-        style: "currency",
-        currency: "INR",
-        maximumFractionDigits: 0,
-      }).format(amount)
-      return <div className="text-right font-medium">{formatted}</div>
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      const order = row.original
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>Update Status</DropdownMenuLabel>
-              <DropdownMenuItem>Processing</DropdownMenuItem>
-              <DropdownMenuItem>Shipped</DropdownMenuItem>
-              <DropdownMenuItem>Delivered</DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">Cancel Order</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
-  },
-];
-
-export default function AdminOrdersPage() {
-  const [data, setData] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-
-  const supabase = createClient();
-
-  useEffect(() => {
-    async function fetchOrders() {
-      const { data: orders, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (orders) {
-        const transformed = orders.map(o => ({
-          id: o.id,
-          customer_name: (o.shipping_address as any)?.name || 'Guest',
-          email: o.email,
-          total: o.total_amount,
-          status: o.status,
-          payment_status: o.payment_status,
-          created_at: o.created_at
-        }));
-        setData(transformed);
-      }
-      setLoading(false);
-    }
-    fetchOrders();
-  }, []);
-
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    state: {
-      sorting,
-      columnFilters,
-    },
-  })
+  useEffect(() => { fetchOrders() }, [status, search, page])
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-heading font-semibold">Orders</h1>
-        <p className="text-muted-foreground text-sm mt-1">Track and manage your customer orders.</p>
+        <h1 className="text-2xl font-bold text-[#1a1a1a]">Orders</h1>
+        <p className="text-[#6b7280] text-sm mt-0.5">{total} total orders</p>
       </div>
 
-      <div className="bg-white border border-sage/20 rounded-md shadow-sm p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center border border-sage/30 rounded-md px-3 py-2 w-full max-w-sm">
-            <Search className="w-4 h-4 text-muted-foreground mr-2" />
-            <input
-              placeholder="Search by name or ID..."
-              value={(table.getColumn("customer_name")?.getFilterValue() as string) ?? ""}
-              onChange={(event) =>
-                table.getColumn("customer_name")?.setFilterValue(event.target.value)
-              }
-              className="bg-transparent border-none outline-none text-sm w-full"
-            />
-          </div>
+      {/* Status tabs */}
+      <div className="flex gap-1 overflow-x-auto">
+        {STATUS_TABS.map(t => (
+          <button key={t}
+            onClick={() => { setStatus(t === 'All' ? '' : t.toLowerCase()); setPage(0) }}
+            className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
+              (t === 'All' && !status) || status === t.toLowerCase()
+                ? 'bg-[#1b3a34] text-white'
+                : 'bg-white border border-[#e5e7eb] text-[#6b7280] hover:text-[#1a1a1a]'
+            }`}
+          >{t}</button>
+        ))}
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]" />
+        <input value={search} onChange={e => { setSearch(e.target.value); setPage(0) }}
+          placeholder="Search by order # or customer..."
+          className="w-full pl-9 pr-4 py-2 border border-[#e5e7eb] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
+      </div>
+
+      <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-[#1b3a34] text-white text-left">
+                <th className="px-4 py-3">Order #</th>
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Customer</th>
+                <th className="px-4 py-3">Items</th>
+                <th className="px-4 py-3">Total</th>
+                <th className="px-4 py-3">Payment</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                  <tr key={i} className="border-t border-[#e5e7eb] animate-pulse">
+                    {[...Array(8)].map((_, j) => <td key={j} className="px-4 py-3"><div className="h-4 bg-gray-200 rounded" /></td>)}
+                  </tr>
+                ))
+              ) : orders.length === 0 ? (
+                <tr><td colSpan={8} className="text-center py-16 text-[#6b7280]">No orders yet</td></tr>
+              ) : orders.map((o, i) => (
+                <tr key={o.id} className={`border-t border-[#e5e7eb] hover:bg-[#f0fdf4] transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-[#f9f9f9]'}`}>
+                  <td className="px-4 py-3 font-mono font-medium text-[#1b3a34]">#{o.order_number}</td>
+                  <td className="px-4 py-3 text-[#6b7280]">{new Date(o.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
+                  <td className="px-4 py-3">{o.customer_name || o.guest_email || '—'}</td>
+                  <td className="px-4 py-3 text-[#6b7280]">{Array.isArray(o.items) ? o.items.length : '—'}</td>
+                  <td className="px-4 py-3 font-medium">₹{Number(o.total).toLocaleString('en-IN')}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${o.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                      {o.payment_status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${STATUS_BADGE[o.status] || 'bg-gray-100 text-gray-700'}`}>
+                      {o.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Link href={`/admin/orders/${o.id}`} className="text-[#1b3a34] hover:underline text-sm font-medium">View →</Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
-        <div className="rounded-md border border-sage/20 overflow-hidden">
-          <Table>
-            <TableHeader className="bg-sage/5">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-teal" />
-                  </TableCell>
-                </TableRow>
-              ) : data.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground font-sans">
-                    No orders placed yet.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="py-4">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-[#e5e7eb] text-sm text-[#6b7280]">
+            <span>Page {page + 1} of {totalPages}</span>
+            <div className="flex gap-2">
+              <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+                className="px-3 py-1.5 border border-[#e5e7eb] rounded-lg hover:bg-gray-50 disabled:opacity-40">← Prev</button>
+              <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
+                className="px-3 py-1.5 border border-[#e5e7eb] rounded-lg hover:bg-gray-50 disabled:opacity-40">Next →</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
-  );
+  )
 }

@@ -1,0 +1,85 @@
+{
+  "main_nav": [
+    {
+      "label": "Product",
+      "href": "/products"
+    },
+    {
+      "label": "Collection",
+      "href": "/collections"
+    },
+    {
+      "label": "About us",
+      "href": "/about"
+    }
+  ],
+  "footer_columns": [
+    {
+      "title": "Quick Links",
+      "links": [
+        {
+          "label": "Home",
+          "href": "/"
+        },
+        {
+          "label": "Products",
+          "href": "/products"
+        },
+        {
+          "label": "Collections",
+          "href": "/collections"
+        },
+        {
+          "label": "About Us",
+          "href": "/about"
+        },
+        {
+          "label": "Contact",
+          "href": "/contact"
+        }
+      ]
+    },
+    {
+      "title": "Policies",
+      "links": [
+        {
+          "label": "Privacy Policy",
+          "href": "/policy/privacy-policy"
+        },
+        {
+          "label": "Return & Refund",
+          "href": "/policy/return-refund-policy"
+        },
+        {
+          "label": "Shipping Policy",
+          "href": "/policy/shipping-policy"
+        },
+        {
+          "label": "Terms & Conditions",
+          "href": "/policy/terms-and-conditions"
+        }
+      ]
+    },
+    {
+      "title": "Support",
+      "links": [
+        {
+          "label": "FAQ",
+          "href": "/faq"
+        },
+        {
+          "label": "Size Guide",
+          "href": "/size-guide"
+        },
+        {
+          "label": "Track Order",
+          "href": "/track-order"
+        },
+        {
+          "label": "Contact Us",
+          "href": "/contact"
+        }
+      ]
+    }
+  ]
+}

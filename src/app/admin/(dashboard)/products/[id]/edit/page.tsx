@@ -1,34 +1,27 @@
 import { createAdminClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import EditProductClient from './EditProductClient'
+import ProductForm from '@/components/admin/ProductForm'
 
-interface Props {
-  params: Promise<{ id: string }>
-}
+export const metadata = { title: 'Edit Product' }
 
-export default async function EditProductPage({ params }: Props) {
-  const resolvedParams = await params;
+export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = createAdminClient()
+  const { data: product } = await supabase
+    .from('products')
+    .select('*, product_variants(*)')
+    .eq('id', id)
+    .single()
 
-  const [
-    { data: product, error: pError },
-    { data: categories, error: cError }
-  ] = await Promise.all([
-    supabase
-      .from('products')
-      .select('*, product_images(*), categories(id, name)')
-      .eq('id', resolvedParams.id)
-      .single(),
-    supabase
-      .from('categories')
-      .select('id, name')
-      .order('sort_order')
-  ])
+  if (!product) notFound()
 
-  if (pError || !product) {
-    console.error('Error fetching product:', pError)
-    return notFound()
-  }
-
-  return <EditProductClient product={product} categories={categories || []} />
+  return (
+    <div className="space-y-6">
+      <div>
+        <nav className="text-sm text-[#6b7280] mb-1">Admin › Products › <span className="text-[#1a1a1a]">Edit Product</span></nav>
+        <h1 className="text-2xl font-bold text-[#1a1a1a]">Edit Product</h1>
+      </div>
+      <ProductForm product={product} />
+    </div>
+  )
 }

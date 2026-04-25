@@ -85,7 +85,7 @@ export default function AnalyticsClient({
                   />
                   <Tooltip 
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                    formatter={(v: number) => [`₹${v.toLocaleString('en-IN')}`, 'Revenue']} 
+                    formatter={(v: unknown) => [`₹${Number(v).toLocaleString('en-IN')}`, 'Revenue']} 
                   />
                   <Area type="monotone" dataKey="revenue" stroke="#016a6e" strokeWidth={3} fill="url(#revenueGrad)" />
                 </AreaChart>

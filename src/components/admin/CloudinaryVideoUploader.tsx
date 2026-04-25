@@ -15,8 +15,6 @@ export function CloudinaryVideoUploader({ onUpload }: Props) {
         resourceType: 'video',
         clientAllowedFormats: ['mp4', 'mov', 'webm'],
         maxFileSize: 100000000, // 100MB
-        // Auto-generate poster thumbnail from first frame
-        eager: [{ format: 'jpg', transformation: [{ width: 400, crop: 'fill' }] }],
       }}
       onSuccess={(result) => {
         if (typeof result.info === 'object' && 'public_id' in result.info) {

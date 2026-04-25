@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Trash2, ShoppingCart, Loader2, Heart, ShoppingBag } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { ProductImage } from '@/components/storefront/ProductImage';
@@ -60,8 +60,10 @@ export default function AccountWishlistPage() {
 
     addItem({
       id: variant.id,
+      productId: product.id,
       name: product.name,
       price: variant.price,
+      compareAtPrice: variant.mrp ?? null,
       image: variant.image_public_ids?.[0] || '',
       quantity: 1,
       color: variant.color,
@@ -153,9 +155,12 @@ export default function AccountWishlistPage() {
           <div className="max-w-xs mx-auto">
             <h3 className="text-xl font-heading font-semibold text-charcoal mb-2">Wishlist is Empty</h3>
             <p className="text-sm text-muted-foreground mb-8">Start hearts-ing your favorites and they'll appear here.</p>
-            <Button asChild className="w-full h-14 bg-charcoal text-cream rounded-none uppercase tracking-widest text-xs font-bold shadow-xl">
-              <Link href="/collections/all">Go Shopping</Link>
-            </Button>
+            <Link
+              href="/collections/all"
+              className={buttonVariants({ className: "w-full h-14 bg-charcoal text-cream rounded-none uppercase tracking-widest text-xs font-bold shadow-xl flex items-center justify-center" })}
+            >
+              Go Shopping
+            </Link>
           </div>
         </div>
       )}

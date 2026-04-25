@@ -1,11 +1,12 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
-import { Share2, Star, Truck, ShieldCheck, RefreshCcw } from 'lucide-react';
+import { Star, Truck, ShieldCheck, RefreshCcw } from 'lucide-react';
 import { ProductImage } from '@/components/storefront/ProductImage';
 import { PincodeChecker } from '@/components/storefront/PincodeChecker';
+import { ProductImageGallery } from '@/components/storefront/ProductImageGallery';
+import { ProductActions } from '@/components/storefront/ProductActions';
 import Script from 'next/script';
 import Link from 'next/link';
 
@@ -44,7 +45,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       product_images (*)
     `)
     .eq('slug', resolvedParams.slug)
-    .eq('is_active', true)
+    .eq('visible', true)
     .single();
 
   if (error || !product) notFound();
@@ -62,7 +63,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     .from('products')
     .select('id, name, slug, product_variants(*), product_images(*)')
     .eq('category_id', product.category_id)
-    .eq('is_active', true)
+    .eq('visible', true)
     .neq('id', product.id)
     .limit(4);
 
@@ -110,31 +111,24 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20 mb-20">
-        <div className="flex flex-col-reverse md:flex-row gap-6">
-          <div className="flex md:flex-col gap-4 overflow-x-auto md:overflow-y-auto md:w-24 scrollbar-hide">
-            {product.product_images?.map((img: any, i: number) => (
-              <div key={i} className="w-20 md:w-24 aspect-[3/4] flex-shrink-0 bg-sage/5 border border-transparent hover:border-teal transition-all">
-                <ProductImage publicId={img.cloudinary_public_id} alt="" width={100} height={130} className="w-full h-full object-cover" />
-              </div>
-            ))}
-          </div>
-          <div className="flex-1 bg-sage/5 aspect-[3/4] relative overflow-hidden border border-sage/10">
-            <ProductImage 
-              publicId={product.product_images?.[0]?.cloudinary_public_id || 'labelwink/products/placeholder'} 
-              alt={product.name} 
-              width={1000} 
-              height={1333} 
-              className="w-full h-full object-cover animate-in fade-in duration-1000" 
-              priority 
+        <div>
+          {product.product_images && product.product_images.length > 0 ? (
+            <ProductImageGallery
+              images={product.product_images}
+              cloudName={process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || ''}
             />
-            {discount > 0 && (
-              <div className="absolute top-6 left-6">
-                <span className="bg-destructive text-cream text-[11px] uppercase tracking-[0.2em] px-3 py-1.5 font-bold shadow-xl">
-                  {discount}% OFF
-                </span>
-              </div>
-            )}
-          </div>
+          ) : (
+            <div className="aspect-[3/4] bg-sage/5 rounded-2xl flex items-center justify-center text-gray-300">
+              No image
+            </div>
+          )}
+          {discount > 0 && (
+            <div className="absolute top-4 left-4 z-10">
+              <span className="bg-green-100 text-green-800 text-xs uppercase tracking-wide px-2.5 py-1 rounded-md font-bold">
+                {discount}% OFF
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col space-y-10">
@@ -149,30 +143,34 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </div>
 
           <div className="flex items-baseline gap-4 border-b border-sage/10 pb-6">
-            <span className="text-4xl font-heading font-bold text-charcoal">₹{firstVariant?.price?.toLocaleString()}</span>
-            {firstVariant?.mrp > firstVariant?.price && (
-              <span className="text-xl text-muted-foreground line-through opacity-50">₹{firstVariant.mrp.toLocaleString()}</span>
+            <span className="text-4xl font-heading font-bold text-charcoal">
+              {firstVariant?.price
+                ? `₹${Number(firstVariant.price).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : 'Price not available'}
+            </span>
+            {firstVariant?.mrp && firstVariant?.price && firstVariant.mrp > firstVariant.price && (
+              <span className="text-xl text-muted-foreground line-through opacity-50">₹{Number(firstVariant.mrp).toLocaleString('en-IN')}</span>
             )}
           </div>
 
-          <div className="text-charcoal/70 leading-relaxed italic font-medium">{product.description}</div>
+          <div className="text-charcoal/70 leading-relaxed font-medium">{product.description}</div>
 
-          <div className="space-y-4">
-            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-              <span>Select Size</span>
-              <button className="text-teal underline underline-offset-4">Size Guide</button>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              {product.product_variants?.map((v: any) => (
-                <button key={v.id} className={`w-14 h-14 flex items-center justify-center text-xs font-bold transition-all border ${v.id === firstVariant?.id ? 'border-charcoal bg-charcoal text-cream' : 'border-sage/20 text-charcoal/60'}`}>{v.size}</button>
-              ))}
-            </div>
-          </div>
+          {/* Stock status */}
+          {(() => {
+            const hasVariants = product.product_variants && product.product_variants.length > 0
+            const allOutOfStock = hasVariants && product.product_variants.every((v: any) => v.stock_qty === 0)
+            if (!hasVariants) return <p className="text-sm text-gray-500">Contact us for availability</p>
+            if (allOutOfStock) return <p className="text-sm text-red-500 font-medium">Currently out of stock</p>
+            return null
+          })()}
 
-          <div className="flex gap-4 pt-4">
-            <Button className="flex-1 h-16 bg-charcoal text-cream rounded-none text-xs font-bold tracking-[0.3em] uppercase">Add To Cart</Button>
-            <Button variant="outline" className="w-16 h-16 border-sage/30 text-charcoal rounded-none"><Share2 className="w-5 h-5" /></Button>
-          </div>
+          <ProductActions
+            productId={product.id}
+            productName={product.name}
+            productSlug={product.slug}
+            variants={product.product_variants ?? []}
+            publicId={product.product_images?.[0]?.cloudinary_public_id}
+          />
 
           <PincodeChecker />
 
@@ -182,7 +180,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <div className="space-y-2"><ShieldCheck className="w-5 h-5 mx-auto text-teal" /><p className="text-[9px] font-bold uppercase tracking-tighter text-muted-foreground">Secure Pay</p></div>
           </div>
 
-          <Accordion type="single" collapsible className="w-full border-t border-sage/10">
+          <Accordion className="w-full border-t border-sage/10">
             <AccordionItem value="details" className="border-sage/10">
               <AccordionTrigger className="text-[10px] font-bold uppercase tracking-[0.2em] py-6 hover:no-underline">Product Details</AccordionTrigger>
               <AccordionContent className="text-charcoal/70 text-xs leading-relaxed space-y-4 pb-6">
@@ -198,9 +196,17 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 }
 
 export async function generateStaticParams() {
-  const supabase = createClient();
-  const { data } = await supabase.from('products').select('slug').eq('is_active', true);
-  return data?.map(({ slug }) => ({ slug })) ?? [];
+  // Cannot use createClient() here as it reads cookies — use direct fetch instead
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/products?select=slug&visible=eq.true`;
+  const res = await fetch(url, {
+    headers: {
+      apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+      Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}`,
+    },
+  });
+  if (!res.ok) return [];
+  const data: { slug: string }[] = await res.json();
+  return data.map(({ slug }) => ({ slug }));
 }
 
 export const revalidate = 60;

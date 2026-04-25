@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { ProductImage } from '@/components/storefront/ProductImage';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -54,6 +53,8 @@ export function Hero({ banners }: HeroProps) {
             height={1080} 
             className="w-full h-full object-cover opacity-60 scale-105"
             priority
+            quality="auto:best"
+            sizes="100vw"
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-transparent to-charcoal/20" />
@@ -70,14 +71,16 @@ export function Hero({ banners }: HeroProps) {
         
         {currentBanner.cta_link && (
           <div className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto animate-in slide-in-from-bottom duration-1000 delay-500">
-            <Link href={currentBanner.cta_link}>
-              <Button className="bg-cream text-charcoal hover:bg-white rounded-full h-14 px-12 text-btn shadow-2xl transition-all hover:scale-105 active:scale-95">
-                {currentBanner.cta_text || 'EXPLORE'}
-              </Button>
+            <Link
+              href={currentBanner.cta_link}
+              className="inline-block px-12 py-4 bg-cream text-charcoal font-semibold tracking-widest uppercase text-sm hover:bg-white hover:scale-105 active:scale-95 transition-all duration-300 rounded-full shadow-2xl border-2 border-cream"
+            >
+              {currentBanner.cta_text || 'SHOP NOW'}
             </Link>
           </div>
         )}
       </div>
+
 
       {/* Navigation Arrows (Only if multiple banners) */}
       {banners.length > 1 && (

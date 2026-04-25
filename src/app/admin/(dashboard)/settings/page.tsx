@@ -1,262 +1,94 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { Save, Loader2, Info } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
+import { useState } from 'react'
+import { useToast } from '@/components/admin/Toast'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<any>({});
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const supabase = createClient();
+  const [currentPw, setCurrentPw] = useState('')
+  const [newPw, setNewPw] = useState('')
+  const [confirmPw, setConfirmPw] = useState('')
+  const [showCurrent, setShowCurrent] = useState(false)
+  const [showNew, setShowNew] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const { showToast, ToastComponent } = useToast()
 
-  useEffect(() => {
-    async function fetchSettings() {
-      const { data } = await supabase.from('site_settings').select('*');
-      if (data) {
-        const settingsMap = data.reduce((acc: any, s: any) => ({
-          ...acc,
-          [s.key]: s.value
-        }), {});
-        setSettings(settingsMap);
+  const changePassword = async () => {
+    if (!currentPw || !newPw || !confirmPw) return showToast('All fields are required', 'error')
+    if (newPw !== confirmPw) return showToast('New passwords do not match', 'error')
+    if (newPw.length < 8) return showToast('Password must be at least 8 characters', 'error')
+
+    setSaving(true)
+    try {
+      const res = await fetch('/api/admin/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw, confirmPassword: confirmPw }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        showToast('Password change validated. Update ADMIN_PASSWORD in .env.local', 'success')
+        setCurrentPw(''); setNewPw(''); setConfirmPw('')
+      } else {
+        showToast(data.error || 'Failed', 'error')
       }
-      setLoading(false);
+    } finally {
+      setSaving(false)
     }
-    fetchSettings();
-  }, []);
-
-  const handleSave = async (key: string, value: any) => {
-    setSaving(true);
-    const { error } = await supabase
-      .from('site_settings')
-      .upsert({ key, value, updated_at: new Date().toISOString() });
-    
-    if (error) {
-      toast.error(`Failed to save ${key}`);
-    } else {
-      toast.success(`Saved ${key.replace(/_/g, ' ')}`);
-      setSettings((prev: any) => ({ ...prev, [key]: value }));
-    }
-    setSaving(false);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-teal" />
-      </div>
-    );
   }
 
   return (
-    <div className="space-y-8 max-w-4xl">
-      <div>
-        <h1 className="text-3xl font-heading font-semibold text-charcoal">Store Settings</h1>
-        <p className="text-muted-foreground text-sm mt-1">Configure your store's general settings, shipping, and payments.</p>
+    <div className="space-y-8 max-w-2xl">
+      {ToastComponent}
+      <h1 className="text-2xl font-bold text-[#1a1a1a]">Settings</h1>
+
+      {/* Change Password */}
+      <div className="bg-white border border-[#e5e7eb] rounded-xl p-6 space-y-5">
+        <h2 className="font-semibold text-[#1a1a1a]">Change Admin Password</h2>
+        <p className="text-sm text-[#6b7280]">
+          Passwords are stored in your environment variable <code className="bg-gray-100 px-2 py-0.5 rounded font-mono text-xs">ADMIN_PASSWORD</code>.
+          After validating here, update the value in your <code className="bg-gray-100 px-2 py-0.5 rounded font-mono text-xs">.env.local</code> file and redeploy.
+        </p>
+        <div className="space-y-4">
+          {[
+            { id: 'current-pw', label: 'Current Password', val: currentPw, setVal: setCurrentPw, show: showCurrent, setShow: setShowCurrent },
+            { id: 'new-pw', label: 'New Password', val: newPw, setVal: setNewPw, show: showNew, setShow: setShowNew },
+            { id: 'confirm-pw', label: 'Confirm New Password', val: confirmPw, setVal: setConfirmPw, show: showNew, setShow: setShowNew },
+          ].map(({ id, label, val, setVal, show, setShow }) => (
+            <div key={id}>
+              <label htmlFor={id} className="block text-sm font-medium mb-1">{label}</label>
+              <div className="relative">
+                <input id={id} type={show ? 'text' : 'password'} value={val} onChange={e => setVal(e.target.value)}
+                  className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
+                <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  {show ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button onClick={changePassword} disabled={saving}
+          className="flex items-center gap-2 px-6 py-2.5 bg-[#1b3a34] text-white rounded-xl text-sm font-medium hover:bg-[#234d44] disabled:opacity-60">
+          {saving && <Loader2 size={16} className="animate-spin" />}
+          Validate & Change Password
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-8">
-        {/* Branding Settings */}
-        <section className="bg-white border border-sage/20 rounded-xl overflow-hidden shadow-sm">
-          <div className="p-6 border-b border-sage/10 bg-sage/5">
-            <h2 className="font-semibold text-charcoal flex items-center gap-2">
-              Branding
-            </h2>
+      {/* Account Info */}
+      <div className="bg-white border border-[#e5e7eb] rounded-xl p-6 space-y-3">
+        <h2 className="font-semibold text-[#1a1a1a]">Account Info</h2>
+        <div className="text-sm space-y-2">
+          <div className="flex justify-between py-2 border-b border-[#e5e7eb]">
+            <span className="text-[#6b7280]">Role</span><span className="font-medium">Admin</span>
           </div>
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-charcoal/60">Store Name</label>
-                <div className="flex gap-2">
-                  <Input 
-                    value={settings.store_name?.text || 'Label Wink'}
-                    onChange={(e) => setSettings({ ...settings, store_name: { text: e.target.value } })}
-                  />
-                  <Button onClick={() => handleSave('store_name', settings.store_name)}>Save</Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-charcoal/60">Logo URL</label>
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder="https://..."
-                    value={settings.logo_url?.url || ''}
-                    onChange={(e) => setSettings({ ...settings, logo_url: { url: e.target.value } })}
-                  />
-                  <Button onClick={() => handleSave('logo_url', settings.logo_url)}>Save</Button>
-                </div>
-              </div>
-            </div>
+          <div className="flex justify-between py-2 border-b border-[#e5e7eb]">
+            <span className="text-[#6b7280]">Auth Type</span><span className="font-medium">Password (JWT)</span>
           </div>
-        </section>
-
-        {/* SEO Settings */}
-        <section className="bg-white border border-sage/20 rounded-xl overflow-hidden shadow-sm">
-          <div className="p-6 border-b border-sage/10 bg-sage/5">
-            <h2 className="font-semibold text-charcoal flex items-center gap-2">
-              SEO & Metadata
-            </h2>
+          <div className="flex justify-between py-2">
+            <span className="text-[#6b7280]">Session Duration</span><span className="font-medium">24 hours</span>
           </div>
-          <div className="p-6 space-y-6">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-charcoal/60">Default Meta Title</label>
-              <div className="flex gap-2">
-                <Input 
-                  value={settings.seo_title?.text || ''}
-                  onChange={(e) => setSettings({ ...settings, seo_title: { text: e.target.value } })}
-                />
-                <Button onClick={() => handleSave('seo_title', settings.seo_title)}>Save</Button>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-widest text-charcoal/60">Default Meta Description</label>
-              <div className="flex gap-2">
-                <Textarea 
-                  value={settings.seo_description?.text || ''}
-                  onChange={(e) => setSettings({ ...settings, seo_description: { text: e.target.value } })}
-                />
-                <Button onClick={() => handleSave('seo_description', settings.seo_description)}>Save</Button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Social Media Settings */}
-        <section className="bg-white border border-sage/20 rounded-xl overflow-hidden shadow-sm">
-          <div className="p-6 border-b border-sage/10 bg-sage/5">
-            <h2 className="font-semibold text-charcoal flex items-center gap-2">
-              Social Media
-            </h2>
-          </div>
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-charcoal/60">Instagram URL</label>
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder="https://instagram.com/..."
-                    value={settings.social_instagram?.url || ''}
-                    onChange={(e) => setSettings({ ...settings, social_instagram: { url: e.target.value } })}
-                  />
-                  <Button onClick={() => handleSave('social_instagram', settings.social_instagram)}>Save</Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-charcoal/60">Facebook URL</label>
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder="https://facebook.com/..."
-                    value={settings.social_facebook?.url || ''}
-                    onChange={(e) => setSettings({ ...settings, social_facebook: { url: e.target.value } })}
-                  />
-                  <Button onClick={() => handleSave('social_facebook', settings.social_facebook)}>Save</Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Shipping Settings */}
-        <section className="bg-white border border-sage/20 rounded-xl overflow-hidden shadow-sm">
-          <div className="p-6 border-b border-sage/10 bg-sage/5">
-            <h2 className="font-semibold text-charcoal flex items-center gap-2">
-              Shipping & Logistics
-            </h2>
-          </div>
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-charcoal/60">Free Shipping Threshold (₹)</label>
-                <div className="flex gap-2">
-                  <Input 
-                    type="number" 
-                    value={settings.free_shipping_threshold?.amount || 999}
-                    onChange={(e) => setSettings({ ...settings, free_shipping_threshold: { amount: Number(e.target.value) } })}
-                  />
-                  <Button onClick={() => handleSave('free_shipping_threshold', settings.free_shipping_threshold)}>Save</Button>
-                </div>
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1"><Info size={10} /> Customers get free shipping above this amount.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Contact Settings */}
-        <section className="bg-white border border-sage/20 rounded-xl overflow-hidden shadow-sm">
-          <div className="p-6 border-b border-sage/10 bg-sage/5">
-            <h2 className="font-semibold text-charcoal flex items-center gap-2">
-              Communication
-            </h2>
-          </div>
-          <div className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-charcoal/60">WhatsApp Number</label>
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder="10-digit number"
-                    value={settings.whatsapp_number?.number || ''}
-                    onChange={(e) => setSettings({ ...settings, whatsapp_number: { number: e.target.value } })}
-                  />
-                  <Button onClick={() => handleSave('whatsapp_number', settings.whatsapp_number)}>Save</Button>
-                </div>
-                <p className="text-[10px] text-muted-foreground">Used for the floating chat button and notifications.</p>
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-charcoal/60">Support Email</label>
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder="support@labelwink.in"
-                    value={settings.store_email?.email || ''}
-                    onChange={(e) => setSettings({ ...settings, store_email: { email: e.target.value } })}
-                  />
-                  <Button onClick={() => handleSave('store_email', settings.store_email)}>Save</Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Payment Settings */}
-        <section className="bg-white border border-sage/20 rounded-xl overflow-hidden shadow-sm">
-          <div className="p-6 border-b border-sage/10 bg-sage/5">
-            <h2 className="font-semibold text-charcoal flex items-center gap-2">
-              Payments
-            </h2>
-          </div>
-          <div className="p-6 space-y-6">
-            <div className="flex items-center justify-between p-4 bg-sage/5 rounded-lg border border-sage/10">
-              <div>
-                <p className="text-sm font-semibold text-charcoal">Cash on Delivery (COD)</p>
-                <p className="text-xs text-muted-foreground">Allow customers to pay when order is delivered.</p>
-              </div>
-              <button 
-                onClick={() => handleSave('cod_enabled', { enabled: !settings.cod_enabled?.enabled })}
-                className={`w-12 h-6 rounded-full transition-colors relative ${settings.cod_enabled?.enabled ? 'bg-teal' : 'bg-sage/40'}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.cod_enabled?.enabled ? 'left-7' : 'left-1'}`} />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-sage/5 rounded-lg border border-sage/10">
-              <div>
-                <p className="text-sm font-semibold text-charcoal">Razorpay Live Mode</p>
-                <p className="text-xs text-muted-foreground">Toggle between test and production keys.</p>
-              </div>
-              <button 
-                onClick={() => handleSave('razorpay_live_mode', { enabled: !settings.razorpay_live_mode?.enabled })}
-                className={`w-12 h-6 rounded-full transition-colors relative ${settings.razorpay_live_mode?.enabled ? 'bg-orange-500' : 'bg-sage/40'}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.razorpay_live_mode?.enabled ? 'left-7' : 'left-1'}`} />
-              </button>
-            </div>
-          </div>
-        </section>
+        </div>
       </div>
     </div>
-  );
+  )
 }
-

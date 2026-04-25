@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useCartStore } from '@/store/useCartStore';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ShoppingBag, ChevronRight, Truck, ShieldCheck, CreditCard, Loader2 } from 'lucide-react';
@@ -106,9 +106,7 @@ export default function CheckoutPage() {
     return (
       <div className="container mx-auto px-4 py-24 text-center">
         <h1 className="text-3xl font-heading mb-6">Your cart is empty</h1>
-        <Button asChild className="bg-teal text-cream h-12 px-8">
-          <Link href="/collections/all">Discover Collection</Link>
-        </Button>
+        <Link href="/collections/all" className={buttonVariants({ className: "bg-teal text-cream h-12 px-8" })}>Discover Collection</Link>
       </div>
     );
   }
@@ -224,7 +222,7 @@ export default function CheckoutPage() {
               {items.map((item) => (
                 <div key={item.id} className="flex gap-4">
                   <div className="w-20 h-24 bg-sage/5 rounded-lg relative overflow-hidden flex-shrink-0">
-                    <ProductImage publicId={item.publicId} alt={item.name} width={80} height={100} className="w-full h-full object-cover" />
+                    <ProductImage publicId={item.publicId || ''} alt={item.name} width={80} height={100} className="w-full h-full object-cover" />
                     <span className="absolute -top-1 -right-1 bg-charcoal text-cream text-[10px] w-6 h-6 rounded-full flex items-center justify-center border-2 border-white font-bold">
                       {item.quantity}
                     </span>

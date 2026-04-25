@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useCartStore } from '@/store/useCartStore';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Minus, Plus, Trash2, X, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import { ProductImage } from '@/components/storefront/ProductImage';
@@ -68,7 +68,6 @@ export function CartDrawer() {
                 title="Your cart is waiting" 
                 description="Explore our latest collection and find something beautiful." 
                 action={{ label: "Shop All", href: "/collections/all" }}
-                onActionClick={() => setIsOpen(false)}
               />
             </div>
           ) : (
@@ -135,9 +134,7 @@ export function CartDrawer() {
                 </span>
               </div>
             </div>
-            <Button asChild className="w-full h-16 bg-charcoal hover:bg-teal text-cream rounded-none text-xs font-bold tracking-[0.3em] uppercase transition-all shadow-xl">
-              <Link href="/checkout" onClick={() => setIsOpen(false)}>Checkout Securely</Link>
-            </Button>
+            <Link href="/checkout" onClick={() => setIsOpen(false)} className={buttonVariants({ className: "w-full h-16 bg-charcoal hover:bg-teal text-cream rounded-none text-xs font-bold tracking-[0.3em] uppercase transition-all shadow-xl flex items-center justify-center" })}>Checkout Securely</Link>
             <p className="text-[9px] text-center text-muted-foreground uppercase tracking-widest font-bold">
               Secure Checkout &bull; Free Shipping over ₹{threshold}
             </p>

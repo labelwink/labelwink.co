@@ -2,12 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Facebook, Instagram, Mail, ArrowRight, MessageCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 
-export function Footer() {
+export function Footer({ 
+  columns = [], 
+  social = {}, 
+  tagline = "GRACE IN EVERY THREAD" 
+}: { 
+  columns?: any[], 
+  social?: any, 
+  tagline?: string 
+}) {
   const [settings, setSettings] = useState<any>({});
   const supabase = createClient();
 
@@ -37,7 +46,7 @@ export function Footer() {
             <div>
               <p className="text-brand-wordmark text-white mb-2">LABEL WINK</p>
               <p className="text-eyebrow text-white/40 text-[10px]" style={{ letterSpacing: '0.15em' }}>
-                GRACE IN EVERY THREAD
+                {tagline}
               </p>
             </div>
             <p className="text-sm text-cream/70 leading-relaxed font-medium">
@@ -73,12 +82,16 @@ export function Footer() {
             <h3 className="font-heading text-xl tracking-widest uppercase border-b border-cream/10 pb-4">Customer Care</h3>
             <ul className="space-y-4 text-[10px] font-bold uppercase tracking-widest text-cream/60">
               <li><Link href="/about" className="hover:text-teal transition-colors">Our Story</Link></li>
-              <li><Link href="/policies" className="hover:text-teal transition-colors">Track Your Order</Link></li>
-              <li><Link href="/policies" className="hover:text-teal transition-colors">Shipping & Returns</Link></li>
-              <li><Link href="/policies" className="hover:text-teal transition-colors">Privacy Policy</Link></li>
-              <li><Link href="/policies" className="hover:text-teal transition-colors">Terms of Service</Link></li>
+              <li><Link href="/faq" className="hover:text-teal transition-colors">FAQ</Link></li>
+              <li><Link href="/size-guide" className="hover:text-teal transition-colors">Size Guide</Link></li>
+              <li><Link href="/contact" className="hover:text-teal transition-colors">Contact Us</Link></li>
+              <li><Link href="/policy/shipping-policy" className="hover:text-teal transition-colors">Shipping &amp; Returns</Link></li>
+              <li><Link href="/policy/privacy-policy" className="hover:text-teal transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/policy/return-refund-policy" className="hover:text-teal transition-colors">Return Policy</Link></li>
+              <li><Link href="/policy/terms-and-conditions" className="hover:text-teal transition-colors">Terms of Service</Link></li>
             </ul>
           </div>
+
 
           {/* Contact & Social */}
           <div className="space-y-8">
@@ -118,9 +131,9 @@ export function Footer() {
           
           {/* Payment Icons */}
           <div className="flex items-center gap-6 opacity-40 grayscale hover:grayscale-0 transition-all">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Visa_2014_logo_detail.svg" alt="Visa" className="h-3" />
-            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-5" />
-            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo.png" alt="UPI" className="h-4 bg-white px-1" />
+            <Image src="https://upload.wikimedia.org/wikipedia/commons/2/24/Visa_2014_logo_detail.svg" alt="Visa" width={36} height={12} loading="lazy" />
+            <Image src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" width={40} height={20} loading="lazy" />
+            <Image src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo.png" alt="UPI" width={40} height={16} loading="lazy" className="bg-white px-1" />
           </div>
         </div>
       </div>
