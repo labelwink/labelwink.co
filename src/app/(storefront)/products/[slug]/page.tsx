@@ -59,7 +59,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   const { data: reviews } = await supabase
     .from('reviews')
-    .select('id, rating, title, body, is_verified, created_at, profiles(full_name)')
+    .select('id, rating, title, body, is_verified_purchase, admin_reply, created_at, profiles(full_name)')
     .eq('product_id', product.id)
     .eq('status', 'approved')
     .order('created_at', { ascending: false });
@@ -304,7 +304,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                         <Star key={i} className={`w-4 h-4 ${i <= r.rating ? 'fill-current' : 'text-gray-200'}`} />
                       ))}
                     </div>
-                    {r.is_verified && (
+                    {r.is_verified_purchase && (
                       <span className="text-[9px] font-bold uppercase tracking-widest text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full flex-shrink-0">
                         ✓ Verified Purchase
                       </span>

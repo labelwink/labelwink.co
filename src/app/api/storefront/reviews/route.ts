@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await supabase
     .from('reviews')
-    .select('id, rating, title, body, is_verified, created_at, profiles(full_name)')
+    .select('id, rating, title, body, is_verified_purchase, admin_reply, created_at, profiles(full_name)')
     .eq('product_id', product_id)
     .eq('status', 'approved')
     .order('created_at', { ascending: false })
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     title: title || null,
     body,
     status: 'pending',
-    is_verified: isVerified,
+    is_verified_purchase: isVerified,
   })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

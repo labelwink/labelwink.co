@@ -44,6 +44,8 @@ interface Order {
   shipping_fee?: number;
   discount_amount: number;
   coupon_code?: string | null;
+  loyalty_points_used?: number;
+  wink_points_awarded?: number;
   customer_name: string | null;
   customer_email: string | null;
   customer_phone: string | null;
@@ -58,6 +60,8 @@ interface Order {
   shipping_method: string | null;
   created_at: string;
   order_items: OrderItem[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  status_history?: Array<{ status: string; note: string | null; created_at: string }>;
 }
 
 // ── Review Modal ──────────────────────────────────────────────────────────────
@@ -341,10 +345,24 @@ export default function OrderDetailPage() {
                   <span>−₹{Number(order.discount_amount).toLocaleString('en-IN')}</span>
                 </div>
               )}
+              {(order.loyalty_points_used || 0) > 0 && (
+                <div className="flex justify-between text-amber-600">
+                  <span className="flex items-center gap-1">
+                    🌟 Wink Points Redeemed
+                  </span>
+                  <span>−₹{Number(order.loyalty_points_used).toLocaleString('en-IN')}</span>
+                </div>
+              )}
               <div className="flex justify-between font-bold text-base text-charcoal pt-1 border-t border-sage/10">
                 <span>Total</span>
                 <span>₹{Number(order.total || 0).toLocaleString('en-IN')}</span>
               </div>
+              {(order.wink_points_awarded || 0) > 0 && (
+                <div className="flex justify-between text-amber-600 text-xs pt-1">
+                  <span>🌟 Wink Points Earned</span>
+                  <span>+{order.wink_points_awarded} pts</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -421,7 +439,31 @@ export default function OrderDetailPage() {
             <h2 className="font-semibold text-charcoal mb-5">Order Timeline</h2>
             {isCancelled ? (
               <p className="text-sm text-red-600 font-semibold">This order was cancelled.</p>
+            ) : order.status_history && order.status_history.length > 0 ? (
+              // Show actual history entries with timestamps
+              <div className="relative pl-5">
+                <div className="absolute left-2 top-2 bottom-2 w-px bg-sage/20" />
+                {order.status_history.slice().reverse().map((h, i) => (
+                  <div key={i} className="relative flex items-start gap-4 pb-5 last:pb-0">
+                    <div className={`absolute -left-[11px] w-3 h-3 rounded-full border-2 flex-shrink-0 mt-0.5 ${
+                      i === order.status_history!.length - 1
+                        ? 'border-teal bg-teal'
+                        : 'border-teal/40 bg-white'
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm capitalize font-semibold ${
+                        i === order.status_history!.length - 1 ? 'text-teal' : 'text-charcoal/70'
+                      }`}>{h.status}</p>
+                      {h.note && <p className="text-xs text-charcoal/50 mt-0.5">{h.note}</p>}
+                      <p className="text-[10px] text-charcoal/40 mt-0.5">
+                        {new Date(h.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (
+              // Fallback: static progress steps
               <div className="space-y-4">
                 {STATUS_ORDER.map((s, i) => {
                   const done = i <= statusIdx;
