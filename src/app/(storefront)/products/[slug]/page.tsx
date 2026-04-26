@@ -95,8 +95,33 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       '@type': 'Offer',
       price: displayPrice,
       priceCurrency: 'INR',
-      availability: firstVariant?.stock_qty > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
-    }
+      availability: firstVariant?.stock_qty > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.com'}/products/${product.slug}`,
+    },
+    ...(reviews && reviews.length > 0 && {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: Number(avgRating).toFixed(1),
+        reviewCount: reviews.length,
+        bestRating: 5,
+        worstRating: 1,
+      },
+      review: reviews.slice(0, 5).map((r: any) => ({
+        '@type': 'Review',
+        reviewRating: {
+          '@type': 'Rating',
+          ratingValue: r.rating,
+          bestRating: 5,
+        },
+        name: r.title || `${r.rating}-star review`,
+        reviewBody: r.body,
+        author: {
+          '@type': 'Person',
+          name: (r.profiles as { full_name?: string } | null)?.full_name || 'Verified Buyer',
+        },
+        datePublished: r.created_at?.slice(0, 10),
+      })),
+    }),
   };
 
   return (

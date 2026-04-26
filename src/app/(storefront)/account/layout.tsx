@@ -2,16 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LogOut, Package, Heart, MapPin, User } from 'lucide-react';
+import { LogOut, Package, Heart, MapPin, User, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
 const navItems = [
-  { name: 'Dashboard', href: '/account', icon: User },
-  { name: 'My Orders', href: '/account/orders', icon: Package },
-  { name: 'Wishlist', href: '/account/wishlist', icon: Heart },
-  { name: 'Addresses', href: '/account/addresses', icon: MapPin },
+  { name: 'Dashboard',  href: '/account',          icon: User },
+  { name: 'My Orders',  href: '/account/orders',    icon: Package },
+  { name: 'Returns',    href: '/account/returns',   icon: RotateCcw },
+  { name: 'Wishlist',   href: '/account/wishlist',  icon: Heart },
+  { name: 'Addresses',  href: '/account/addresses', icon: MapPin },
 ];
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
