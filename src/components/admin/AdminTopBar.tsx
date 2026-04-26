@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { LogOut, Menu, ExternalLink, Bell, ShoppingBag, Star, RotateCcw, Check } from 'lucide-react'
+import { LogOut, Menu, ExternalLink, Bell, ShoppingBag, Star, RotateCcw, Check, Package } from 'lucide-react'
 import { useSidebar } from '@/components/admin/AdminSidebar'
 import type { AdminNotification } from '@/types'
 
@@ -18,7 +18,7 @@ function timeAgo(dateStr: string): string {
 
 const NOTIF_ICONS: Record<string, React.ElementType> = {
   new_order:      ShoppingBag,
-  low_stock:      Bell,
+  low_stock:      Package,
   new_review:     Star,
   return_request: RotateCcw,
 }
@@ -81,8 +81,11 @@ export function AdminTopBar() {
   const handleNotifClick = (notif: AdminNotification) => {
     markRead(notif.id)
     setOpen(false)
-    const orderId = (notif.data as Record<string, string> | null)?.order_id
-    if (orderId) router.push(`/admin/orders/${orderId}`)
+    const d = (notif.data as Record<string, string> | null) ?? {}
+    if (notif.type === 'low_stock')      { router.push('/admin/inventory'); return }
+    if (notif.type === 'new_review')     { router.push('/admin/reviews');   return }
+    if (notif.type === 'return_request') { router.push('/admin/returns');   return }
+    if (d.order_id) router.push(`/admin/orders/${d.order_id}`)
   }
 
   const handleLogout = async () => {

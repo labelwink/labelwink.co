@@ -17,6 +17,7 @@ export async function GET(
     .select(`
       id, status, total, subtotal,
       shipping_amount, shipping_fee, discount_amount,
+      loyalty_points_used, wink_points_awarded,
       customer_name, customer_email, customer_phone,
       payment_status, payment_method, razorpay_payment_id,
       shipping_carrier, tracking_number, tracking_url,
@@ -29,10 +30,14 @@ export async function GET(
         product_name,
         size, color,
         products ( id, name, slug )
+      ),
+      status_history: order_status_history (
+        status, note, created_at
       )
     `)
     .eq('id', id)
     .eq('user_id', user.id)
+    .order('created_at', { referencedTable: 'order_status_history', ascending: true })
     .single()
 
   if (error) {

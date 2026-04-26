@@ -20,6 +20,7 @@ interface AnalyticsData {
     avgOrderValue: number
     customerCount: number
     revenueGrowth: number | null
+    winkPointsLiability: number
   }
   chartData: { date: string; label: string; revenue: number; orders: number }[]
   statusBreakdown: Record<string, number>
@@ -89,6 +90,14 @@ export default function AnalyticsPage() {
       sub:   'Registered accounts',
       subColor: 'text-[#9ca3af]',
       icon: Users, color: 'text-amber-600', bg: 'bg-amber-50',
+      trend: null,
+    },
+    {
+      title: 'Wink Points Liability',
+      value: formatCurrency(data.kpis.winkPointsLiability ?? 0),
+      sub:   'Outstanding loyalty balance',
+      subColor: 'text-amber-500',
+      icon: TrendingDown, color: 'text-amber-600', bg: 'bg-amber-50',
       trend: null,
     },
   ] : []
