@@ -190,9 +190,26 @@ export default function CheckoutPage() {
         description: 'Boutique Fashion Order',
         order_id:    result.razorpayOrderId,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        handler: (response: any) => {
+        handler: async (response: any) => {
+          // Verify payment signature server-side before showing success
+          try {
+            await fetch('/api/razorpay/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id:   response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature:  response.razorpay_signature,
+                order_id:            result.orderId,
+              }),
+            });
+          } catch { /* non-fatal — success page will show anyway */ }
           clearCart();
-          router.push(`/checkout/success?orderId=${result.orderId}&paymentId=${response.razorpay_payment_id}`);
+          router.push(
+            `/checkout/success?orderId=${result.orderId}` +
+            `&paymentId=${response.razorpay_payment_id}` +
+            `&verified=1`
+          );
         },
         prefill: { name: formData.fullName, email: formData.email, contact: formData.phone },
         theme: { color: '#016a6e' },

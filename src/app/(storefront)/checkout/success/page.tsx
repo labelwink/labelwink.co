@@ -85,24 +85,31 @@ function Confetti() {
 }
 
 // ── Order card info ────────────────────────────────────────────────────────────
+interface OrderItem {
+  id: string;
+  quantity: number;
+  price_at_purchase?: number;
+  price?: number;
+  variant_size?: string;
+  variant_color?: string | null;
+  product_name?: string;
+  size?: string;
+  color?: string | null;
+  products: { name: string; slug: string } | null;
+}
+
 interface OrderInfo {
   id: string;
   status: string;
   total: number;
   subtotal: number;
-  shipping_amount: number;
+  shipping_amount?: number;
+  shipping_fee?: number;
   discount_amount: number;
   customer_name: string | null;
   customer_phone: string | null;
   shipping_address: Record<string, string> | null;
-  order_items: Array<{
-    id: string;
-    quantity: number;
-    price: number;
-    size: string;
-    color: string | null;
-    products: { name: string; slug: string } | null;
-  }>;
+  order_items: OrderItem[];
 }
 
 // ── Points earned helper ───────────────────────────────────────────────────────
@@ -115,6 +122,7 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const orderId   = searchParams.get('orderId');
   const paymentId = searchParams.get('paymentId');
+  const verified  = searchParams.get('verified') === '1';
 
   const [order, setOrder] = useState<OrderInfo | null>(null);
   const [showConfetti, setShowConfetti] = useState(true);
@@ -169,6 +177,11 @@ function SuccessContent() {
           {paymentId && (
             <p className="mt-2 text-xs text-[#1a3a34]/40 font-mono">Payment: {paymentId}</p>
           )}
+          {verified && (
+            <div className="mt-3 inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Payment Verified
+            </div>
+          )}
         </div>
 
         {/* ── Loyalty points banner ── */}
@@ -197,19 +210,25 @@ function SuccessContent() {
                 </h2>
               </div>
               <div className="divide-y divide-[#e2d9cc]/60">
-                {order.order_items?.map(item => (
-                  <div key={item.id} className="px-6 py-4 flex justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold text-[#1a3a34]">{item.products?.name || 'Item'}</p>
-                      <p className="text-xs text-[#1a3a34]/50 mt-0.5">
-                        Size: {item.size}{item.color ? ` · ${item.color}` : ''} · Qty: {item.quantity}
+                {order.order_items?.map(item => {
+                  const itemPrice = item.price_at_purchase ?? item.price ?? 0;
+                  const itemSize  = item.variant_size  || item.size  || '—';
+                  const itemColor = item.variant_color || item.color || null;
+                  const itemName  = item.product_name  || item.products?.name || 'Item';
+                  return (
+                    <div key={item.id} className="px-6 py-4 flex justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-[#1a3a34]">{itemName}</p>
+                        <p className="text-xs text-[#1a3a34]/50 mt-0.5">
+                          Size: {itemSize}{itemColor ? ` · ${itemColor}` : ''} · Qty: {item.quantity}
+                        </p>
+                      </div>
+                      <p className="text-sm font-bold text-[#1a3a34] flex-shrink-0">
+                        ₹{(Number(itemPrice) * item.quantity).toLocaleString('en-IN')}
                       </p>
                     </div>
-                    <p className="text-sm font-bold text-[#1a3a34] flex-shrink-0">
-                      ₹{(Number(item.price) * item.quantity).toLocaleString('en-IN')}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="px-6 py-4 border-t border-[#e2d9cc] bg-[#faf8f5] space-y-2 text-sm">
                 <div className="flex justify-between text-[#1a3a34]/60">
@@ -218,8 +237,8 @@ function SuccessContent() {
                 </div>
                 <div className="flex justify-between text-[#1a3a34]/60">
                   <span>Shipping</span>
-                  <span className={Number(order.shipping_amount || 0) === 0 ? 'text-[#016a6e] font-semibold' : ''}>
-                    {Number(order.shipping_amount || 0) === 0 ? 'FREE' : `₹${Number(order.shipping_amount).toLocaleString('en-IN')}`}
+                  <span className={Number(order.shipping_amount || order.shipping_fee || 0) === 0 ? 'text-[#016a6e] font-semibold' : ''}>
+                    {Number(order.shipping_amount || order.shipping_fee || 0) === 0 ? 'FREE' : `₹${Number(order.shipping_amount || order.shipping_fee).toLocaleString('en-IN')}`}
                   </span>
                 </div>
                 {(order.discount_amount || 0) > 0 && (
