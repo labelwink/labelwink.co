@@ -2,7 +2,7 @@ import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 
 /**
- * Sliding-window rate limiter: 5 attempts per 15 minutes per IP.
+ * Fixed-window rate limiter: 5 attempts per 15 minutes per IP.
  * Backed by Upstash Redis — survives serverless cold starts.
  *
  * Required env vars:
@@ -24,7 +24,7 @@ import { Redis } from '@upstash/redis'
  */
 export const adminAuthLimiter = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(5, '15 m'),
+  limiter: Ratelimit.fixedWindow(5, '15 m'),
   prefix: 'admin_auth',
   analytics: false,
 })

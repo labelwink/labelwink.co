@@ -7,6 +7,7 @@ import { ProductImage } from '@/components/storefront/ProductImage';
 import { PincodeChecker } from '@/components/storefront/PincodeChecker';
 import { ProductImageGallery } from '@/components/storefront/ProductImageGallery';
 import { ProductActions } from '@/components/storefront/ProductActions';
+import { WishlistButton } from '@/components/storefront/WishlistButton';
 import WriteReviewForm from '@/components/storefront/WriteReviewForm';
 import Script from 'next/script';
 import Link from 'next/link';
@@ -23,9 +24,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   if (!product) return { title: 'Product Not Found' };
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co';
+  const canonical = `${siteUrl}/products/${resolvedParams.slug}`;
+
   return {
     title: product.seo_title || `${product.name} | Label Wink`,
     description: product.seo_description || product.description,
+    alternates: {
+      canonical,
+    },
     openGraph: {
       title: product.name,
       description: product.description || undefined,
@@ -38,8 +45,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const resolvedParams = await params;
   const supabase = createClient();
 
-  // Fetch user session for WriteReviewForm
+  // Fetch user session for WriteReviewForm and wishlist check
   const { data: { user } } = await supabase.auth.getUser();
+
+  // Will be set after product fetch
+  let isWishlisted = false;
 
   const { data: product, error } = await supabase
     .from('products')
@@ -54,6 +64,17 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     .single();
 
   if (error || !product) notFound();
+
+  // Re-check wishlist with actual product ID
+  if (user) {
+    const { data: wl } = await supabase
+      .from('wishlists')
+      .select('id')
+      .eq('product_id', product.id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    isWishlisted = !!wl;
+  }
 
   // Fetch reviews separately to avoid inner join issues
 
@@ -205,6 +226,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
           {/* Desktop ProductActions */}
           <div className="hidden md:block">
+            <div className="flex items-center gap-3 mb-4">
+              <WishlistButton
+                productId={product.id}
+                variantId={product.product_variants?.[0]?.id}
+                initialWishlisted={isWishlisted}
+                className="w-14 h-14 border border-sage/30 text-charcoal rounded-none hover:border-charcoal transition-colors flex items-center justify-center flex-shrink-0 disabled:opacity-50"
+              />
+            </div>
             <ProductActions
               productId={product.id}
               productName={product.name}
@@ -216,6 +245,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
           {/* Mobile ProductActions */}
           <div className="md:hidden">
+            <div className="flex items-center gap-3 mb-4">
+              <WishlistButton
+                productId={product.id}
+                variantId={product.product_variants?.[0]?.id}
+                initialWishlisted={isWishlisted}
+                className="w-12 h-12 border border-sage/30 text-charcoal rounded-none hover:border-charcoal transition-colors flex items-center justify-center flex-shrink-0 disabled:opacity-50"
+              />
+            </div>
             <ProductActions
               productId={product.id}
               productName={product.name}

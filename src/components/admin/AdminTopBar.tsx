@@ -43,8 +43,10 @@ export function AdminTopBar() {
     try {
       const res = await fetch('/api/admin/notifications')
       if (res.ok) {
-        const data: AdminNotification[] = await res.json()
-        if (Array.isArray(data)) setNotifications(data)
+        const json = await res.json()
+        // Support both new { notifications } shape and legacy flat array
+        const items = Array.isArray(json) ? json : (json.notifications ?? [])
+        setNotifications(items)
       }
     } catch {
       // fail silently

@@ -58,6 +58,7 @@ export default function ReviewsPage() {
   const [total,      setTotal]      = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [loading,    setLoading]    = useState(true)
+  const [error,      setError]      = useState<string | null>(null)
   const [counts,     setCounts]     = useState({ pending: 0, approved: 0, rejected: 0 })
   const [actioning,  setActioning]  = useState<Set<string>>(new Set())
   // Reply state: reviewId -> { open, text, saving }
@@ -76,14 +77,24 @@ export default function ReviewsPage() {
 
   const fetchReviews = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       const p = new URLSearchParams({ status, page: String(page) })
       const res  = await fetch(`/api/admin/reviews?${p}`)
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
+        console.error('Reviews API error:', err)
+        setError(err.error || `Failed to load reviews (${res.status})`)
+        setReviews([])
+        return
+      }
       const data = await res.json()
       setReviews(data.reviews ?? [])
       setTotal(data.total ?? 0)
       setTotalPages(data.totalPages ?? 0)
-    } catch {
+    } catch (e) {
+      console.error('Reviews fetch exception:', e)
+      setError('Network error — could not reach the server')
       setReviews([])
     } finally {
       setLoading(false)
@@ -226,6 +237,18 @@ export default function ReviewsPage() {
               <div className="h-3 bg-gray-100 rounded w-3/4" />
             </div>
           ))}
+        </div>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
+          <XCircle size={32} className="mx-auto text-red-300 mb-3" />
+          <p className="text-sm font-semibold text-red-700 mb-1">Error loading reviews</p>
+          <p className="text-xs text-red-500 mb-4">{error}</p>
+          <button
+            onClick={() => { fetchReviews(); fetchCounts() }}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition-colors"
+          >
+            <RefreshCw size={12} /> Retry
+          </button>
         </div>
       ) : reviews.length === 0 ? (
         <div className="bg-white border border-[#e5e7eb] rounded-xl p-16 text-center">

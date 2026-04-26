@@ -19,14 +19,18 @@ const STATUS_FILTERS = ['All', 'pending', 'confirmed', 'processing', 'shipped', 
 interface OrderItem {
   id: string;
   quantity: number;
-  price: number;
-  size: string;
-  color: string | null;
-  products: { name: string; slug: string } | null;
+  price_at_purchase: number;
+  product_name: string | null;
+  variant_size: string | null;
+  variant_color: string | null;
+  image_url: string | null;
+  image_cloudinary_id: string | null;
+  product_id: string | null;
 }
 
 interface Order {
   id: string;
+  order_number: string | null;
   status: string;
   total: number;
   created_at: string;
@@ -52,7 +56,7 @@ export default function AccountOrdersPage() {
   const filtered = orders.filter(o => {
     const matchStatus = filter === 'All' || o.status === filter;
     const matchSearch = !search || o.id.toLowerCase().includes(search.toLowerCase()) ||
-      o.order_items?.some(item => item.products?.name?.toLowerCase().includes(search.toLowerCase()));
+      o.order_items?.some(item => item.product_name?.toLowerCase().includes(search.toLowerCase()));
     return matchStatus && matchSearch;
   });
 
@@ -151,11 +155,11 @@ export default function AccountOrdersPage() {
 
                     <div className="min-w-0">
                       <p className="font-semibold text-charcoal text-sm group-hover:text-teal transition-colors truncate">
-                        {firstItem?.products?.name || 'Label Wink Order'}
+                        {firstItem?.product_name || 'Label Wink Order'}
                       </p>
                       {firstItem && (
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Size: {firstItem.size}{firstItem.color ? ` · ${firstItem.color}` : ''} · Qty: {firstItem.quantity}
+                          Size: {firstItem.variant_size || '—'}{firstItem.variant_color ? ` · ${firstItem.variant_color}` : ''} · Qty: {firstItem.quantity}
                           {extraCount > 0 && ` · +${extraCount} more item${extraCount > 1 ? 's' : ''}`}
                         </p>
                       )}

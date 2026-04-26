@@ -14,6 +14,8 @@ import { verifyAdminToken } from '@/lib/adminAuth'
 export async function requireAdmin(): Promise<NextResponse | null> {
   const cookieStore = await cookies()
   const token = cookieStore.get('admin_session')?.value
+  // T4 – debug: confirm whether the cookie reached the server
+  console.log('Token from cookie:', token ? 'present' : 'missing')
 
   if (!token) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

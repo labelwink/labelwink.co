@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
-import { Heart } from 'lucide-react';
 import { ProductImage } from '@/components/storefront/ProductImage';
+import { WishlistButton } from '@/components/storefront/WishlistButton';
 
 export interface ProductCardProps {
   id: string;
@@ -34,7 +33,6 @@ export function ProductCard({
   colors = [],
   totalStock,
 }: ProductCardProps) {
-  const [wishlisted, setWishlisted] = useState(false);
   const discount = compareAtPrice ? Math.round(((compareAtPrice - basePrice) / compareAtPrice) * 100) : 0;
   const isOutOfStock = totalStock !== undefined && totalStock === 0;
 
@@ -99,14 +97,13 @@ export function ProductCard({
           )}
         </div>
 
-        {/* Wishlist Button */}
-        <button 
-          onClick={(e) => { e.preventDefault(); setWishlisted(w => !w); }}
-          className="absolute top-2 right-2 p-1.5 rounded-full bg-cream/50 backdrop-blur-sm text-charcoal hover:bg-cream transition-colors z-20"
-          aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-        >
-          <Heart className={`w-4 h-4 transition-colors ${wishlisted ? 'fill-red-500 text-red-500' : ''}`} />
-        </button>
+        {/* Wishlist Button — top-right */}
+        <div className="absolute top-2 right-2 z-20">
+          <WishlistButton
+            productId={id}
+            className="p-1.5 rounded-full bg-cream/50 backdrop-blur-sm text-charcoal hover:bg-cream transition-colors disabled:opacity-50"
+          />
+        </div>
 
         {/* Quick Add — always visible on mobile, hover-only on desktop */}
         <div className={`absolute bottom-0 left-0 right-0 z-20 transition-all duration-300 md:translate-y-full md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100`}>
@@ -150,6 +147,3 @@ export function ProductCard({
     </div>
   );
 }
-
-
-

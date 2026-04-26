@@ -17,9 +17,9 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from('reviews')
     .select(
-      `id, rating, title, body, status, is_verified_purchase, admin_reply, created_at,
+      `id, rating, title, body, status, is_verified_purchase, admin_reply, created_at, user_id,
        products ( id, name, slug ),
-       profiles ( id, full_name, email )`,
+       profiles!reviews_user_id_profiles_fkey ( id, full_name, email )`,
       { count: 'exact' }
     )
     .order('created_at', { ascending: false })
@@ -28,7 +28,11 @@ export async function GET(req: NextRequest) {
   query = query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
   const { data, count, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  if (error) {
+    console.error('[Reviews API] Supabase error:', error)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
 
   return NextResponse.json({
     reviews: data ?? [],

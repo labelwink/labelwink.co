@@ -12,13 +12,18 @@ export async function POST(req: NextRequest) {
     req.headers.get('x-real-ip') ??
     'unknown'
 
-  const { success } = await adminAuthLimiter.limit(ip)
-  if (!success) {
-    return NextResponse.json(
-      { error: 'Too many attempts. Try again in 15 minutes.' },
-      { status: 429 }
-    )
+  let rateLimitOk = true
+  try {
+    const { success } = await adminAuthLimiter.limit(ip)
+    rateLimitOk = success
+  } catch (e) {
+    console.error('Rate limiter error (non-fatal):', e)
+    // fail open — do not block login if Redis is unavailable
   }
+  if (!rateLimitOk) return NextResponse.json(
+    { error: 'Too many attempts. Try again in 15 minutes.' },
+    { status: 429 }
+  )
 
   let body: { email?: string; password?: string }
   try {
@@ -52,11 +57,13 @@ export async function POST(req: NextRequest) {
   const response = NextResponse.json({ success: true })
   response.cookies.set('admin_session', token, {
     httpOnly: true,
-    sameSite: 'strict',
+    sameSite: 'lax',   // T1: 'strict' blocks the cookie on cross-site top-level navigations (e.g. OAuth redirects). 'lax' is still safe: it blocks third-party AJAX/image requests but allows the cookie on safe same-site navigations initiated by the user.
     path: '/',
     maxAge: 86400,
     secure: process.env.NODE_ENV === 'production',
   })
+  // T4 – debug: confirm the cookie was attached to the response
+  console.log('Cookie set:', response.cookies.getAll())
 
   return response
 }

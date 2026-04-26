@@ -23,6 +23,18 @@ const nextConfig = {
     qualities: [75, 90, 100],
   },
   async headers() {
+    const isDev = process.env.NODE_ENV === 'development';
+
+    // script-src: add 'unsafe-eval' in dev for webpack HMR + React Refresh
+    const scriptSrc = isDev
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://accounts.google.com"
+      : "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://accounts.google.com";
+
+    // connect-src: add HMR WebSocket in dev
+    const connectSrc = isDev
+      ? "connect-src 'self' https://*.supabase.co https://api.brevo.com wss://*.supabase.co https://accounts.google.com ws://localhost:3000"
+      : "connect-src 'self' https://*.supabase.co https://api.brevo.com wss://*.supabase.co https://accounts.google.com";
+
     return [
       {
         source: '/(.*)',
@@ -42,10 +54,10 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com",
+              scriptSrc,
               "img-src 'self' data: res.cloudinary.com images.unsplash.com",
-              "connect-src 'self' https://*.supabase.co https://api.brevo.com wss://*.supabase.co",
-              "frame-src https://api.razorpay.com",
+              connectSrc,
+              "frame-src https://api.razorpay.com https://accounts.google.com",
               "font-src 'self' https://fonts.gstatic.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             ].join('; '),

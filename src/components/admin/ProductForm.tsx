@@ -98,7 +98,7 @@ export default function ProductForm({ product }: { product?: any }) {
       const fd = new FormData()
       fd.append('file', toUpload[i])
       try {
-        const res = await fetch('/api/admin/upload', { method: 'POST', body: fd })
+        const res = await fetch('/api/admin/upload', { method: 'POST', body: fd, credentials: 'include' })
         const { url, public_id } = await res.json()
         setImages(prev => {
           const next = [...prev]
@@ -129,9 +129,9 @@ export default function ProductForm({ product }: { product?: any }) {
       name, slug, category, short_description: shortDesc, description,
       tags, occasion: occasions, mrp: Number(mrp), price: Number(price),
       first_order_discount: firstOrderDiscount,
-      colour, fabric, fit, season, gender, collection,
+      fabric, fit, season,
       hsn_code: hsnCode || null,
-      weight_grams: weight ? Number(weight) : null,
+      weight: weight ? Number(weight) : null,
       images: images.filter(img => img.url).map((img, i) => ({
         url: img.url,
         public_id: img.public_id || null,
@@ -146,7 +146,7 @@ export default function ProductForm({ product }: { product?: any }) {
       const url = product ? `/api/admin/products/${product.id}` : '/api/admin/products'
       const method = product ? 'PATCH' : 'POST'
       console.log('Submitting product data:', JSON.stringify(body, null, 2))
-      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), credentials: 'include' })
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
         console.error('Product save error response:', errData)

@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/requireAdmin'
+import { z } from 'zod/v4'
 
 export const runtime = 'nodejs'
+
+// ── Zod schemas ─────────────────────────────────────────────────────────────────
+const CreateDiscountSchema = z.object({
+  code: z.string().min(1, 'Discount code is required').max(50).transform(v => v.toUpperCase().trim()),
+  type: z.enum(['percent', 'percentage', 'flat', 'fixed', 'fixed_amount', 'free_shipping'], {
+    error: 'Type must be one of: percent, flat, fixed_amount, free_shipping',
+  }),
+  value: z.coerce.number().min(0, 'Value must be ≥ 0'),
+  min_order: z.coerce.number().min(0).optional().nullable(),
+  max_uses: z.coerce.number().int().min(1, 'Max uses must be ≥ 1').optional().nullable(),
+  starts_at: z.string().optional().nullable(),
+  expires_at: z.string().optional().nullable(),
+  is_active: z.boolean().optional().default(true),
+})
 
 const toISO = (dateStr: string | undefined | null): string | null => {
   if (!dateStr) return null
@@ -50,8 +65,34 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const guard = await requireAdmin()
   if (guard) return guard
+
+  // ── Validate request body ───────────────────────────────────────────────────
+  let body: unknown
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json(
+      { error: 'Invalid JSON body', fieldErrors: {} },
+      { status: 400 }
+    )
+  }
+
+  const result = CreateDiscountSchema.safeParse(body)
+  if (!result.success) {
+    const fieldErrors: Record<string, string[]> = {}
+    for (const issue of result.error.issues) {
+      const path = issue.path.map(String).join('.') || '_root'
+      if (!fieldErrors[path]) fieldErrors[path] = []
+      fieldErrors[path].push(issue.message)
+    }
+    return NextResponse.json(
+      { error: 'Validation failed', fieldErrors },
+      { status: 400 }
+    )
+  }
+
+  const validated = result.data
   const supabase = createAdminClient()
-  const body = await req.json()
 
   // Normalise type: UI sends 'percent'/'flat', discount_codes uses 'percentage'/'fixed_amount'
   const typeMap: Record<string, string> = {
@@ -64,16 +105,15 @@ export async function POST(req: NextRequest) {
   }
 
   const row = {
-    code:             (body.code as string)?.toUpperCase().trim(),
-    type:             typeMap[body.type ?? 'flat'] ?? 'fixed_amount',
-    value:            Number(body.value ?? 0),
-    min_order_amount: body.min_order ? Number(body.min_order) : null,
-    max_uses:         body.max_uses  ? Number(body.max_uses)  : null,
-    starts_at:        toISO(body.starts_at) ?? new Date().toISOString(),
-    expires_at:       toISO(body.expires_at),
-    is_active:        body.is_active ?? true,
+    code:             validated.code,
+    type:             typeMap[validated.type] ?? 'fixed_amount',
+    value:            validated.value,
+    min_order_amount: validated.min_order ? Number(validated.min_order) : null,
+    max_uses:         validated.max_uses  ? Number(validated.max_uses)  : null,
+    starts_at:        toISO(validated.starts_at) ?? new Date().toISOString(),
+    expires_at:       toISO(validated.expires_at),
+    is_active:        validated.is_active,
     used_count:       0,
-    description:      body.description ?? null,
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,7 +123,13 @@ export async function POST(req: NextRequest) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message, hint: error.hint }, { status: 500 })
+  if (error) {
+    console.error('Discounts POST error:', error.code, error.details, error.message)
+    return NextResponse.json(
+      { error: error.message, details: error.details },
+      { status: error.code === '23505' ? 409 : 500 }
+    )
+  }
   return NextResponse.json(data, { status: 201 })
 }
 
@@ -110,7 +156,13 @@ export async function PATCH(req: NextRequest) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('Discounts PATCH error:', error.code, error.details, error.message)
+    return NextResponse.json(
+      { error: error.message, details: error.details },
+      { status: error.code === '23505' ? 409 : 500 }
+    )
+  }
   return NextResponse.json(data)
 }
 
@@ -122,6 +174,12 @@ export async function DELETE(req: NextRequest) {
   const { id } = await req.json()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any).from('discount_codes').delete().eq('id', id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('Discounts DELETE error:', error.code, error.details, error.message)
+    return NextResponse.json(
+      { error: error.message, details: error.details },
+      { status: 500 }
+    )
+  }
   return NextResponse.json({ success: true })
 }

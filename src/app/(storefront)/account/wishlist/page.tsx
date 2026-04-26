@@ -1,74 +1,47 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { Trash2, ShoppingCart, Loader2, Heart } from 'lucide-react';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import { Heart } from 'lucide-react';
+import { buttonVariants } from '@/components/ui/button';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useCartStore } from '@/store/useCartStore';
+import { WishlistRemoveButton } from './WishlistRemoveButton';
 
-export default function AccountWishlistPage() {
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { addItem, setIsOpen } = useCartStore();
+export const dynamic = 'force-dynamic';
 
-  useEffect(() => {
-    fetchWishlist();
-  }, []);
+export default async function AccountWishlistPage() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  async function fetchWishlist() {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/storefront/wishlist');
-      if (res.ok) {
-        const data = await res.json();
-        setItems(data);
-      }
-    } finally {
-      setLoading(false);
-    }
+  if (!user) {
+    redirect('/account/login');
   }
 
-  async function handleRemove(productId: string) {
-    const res = await fetch(`/api/storefront/wishlist?product_id=${productId}`, { method: 'DELETE' });
-    if (res.ok) {
-      setItems(items.filter(item => item.product_id !== productId));
-    }
-  }
+  const { data: items } = await supabase
+    .from('wishlists')
+    .select('id, product_id, added_at, products(id, name, slug, price, mrp, images)')
+    .eq('user_id', user.id)
+    .order('added_at', { ascending: false });
 
-  const handleAddToCart = (item: any) => {
-    const product = item.product;
-    const variant = product?.product_variants?.[0];
-    if (!variant) return;
-
-    const imagePublicId = variant.image_public_ids?.[0] || product?.product_images?.[0]?.cloudinary_public_id || '';
-
-    addItem({
-      id: variant.id,
-      productId: product.id,
-      name: product.name,
-      price: variant.price,
-      compareAtPrice: variant.mrp ?? null,
-      image: imagePublicId,
-      quantity: 1,
-      color: variant.color,
-      size: variant.size,
-      slug: product.slug,
-      publicId: imagePublicId,
-    });
-    setIsOpen(true);
-  };
+  const wishlistItems = items ?? [];
 
   const getImageUrl = (product: any) => {
-    const variant = product?.product_variants?.[0];
-    const publicId = variant?.image_public_ids?.[0] || product?.product_images?.[0]?.cloudinary_public_id;
-    if (!publicId) return null;
-    return `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/w_400,h_533,c_fill/${publicId}`;
+    // images is a JSONB array of Cloudinary public IDs or URLs
+    const images = product?.images;
+    if (!images || !Array.isArray(images) || images.length === 0) return null;
+    const firstImage = images[0];
+    // If it's a full URL, return as-is
+    if (typeof firstImage === 'string' && firstImage.startsWith('http')) return firstImage;
+    // If it's a Cloudinary public ID
+    if (typeof firstImage === 'string') {
+      return `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/w_400,h_533,c_fill/${firstImage}`;
+    }
+    // If it's an object with url or public_id
+    if (firstImage?.url) return firstImage.url;
+    if (firstImage?.public_id) {
+      return `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/w_400,h_533,c_fill/${firstImage.public_id}`;
+    }
+    return null;
   };
-
-  if (loading) {
-    return <div className="flex items-center justify-center h-[40vh]"><Loader2 className="w-8 h-8 animate-spin text-teal" /></div>;
-  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -77,17 +50,18 @@ export default function AccountWishlistPage() {
         <p className="text-muted-foreground text-sm mt-1">Your curated collection of favorites.</p>
       </div>
       
-      {items.length > 0 ? (
+      {wishlistItems.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {items.map((item) => {
-            const product = item.product;
+          {wishlistItems.map((item: any) => {
+            const product = item.products;
             if (!product) return null;
-            const variant = product.product_variants?.[0];
-            const discount = variant?.mrp && variant?.price ? Math.round(((variant.mrp - variant.price) / variant.mrp) * 100) : 0;
+            const discount = product.mrp && product.price
+              ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
+              : 0;
             const imgUrl = getImageUrl(product);
 
             return (
-              <div key={item.wishlist_id} className="group relative flex flex-col gap-4">
+              <div key={item.id} className="group relative flex flex-col gap-4">
                 <div className="relative aspect-[3/4] overflow-hidden bg-sage/5 rounded-none border border-sage/10">
                   <Link href={`/products/${product.slug}`} className="absolute inset-0 block">
                     {imgUrl ? (
@@ -99,25 +73,14 @@ export default function AccountWishlistPage() {
                         sizes="(max-width: 768px) 50vw, 25vw"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-sage/40"><Heart className="w-8 h-8" /></div>
+                      <div className="w-full h-full flex items-center justify-center text-sage/40">
+                        <Heart className="w-8 h-8" />
+                      </div>
                     )}
                   </Link>
                   
-                  <button 
-                    onClick={() => handleRemove(item.product_id)}
-                    className="absolute top-3 right-3 p-2 rounded-full bg-white/90 backdrop-blur-sm text-destructive hover:bg-destructive hover:text-white transition-all z-10 shadow-sm"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                  
-                  <div className="absolute bottom-4 left-4 right-4 translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                    <Button 
-                      onClick={() => handleAddToCart(item)}
-                      className="w-full bg-teal hover:bg-teal/90 text-cream text-[10px] uppercase tracking-widest font-bold h-12 rounded-none gap-2 shadow-xl border-none"
-                    >
-                      <ShoppingCart className="w-3.5 h-3.5" /> Move to Cart
-                    </Button>
-                  </div>
+                  {/* Remove from wishlist */}
+                  <WishlistRemoveButton productId={item.product_id} />
                   
                   {discount > 0 && (
                     <div className="absolute top-3 left-3 bg-destructive text-cream text-[9px] font-bold px-2 py-1 uppercase tracking-widest">
@@ -131,9 +94,9 @@ export default function AccountWishlistPage() {
                     {product.name}
                   </Link>
                   <div className="flex items-center gap-3 text-sm">
-                    <span className="font-bold text-charcoal">₹{variant?.price?.toLocaleString() ?? '—'}</span>
-                    {variant?.mrp > variant?.price && (
-                      <span className="text-muted-foreground line-through text-[11px] font-medium opacity-60">₹{variant.mrp.toLocaleString()}</span>
+                    <span className="font-bold text-charcoal">₹{product.price?.toLocaleString() ?? '—'}</span>
+                    {product.mrp > product.price && (
+                      <span className="text-muted-foreground line-through text-[11px] font-medium opacity-60">₹{product.mrp.toLocaleString()}</span>
                     )}
                   </div>
                 </div>
