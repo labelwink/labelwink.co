@@ -9,7 +9,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 export default async function Home() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Read home data
   let homeData: any = {};

@@ -11,7 +11,7 @@ export default async function CollectionPage({
 }) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // 1. Get category details
   const { data: category, error: catError } = await supabase

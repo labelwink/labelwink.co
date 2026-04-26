@@ -1,7 +1,7 @@
 import { createClient } from './server';
 
 export async function getProducts(categorySlug?: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   let query = supabase
     .from('products')
@@ -36,7 +36,7 @@ export async function getProducts(categorySlug?: string) {
 }
 
 export async function getProductBySlug(slug: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   const { data, error } = await supabase
     .from('products')

@@ -7,7 +7,7 @@ export const metadata = {
 }
 
 export default async function AboutPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data } = await supabase
     .from('cms_content')
     .select('content')

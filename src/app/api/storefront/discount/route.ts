@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid coupon code' }, { status: 400 })
   }
 
-  const supabase = createClient()
+  const supabase = await createClient()
   const now = new Date().toISOString()
 
   const { data, error } = await supabase

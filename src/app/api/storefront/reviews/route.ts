@@ -5,7 +5,7 @@ export const runtime = 'nodejs'
 
 // GET ?product_id=xxx — fetch approved reviews + stats
 export async function GET(req: NextRequest) {
-  const supabase = createClient()
+  const supabase = await createClient()
   const product_id = new URL(req.url).searchParams.get('product_id')
   if (!product_id) return NextResponse.json({ error: 'product_id required' }, { status: 400 })
 
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
 // POST — submit a new review (must be logged in + must have ordered the product)
 export async function POST(req: NextRequest) {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 

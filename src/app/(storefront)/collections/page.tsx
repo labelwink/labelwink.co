@@ -10,7 +10,7 @@ export const metadata = {
 export const revalidate = 60
 
 export default async function CollectionsPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: collections } = await supabase
     .from('collections')

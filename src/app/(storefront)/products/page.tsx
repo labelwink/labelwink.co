@@ -9,7 +9,7 @@ export const metadata = {
 export const revalidate = 60;
 
 export default async function AllProductsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: products } = await supabase
     .from('products')

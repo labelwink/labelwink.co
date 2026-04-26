@@ -2,7 +2,7 @@ import { createClient } from './supabase/server';
 import { redirect } from 'next/navigation';
 
 export async function getSession() {
-  const supabase = createClient();
+  const supabase = await createClient();
   try {
     const {
       data: { session },
@@ -15,7 +15,7 @@ export async function getSession() {
 }
 
 export async function getUser() {
-  const supabase = createClient();
+  const supabase = await createClient();
   try {
     const { data: { user }, error } = await supabase.auth.getUser();
     
@@ -38,7 +38,7 @@ export async function getUser() {
 }
 
 export async function signOut() {
-  const supabase = createClient();
+  const supabase = await createClient();
   await supabase.auth.signOut();
   redirect('/');
 }

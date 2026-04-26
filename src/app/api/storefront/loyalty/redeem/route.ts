@@ -10,7 +10,7 @@ export const runtime = 'nodejs'
  * Creates a single-use coupon for the exact ₹ value and deducts points.
  */
 export async function POST(req: NextRequest) {
-  const supabase      = createClient()
+  const supabase      = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const adminSupabase = createAdminSupabaseClient() as any
 

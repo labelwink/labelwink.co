@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 
 export default async function PoliciesPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: policies } = await supabase
     .from('policies')
     .select('*')

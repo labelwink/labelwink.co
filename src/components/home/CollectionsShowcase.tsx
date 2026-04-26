@@ -14,7 +14,7 @@ interface Collection {
 
 async function getCollections(): Promise<Collection[]> {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data } = await supabase
       .from('collections')
       .select('id, name, slug, image_cloudinary_id, image_url, description')

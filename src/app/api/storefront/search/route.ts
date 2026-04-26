@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ products: [] })
   }
 
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase
     .from('products')

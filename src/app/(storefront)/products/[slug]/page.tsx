@@ -15,7 +15,7 @@ import Link from 'next/link';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: product } = await supabase
     .from('products')
     .select('name, description, seo_title, seo_description, og_image_cloudinary_id')
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Fetch user session for WriteReviewForm and wishlist check
   const { data: { user } } = await supabase.auth.getUser();
