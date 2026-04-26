@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from('reviews')
     .select(
-      `id, rating, title, body, status, is_verified, created_at,
+      `id, rating, title, body, status, is_verified_purchase, admin_reply, created_at,
        products ( id, name, slug ),
        profiles ( id, full_name, email )`,
       { count: 'exact' }

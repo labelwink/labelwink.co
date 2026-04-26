@@ -14,14 +14,16 @@ import { formatDate } from '@/lib/utils/format'
 interface Coupon {
   id: string
   code: string
-  type: string          // 'percent' | 'percentage' | 'flat'
+  type: string          // 'percentage' | 'fixed_amount' | 'free_shipping'
   value: number
-  min_order: number | null
+  min_order_amount: number | null
+  min_order: number | null        // legacy alias
   max_uses: number | null
   used_count: number
   expires_at: string | null
   is_active: boolean
   created_at: string
+  description: string | null
 }
 
 const EMPTY_FORM = { code: '', type: 'percent', value: '', min_order: '', max_uses: '', expires_at: '' }
@@ -33,6 +35,8 @@ function isExpired(expires_at: string | null) {
 
 function couponLabel(c: Coupon) {
   const isPerc = c.type === 'percent' || c.type === 'percentage'
+  const isFree = c.type === 'free_shipping'
+  if (isFree) return 'Free Shipping'
   return isPerc ? `${c.value}% off` : `₹${c.value} off`
 }
 
@@ -86,13 +90,14 @@ export default function DiscountsPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        code:       form.code.toUpperCase().trim(),
-        type:       form.type,
-        value:      Number(form.value),
-        min_order:  form.min_order  ? Number(form.min_order)  : null,
-        max_uses:   form.max_uses   ? Number(form.max_uses)   : null,
-        expires_at: form.expires_at || null,
-        is_active:  true,
+        code:             form.code.toUpperCase().trim(),
+        type:             form.type,
+        value:            Number(form.value),
+        min_order:        form.min_order  ? Number(form.min_order)  : null,
+        min_order_amount: form.min_order  ? Number(form.min_order)  : null,
+        max_uses:         form.max_uses   ? Number(form.max_uses)   : null,
+        expires_at:       form.expires_at || null,
+        is_active:        true,
       }),
     })
     setSaving(false)
@@ -311,7 +316,9 @@ export default function DiscountsPage() {
                     <td className="px-4 py-3.5 text-xs font-semibold text-[#1a1a1a]">{couponLabel(c)}</td>
                     {/* Min Order */}
                     <td className="px-4 py-3.5 text-xs text-[#6b7280]">
-                      {c.min_order ? `₹${c.min_order.toLocaleString('en-IN')}` : '—'}
+                      {(c.min_order_amount || c.min_order)
+                        ? `₹${(c.min_order_amount ?? c.min_order)!.toLocaleString('en-IN')}`
+                        : '—'}
                     </td>
                     {/* Uses */}
                     <td className="px-4 py-3.5 text-center text-xs">

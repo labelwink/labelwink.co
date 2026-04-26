@@ -17,7 +17,8 @@ interface Review {
   title: string | null
   body: string | null
   status: 'pending' | 'approved' | 'rejected'
-  is_verified: boolean
+  is_verified_purchase: boolean
+  admin_reply: string | null
   created_at: string
   products: { id: string; name: string; slug: string } | null
   profiles: { id: string; full_name: string | null; email: string | null } | null
@@ -212,7 +213,7 @@ export default function ReviewsPage() {
                       <span className="font-semibold text-sm text-[#1a1a1a] truncate">
                         {review.profiles?.full_name || 'Anonymous'}
                       </span>
-                      {review.is_verified && (
+                      {review.is_verified_purchase && (
                         <span className="flex items-center gap-0.5 text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded-full">
                           <BadgeCheck size={10} /> Verified
                         </span>
@@ -277,9 +278,9 @@ export default function ReviewsPage() {
                       <Clock size={12} /> Move to Pending
                     </button>
                   )}
-                  {!review.is_verified && (
+                  {!review.is_verified_purchase && (
                     <button
-                      onClick={() => act(review.id, { is_verified: true })}
+                      onClick={() => act(review.id, { is_verified_purchase: true })}
                       disabled={isActioning}
                       className="flex items-center gap-1.5 px-3 py-1.5 border border-emerald-200 text-emerald-600 rounded-lg text-xs font-semibold hover:bg-emerald-50 disabled:opacity-50 transition-colors"
                     >

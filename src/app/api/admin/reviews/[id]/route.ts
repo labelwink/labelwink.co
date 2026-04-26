@@ -12,9 +12,11 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 
   // Allow updating status and admin_reply
   const allowed: Record<string, unknown> = {}
-  if ('status'      in body) allowed.status       = body.status
-  if ('admin_reply' in body) allowed.admin_reply   = body.admin_reply
-  if ('is_verified' in body) allowed.is_verified   = body.is_verified
+  if ('status'               in body) allowed.status               = body.status
+  if ('admin_reply'          in body) allowed.admin_reply           = body.admin_reply
+  if ('is_verified_purchase' in body) allowed.is_verified_purchase  = body.is_verified_purchase
+  // Legacy alias
+  if ('is_verified'          in body) allowed.is_verified_purchase  = body.is_verified
 
   const { data, error } = await supabase.from('reviews').update(allowed).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
