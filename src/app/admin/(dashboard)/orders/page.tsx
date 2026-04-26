@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Search } from 'lucide-react'
 
-const STATUS_TABS = ['All', 'Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled']
+const STATUS_TABS = ['All', 'Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled']
 const STATUS_BADGE: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  processing: 'bg-blue-100 text-blue-800',
-  shipped: 'bg-orange-100 text-orange-800',
+  pending:   'bg-yellow-100 text-yellow-800',
+  confirmed: 'bg-blue-100 text-blue-800',
+  shipped:   'bg-purple-100 text-purple-800',
   delivered: 'bg-green-100 text-green-800',
   cancelled: 'bg-red-100 text-red-800',
 }
@@ -62,7 +62,7 @@ export default function OrdersPage() {
       <div className="relative max-w-sm">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280]" />
         <input value={search} onChange={e => { setSearch(e.target.value); setPage(0) }}
-          placeholder="Search by order # or customer..."
+          placeholder="Search by order # or customer name..."
           className="w-full pl-9 pr-4 py-2 border border-[#e5e7eb] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
       </div>
 
@@ -72,12 +72,12 @@ export default function OrdersPage() {
             <thead>
               <tr className="bg-[#1b3a34] text-white text-left">
                 <th className="px-4 py-3">Order #</th>
-                <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Customer</th>
+                <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Items</th>
                 <th className="px-4 py-3">Total</th>
-                <th className="px-4 py-3">Payment</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -91,24 +91,23 @@ export default function OrdersPage() {
               ) : orders.length === 0 ? (
                 <tr><td colSpan={8} className="text-center py-16 text-[#6b7280]">No orders yet</td></tr>
               ) : orders.map((o, i) => (
-                <tr key={o.id} className={`border-t border-[#e5e7eb] hover:bg-[#f0fdf4] transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-[#f9f9f9]'}`}>
-                  <td className="px-4 py-3 font-mono font-medium text-[#1b3a34]">#{o.order_number}</td>
-                  <td className="px-4 py-3 text-[#6b7280]">{new Date(o.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
-                  <td className="px-4 py-3">{o.customer_name || o.guest_email || '—'}</td>
-                  <td className="px-4 py-3 text-[#6b7280]">{Array.isArray(o.items) ? o.items.length : '—'}</td>
-                  <td className="px-4 py-3 font-medium">₹{Number(o.total).toLocaleString('en-IN')}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${o.payment_status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                      {o.payment_status}
-                    </span>
-                  </td>
+                <tr key={o.id}
+                  className={`border-t border-[#e5e7eb] hover:bg-[#f0fdf4] transition-colors cursor-pointer ${i % 2 === 0 ? 'bg-white' : 'bg-[#f9f9f9]'}`}
+                  onClick={() => window.location.href = `/admin/orders/${o.id}`}
+                >
+                  <td className="px-4 py-3 font-mono font-medium text-[#1b3a34]">#{o.id?.slice(0,8).toUpperCase()}</td>
+                  <td className="px-4 py-3 font-medium">{o.customer_name || '—'}</td>
+                  <td className="px-4 py-3 text-[#6b7280]">{o.customer_phone || '—'}</td>
+                  <td className="px-4 py-3 text-[#6b7280]">{Array.isArray(o.items) ? o.items.length : (o.order_items_count ?? '—')}</td>
+                  <td className="px-4 py-3 font-medium">₹{Number(o.total || o.total_amount || 0).toLocaleString('en-IN')}</td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${STATUS_BADGE[o.status] || 'bg-gray-100 text-gray-700'}`}>
                       {o.status}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-[#6b7280]">{new Date(o.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })}</td>
                   <td className="px-4 py-3">
-                    <Link href={`/admin/orders/${o.id}`} className="text-[#1b3a34] hover:underline text-sm font-medium">View →</Link>
+                    <Link href={`/admin/orders/${o.id}`} onClick={e => e.stopPropagation()} className="text-[#1b3a34] hover:underline text-sm font-medium">View →</Link>
                   </td>
                 </tr>
               ))}

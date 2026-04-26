@@ -1,70 +1,60 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Star, CheckCircle, Flag, Trash2, MessageSquare, Loader2, Clock } from 'lucide-react';
-import { Button } from "@/components/ui/button";
-import { createClient } from '@/lib/supabase/client';
+import { Star, CheckCircle, Flag, Trash2, MessageSquare, Loader2, Clock, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+
+const TABS = ['pending', 'approved', 'rejected'] as const;
+type Tab = typeof TABS[number];
 
 export default function ReviewsPage() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('pending');
-  const supabase = createClient();
+  const [activeTab, setActiveTab] = useState<Tab>('pending');
 
   async function fetchReviews() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('reviews')
-      .select(`
-        *,
-        products (name),
-        users (name)
-      `)
-      .order('created_at', { ascending: false });
-    
-    if (data) setReviews(data);
+    const res = await fetch('/api/admin/reviews');
+    if (res.ok) {
+      const data = await res.json();
+      setReviews(data);
+    }
     setLoading(false);
   }
 
-  useEffect(() => {
-    fetchReviews();
-  }, []);
+  useEffect(() => { fetchReviews(); }, []);
 
   const updateStatus = async (id: string, status: string) => {
-    const { error } = await supabase
-      .from('reviews')
-      .update({ status })
-      .eq('id', id);
-    
-    if (error) {
-      toast.error('Failed to update review status');
-    } else {
+    const res = await fetch(`/api/admin/reviews/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (res.ok) {
       toast.success(`Review ${status}`);
       fetchReviews();
+    } else {
+      toast.error('Failed to update review status');
     }
   };
 
   const deleteReview = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this review?')) return;
-    const { error } = await supabase
-      .from('reviews')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      toast.error('Failed to delete review');
-    } else {
+    if (!confirm('Delete this review? This cannot be undone.')) return;
+    const res = await fetch(`/api/admin/reviews/${id}`, { method: 'DELETE' });
+    if (res.ok) {
       toast.success('Review deleted');
       fetchReviews();
+    } else {
+      toast.error('Failed to delete review');
     }
   };
 
   const filteredReviews = reviews.filter(r => r.status === activeTab);
   const counts = {
-    pending: reviews.filter(r => r.status === 'pending').length,
+    pending:  reviews.filter(r => r.status === 'pending').length,
     approved: reviews.filter(r => r.status === 'approved').length,
-    flagged: reviews.filter(r => r.status === 'flagged').length,
+    rejected: reviews.filter(r => r.status === 'rejected').length,
   };
 
   return (
@@ -79,7 +69,7 @@ export default function ReviewsPage() {
       <div className="bg-white border border-sage/20 rounded-xl shadow-sm p-8">
         {/* Tabs */}
         <div className="flex items-center gap-8 border-b border-sage/10 pb-4 mb-8">
-          {(['pending', 'approved', 'flagged'] as const).map(tab => (
+          {TABS.map(tab => (
             <button 
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -100,7 +90,7 @@ export default function ReviewsPage() {
           {loading ? (
             <div className="py-20 text-center">
               <Loader2 className="w-10 h-10 animate-spin mx-auto text-teal/40" />
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mt-4">Loading feedback...</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mt-4">Loading reviews...</p>
             </div>
           ) : filteredReviews.length === 0 ? (
             <div className="py-20 text-center bg-sage/5 rounded-xl border border-dashed border-sage/20">
@@ -112,11 +102,11 @@ export default function ReviewsPage() {
               <div key={review.id} className="p-6 border border-sage/10 rounded-xl hover:bg-sage/5 transition-all group">
                 <div className="flex justify-between items-start mb-4">
                   <div className="space-y-1">
-                    <h3 className="font-bold text-charcoal tracking-tight">{review.products?.name}</h3>
+                    <h3 className="font-bold text-charcoal tracking-tight">{review.products?.name || 'Unknown Product'}</h3>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold uppercase tracking-widest text-teal">{review.users?.name || 'Guest'}</span>
+                      <span className="text-xs font-bold uppercase tracking-widest text-teal">{review.profiles?.full_name || 'Guest'}</span>
                       <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter opacity-60">
-                        {new Date(review.created_at).toLocaleDateString()}
+                        {new Date(review.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
                     </div>
                   </div>
@@ -142,14 +132,14 @@ export default function ReviewsPage() {
                       <CheckCircle className="w-3.5 h-3.5 mr-2" /> Approve
                     </Button>
                   )}
-                  {activeTab !== 'flagged' && (
+                  {activeTab !== 'rejected' && (
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => updateStatus(review.id, 'flagged')}
-                      className="text-orange-600 border-orange-200 hover:bg-orange-50 rounded-none uppercase tracking-widest text-[9px] font-bold h-9"
+                      onClick={() => updateStatus(review.id, 'rejected')}
+                      className="text-red-600 border-red-200 hover:bg-red-50 rounded-none uppercase tracking-widest text-[9px] font-bold h-9"
                     >
-                      <Flag className="w-3.5 h-3.5 mr-2" /> Flag
+                      <XCircle className="w-3.5 h-3.5 mr-2" /> Reject
                     </Button>
                   )}
                   {activeTab !== 'pending' && (

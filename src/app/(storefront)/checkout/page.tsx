@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useCartStore } from '@/store/useCartStore';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,6 @@ export default function CheckoutPage() {
 
   const [loading, setLoading] = useState(false);
   const [pincodeLoading, setPincodeLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
   const [formData, setFormData] = useState({
     email: '',
     fullName: '',
@@ -72,7 +71,10 @@ export default function CheckoutPage() {
         })),
         subtotal,
         address: formData,
-        paymentMethod
+        paymentMethod: 'razorpay',
+        customerName: formData.fullName,
+        customerEmail: formData.email,
+        customerPhone: formData.phone,
       });
 
       if (result.error) {
@@ -81,20 +83,13 @@ export default function CheckoutPage() {
         return;
       }
 
-      if (result.isCOD) {
-        toast.success('Order placed successfully!');
-        clearCart();
-        router.push(`/checkout/success?orderId=${result.orderId}`);
-        return;
-      }
-
-      // Handle Razorpay
+      // Trigger Razorpay
       const options = {
         key: result.razorpayKeyId,
         amount: result.amount,
         currency: result.currency,
-        name: "Label Wink",
-        description: "Boutique Fashion Order",
+        name: 'Label Wink',
+        description: 'Boutique Fashion Order',
         order_id: result.razorpayOrderId,
         handler: function (response: any) {
           toast.success('Payment successful!');
@@ -106,7 +101,7 @@ export default function CheckoutPage() {
           email: formData.email,
           contact: formData.phone,
         },
-        theme: { color: "#016a6e" },
+        theme: { color: '#016a6e' },
       };
 
       const rzp = new (window as any).Razorpay(options);
@@ -122,7 +117,7 @@ export default function CheckoutPage() {
     return (
       <div className="container mx-auto px-4 py-24 text-center">
         <h1 className="text-3xl font-heading mb-6">Your cart is empty</h1>
-        <Link href="/collections/all" className={buttonVariants({ className: "bg-teal text-cream h-12 px-8" })}>Discover Collection</Link>
+        <Link href="/collections/all" className={buttonVariants({ className: 'bg-teal text-cream h-12 px-8' })}>Discover Collection</Link>
       </div>
     );
   }
@@ -213,34 +208,17 @@ export default function CheckoutPage() {
                 </div>
               </section>
 
-              <section className="space-y-6">
+              <section className="space-y-4">
                 <h2 className="text-sm font-bold uppercase tracking-[0.2em] flex items-center gap-3">
                   <span className="w-8 h-8 rounded-full bg-charcoal text-cream flex items-center justify-center font-sans text-xs">2</span>
-                  Payment Method
+                  Payment
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <button 
-                    type="button"
-                    onClick={() => setPaymentMethod('razorpay')}
-                    className={`p-6 border-2 rounded-xl flex flex-col gap-3 text-left transition-all ${paymentMethod === 'razorpay' ? 'border-teal bg-teal/5' : 'border-sage/20 bg-white'}`}
-                  >
-                    <CreditCard className={paymentMethod === 'razorpay' ? 'text-teal' : 'text-charcoal/40'} />
-                    <div>
-                      <p className="font-bold text-sm text-charcoal uppercase tracking-wider">Online Payment</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">UPI, Cards, Netbanking via Razorpay</p>
-                    </div>
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setPaymentMethod('cod')}
-                    className={`p-6 border-2 rounded-xl flex flex-col gap-3 text-left transition-all ${paymentMethod === 'cod' ? 'border-teal bg-teal/5' : 'border-sage/20 bg-white'}`}
-                  >
-                    <Truck className={paymentMethod === 'cod' ? 'text-teal' : 'text-charcoal/40'} />
-                    <div>
-                      <p className="font-bold text-sm text-charcoal uppercase tracking-wider">Cash on Delivery</p>
-                      <p className="text-[10px] text-muted-foreground mt-1">Pay when your order is delivered</p>
-                    </div>
-                  </button>
+                <div className="p-6 border-2 border-teal bg-teal/5 rounded-xl flex items-center gap-4">
+                  <CreditCard className="text-teal w-6 h-6 flex-shrink-0" />
+                  <div>
+                    <p className="font-bold text-sm text-charcoal uppercase tracking-wider">Online Payment via Razorpay</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">UPI, Cards, Net Banking — 100% secure</p>
+                  </div>
                 </div>
               </section>
 
@@ -284,8 +262,8 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between text-charcoal/60 font-medium">
                 <span>Shipping</span>
-                <span className={shipping === 0 ? "text-teal" : ""}>
-                  {shipping === 0 ? "FREE" : `₹${shipping}`}
+                <span className={shipping === 0 ? 'text-teal' : ''}>
+                  {shipping === 0 ? 'FREE' : `₹${shipping}`}
                 </span>
               </div>
               <div className="flex justify-between text-xl font-heading font-bold pt-4 border-t border-sage/10 text-charcoal">

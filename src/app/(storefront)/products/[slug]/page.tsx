@@ -7,8 +7,10 @@ import { ProductImage } from '@/components/storefront/ProductImage';
 import { PincodeChecker } from '@/components/storefront/PincodeChecker';
 import { ProductImageGallery } from '@/components/storefront/ProductImageGallery';
 import { ProductActions } from '@/components/storefront/ProductActions';
+import WriteReviewForm from '@/components/storefront/WriteReviewForm';
 import Script from 'next/script';
 import Link from 'next/link';
+
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params;
@@ -36,6 +38,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const resolvedParams = await params;
   const supabase = createClient();
 
+  // Fetch user session for WriteReviewForm
+  const { data: { user } } = await supabase.auth.getUser();
+
   const { data: product, error } = await supabase
     .from('products')
     .select(`
@@ -51,6 +56,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   if (error || !product) notFound();
 
   // Fetch reviews separately to avoid inner join issues
+
   const { data: reviews } = await supabase
     .from('reviews')
     .select('*, users(name)')
@@ -213,9 +219,55 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           </Accordion>
         </div>
       </div>
+
+      {/* Reviews Section */}
+      <section className="mt-12 border-t border-sage/10 pt-10">
+        <h2 className="text-2xl font-heading font-semibold mb-8 text-charcoal">Customer Reviews</h2>
+
+        {/* Rating summary */}
+        {reviews && reviews.length > 0 && (
+          <div className="flex items-center gap-5 mb-8 p-5 bg-sage/5 rounded-xl">
+            <span className="text-5xl font-heading font-bold text-charcoal">{Number(avgRating).toFixed(1)}</span>
+            <div>
+              <div className="flex text-yellow-400 mb-1">
+                {[1,2,3,4,5].map(i => (
+                  <Star key={i} className={`w-5 h-5 ${i <= Math.round(Number(avgRating)) ? 'fill-current' : 'text-gray-200'}`} />
+                ))}
+              </div>
+              <span className="text-sm text-charcoal/60">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Review list */}
+        {reviews && reviews.length > 0 ? (
+          <div className="space-y-0 divide-y divide-sage/10">
+            {reviews.map((r: any) => (
+              <div key={r.id} className="py-5">
+                <div className="flex text-yellow-400 mb-2">
+                  {[1,2,3,4,5].map(i => (
+                    <Star key={i} className={`w-4 h-4 ${i <= r.rating ? 'fill-current' : 'text-gray-200'}`} />
+                  ))}
+                </div>
+                {r.title && <p className="font-semibold text-charcoal text-sm mt-1">{r.title}</p>}
+                {r.body && <p className="text-charcoal/70 text-sm mt-1 leading-relaxed">{r.body}</p>}
+                <p className="text-xs text-charcoal/40 mt-2">
+                  {r.users?.name || r.reviewer_name || 'Verified Buyer'} · {new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-charcoal/50 italic mb-6">No reviews yet. Be the first to review this product!</p>
+        )}
+
+        {/* Write review form */}
+        <WriteReviewForm productId={product.id} isLoggedIn={!!user} />
+      </section>
     </div>
   );
 }
+
 
 export async function generateStaticParams() {
   // Cannot use createClient() here as it reads cookies — use direct fetch instead

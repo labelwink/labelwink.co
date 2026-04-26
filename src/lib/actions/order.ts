@@ -10,7 +10,10 @@ interface CheckoutData {
   subtotal: number;
   couponCode?: string;
   address: any;
-  paymentMethod: 'razorpay' | 'cod';
+  paymentMethod: 'razorpay';
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
 }
 
 export async function createOrder(checkoutData: CheckoutData) {
@@ -62,38 +65,7 @@ export async function createOrder(checkoutData: CheckoutData) {
 
   const total = checkoutData.subtotal - discountAmount + shippingFee;
 
-  // 4. Handle COD
-  if (checkoutData.paymentMethod === 'cod') {
-    const { data: order, error } = await supabase
-      .from('orders')
-      .insert({
-        user_id: checkoutData.userId,
-        payment_method: 'cod',
-        payment_status: 'pending',
-        shipping_address: checkoutData.address,
-        subtotal: checkoutData.subtotal,
-        discount_amount: discountAmount,
-        coupon_code: checkoutData.couponCode,
-        shipping_fee: shippingFee,
-        total,
-        status: 'pending',
-      })
-      .select()
-      .single();
-
-    if (error) return { error: error.message };
-    
-    // In a real app, you'd insert order items here too.
-    // Reducing stock
-    for (const item of checkoutData.items) {
-      await supabase.rpc('reduce_stock', { var_id: item.variantId, qty: item.quantity });
-    }
-
-    revalidatePath('/admin/orders');
-    return { success: true, orderId: order.id, orderNumber: order.order_number, isCOD: true };
-  }
-
-  // 5. Handle Razorpay
+  // 4. Create Razorpay order
   const razorpayOrder = await razorpay.orders.create({
     amount: Math.round(total * 100), // in paise
     currency: 'INR',
@@ -114,9 +86,26 @@ export async function createOrder(checkoutData: CheckoutData) {
       shipping_fee: shippingFee,
       total,
       status: 'pending',
+      customer_name: checkoutData.customerName || checkoutData.address?.fullName || checkoutData.address?.full_name || '',
+      customer_email: checkoutData.customerEmail || checkoutData.address?.email || '',
+      customer_phone: checkoutData.customerPhone || checkoutData.address?.phone || '',
     })
     .select()
     .single();
+
+  // 5. Insert admin notification for new order
+  if (order) {
+    const shortId = order.id.slice(0, 8).toUpperCase();
+    const customerLabel = checkoutData.customerName || checkoutData.customerEmail || 'A customer';
+    await supabase.from('admin_notifications').insert({
+      type: 'new_order',
+      title: `New Order #${shortId}`,
+      body: `${customerLabel} placed an order for ₹${total}`,
+      data: { order_id: order.id, total },
+    });
+  }
+
+  revalidatePath('/admin/orders');
 
   return {
     success: true,

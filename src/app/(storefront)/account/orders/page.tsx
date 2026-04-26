@@ -2,49 +2,27 @@
 
 import { useState, useEffect } from 'react';
 import { buttonVariants } from '@/components/ui/button';
-import { Package, Download, Loader2, ChevronRight, Search } from 'lucide-react';
+import { Package, Loader2, Search, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { createClient } from '@/lib/supabase/client';
+
+const STATUS_COLORS: Record<string, string> = {
+  pending:   'bg-yellow-100 text-yellow-700',
+  confirmed: 'bg-blue-100 text-blue-700',
+  shipped:   'bg-purple-100 text-purple-700',
+  delivered: 'bg-green-100 text-green-700',
+  cancelled: 'bg-red-100 text-red-700',
+};
 
 export default function AccountOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
-    async function fetchOrders() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items (
-            quantity,
-            price,
-            product_variants (
-              size,
-              color,
-              image_public_ids,
-              products (
-                name
-              )
-            )
-          )
-        `)
-        .eq('email', user.email)
-        .order('created_at', { ascending: false });
-
-      if (data) setOrders(data);
-      setLoading(false);
-    }
-
-    fetchOrders();
+    fetch('/api/storefront/orders')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setOrders(data); })
+      .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
@@ -66,9 +44,10 @@ export default function AccountOrdersPage() {
         <div className="space-y-6">
           {orders.map((order) => {
             const firstItem = order.order_items?.[0];
-            const product = firstItem?.product_variants?.products;
             const variant = firstItem?.product_variants;
+            const product = variant?.products;
             const imageId = variant?.image_public_ids?.[0];
+            const statusColor = STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-700';
             
             return (
               <div key={order.id} className="border border-sage/20 rounded-none bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden group">
@@ -76,45 +55,38 @@ export default function AccountOrdersPage() {
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center bg-sage/5 p-4 border-b border-sage/10 gap-3">
                   <div className="flex flex-wrap gap-x-8 gap-y-2">
                     <div>
-                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">Order Placed</p>
+                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">Order</p>
+                      <p className="text-sm font-mono text-charcoal font-semibold">#{order.id.slice(0, 8).toUpperCase()}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">Date</p>
                       <p className="text-sm font-semibold text-charcoal">
-                        {new Date(order.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                        {new Date(order.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">Total Amount</p>
-                      <p className="text-sm font-bold text-charcoal">₹{Number(order.total_amount).toLocaleString()}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">Order ID</p>
-                      <p className="text-sm font-mono text-charcoal">#{order.id.slice(0, 8).toUpperCase()}</p>
+                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">Total</p>
+                      <p className="text-sm font-bold text-charcoal">₹{Number(order.total || order.total_amount || 0).toLocaleString()}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                      order.status === 'delivered' ? 'bg-green-100 text-green-700' : 
-                      order.status === 'pending' ? 'bg-orange-100 text-orange-700' : 
-                      'bg-blue-100 text-blue-700'
-                    }`}>
-                      {order.status}
-                    </span>
-                  </div>
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusColor}`}>
+                    {order.status}
+                  </span>
                 </div>
                 
                 {/* Order Content */}
                 <div className="p-6">
                   <div className="flex flex-col md:flex-row gap-6">
-                    {/* Main Item Info */}
                     <div className="flex gap-6 flex-1">
                       <div className="w-24 h-32 bg-sage/10 rounded-none overflow-hidden flex-shrink-0 border border-sage/10">
                         {imageId ? (
                           <Image 
-                            src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/w_200,h_260,c_fill/${imageId}`} 
-                            alt={product?.name || 'Product'} 
+                            src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/w_200,h_260,c_fill/${imageId}`}
+                            alt={product?.name || 'Product'}
                             width={96}
                             height={128}
                             loading="lazy"
-                            className="w-full h-full object-cover" 
+                            className="w-full h-full object-cover"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-sage/40">
@@ -130,13 +102,18 @@ export default function AccountOrdersPage() {
                           {variant ? `Size: ${variant.size} | Color: ${variant.color}` : 'View details for item breakdown'}
                         </p>
                         <p className="text-xs text-muted-foreground mt-2">
-                          Qty: {firstItem?.quantity || 1} {order.order_items.length > 1 && `+ ${order.order_items.length - 1} more items`}
+                          Qty: {firstItem?.quantity || 1}
+                          {order.order_items?.length > 1 && ` + ${order.order_items.length - 1} more item${order.order_items.length - 1 > 1 ? 's' : ''}`}
                         </p>
-                        
-                        {order.status === 'delivered' && (
-                          <div className="flex items-center gap-2 text-green-600 text-[10px] font-bold uppercase tracking-widest mt-4">
-                            <Download className="w-3.5 h-3.5" />
-                            <button className="hover:underline">Download GST Invoice</button>
+
+                        {/* Tracking info if available */}
+                        {order.tracking_number && (
+                          <div className="mt-3 text-xs text-purple-700 font-semibold">
+                            {order.shipping_carrier && <span>{order.shipping_carrier} · </span>}
+                            Tracking: {order.tracking_number}
+                            {order.tracking_url && (
+                              <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="ml-2 underline text-purple-600">Track</a>
+                            )}
                           </div>
                         )}
                       </div>
@@ -145,15 +122,9 @@ export default function AccountOrdersPage() {
                     <div className="flex flex-row md:flex-col gap-3 justify-end md:w-48">
                       <Link 
                         href={`/account/orders/${order.id}`}
-                        className={buttonVariants({ className: "flex-1 bg-charcoal hover:bg-charcoal/90 text-cream rounded-none h-11 text-xs font-bold uppercase tracking-widest" })}
+                        className={buttonVariants({ className: 'flex-1 bg-charcoal hover:bg-charcoal/90 text-cream rounded-none h-11 text-xs font-bold uppercase tracking-widest flex items-center gap-2' })}
                       >
-                        Track Order
-                      </Link>
-                      <Link 
-                        href={`/products/${order.order_items[0]?.product_variants?.products?.slug}`}
-                        className={buttonVariants({ variant: "outline", className: "flex-1 border-charcoal/20 hover:border-teal hover:text-teal rounded-none h-11 text-xs font-bold uppercase tracking-widest transition-all" })}
-                      >
-                        Buy Again
+                        View Details <ChevronRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
                   </div>
@@ -172,7 +143,7 @@ export default function AccountOrdersPage() {
             <p className="text-sm text-muted-foreground mb-8">It looks like you haven't started your fashion journey with us yet.</p>
             <Link 
               href="/collections/all"
-              className={buttonVariants({ className: "w-full h-14 bg-teal text-cream rounded-none uppercase tracking-widest text-xs font-bold shadow-xl flex items-center justify-center" })}
+              className={buttonVariants({ className: 'w-full h-14 bg-teal text-cream rounded-none uppercase tracking-widest text-xs font-bold shadow-xl flex items-center justify-center' })}
             >
               Explore Collections
             </Link>

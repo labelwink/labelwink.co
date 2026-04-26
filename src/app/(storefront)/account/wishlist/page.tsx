@@ -1,17 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trash2, ShoppingCart, Loader2, Heart, ShoppingBag } from 'lucide-react';
+import { Trash2, ShoppingCart, Loader2, Heart } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
-import { ProductImage } from '@/components/storefront/ProductImage';
+import Image from 'next/image';
 import { useCartStore } from '@/store/useCartStore';
 
 export default function AccountWishlistPage() {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
   const { addItem, setIsOpen } = useCartStore();
 
   useEffect(() => {
@@ -20,43 +18,30 @@ export default function AccountWishlistPage() {
 
   async function fetchWishlist() {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data } = await supabase
-        .from('wishlists')
-        .select(`
-          id,
-          products (
-            id,
-            name,
-            slug,
-            product_variants (
-              id,
-              price,
-              mrp,
-              image_public_ids,
-              color,
-              size
-            )
-          )
-        `)
-        .eq('user_id', user.id);
-      
-      if (data) setItems(data);
-    }
-    setLoading(false);
-  }
-
-  async function handleRemove(id: string) {
-    const { error } = await supabase.from('wishlists').delete().eq('id', id);
-    if (!error) {
-      setItems(items.filter(item => item.id !== id));
+    try {
+      const res = await fetch('/api/storefront/wishlist');
+      if (res.ok) {
+        const data = await res.json();
+        setItems(data);
+      }
+    } finally {
+      setLoading(false);
     }
   }
 
-  const handleAddToCart = (product: any) => {
-    const variant = product.product_variants?.[0];
+  async function handleRemove(productId: string) {
+    const res = await fetch(`/api/storefront/wishlist?product_id=${productId}`, { method: 'DELETE' });
+    if (res.ok) {
+      setItems(items.filter(item => item.product_id !== productId));
+    }
+  }
+
+  const handleAddToCart = (item: any) => {
+    const product = item.product;
+    const variant = product?.product_variants?.[0];
     if (!variant) return;
+
+    const imagePublicId = variant.image_public_ids?.[0] || product?.product_images?.[0]?.cloudinary_public_id || '';
 
     addItem({
       id: variant.id,
@@ -64,14 +49,21 @@ export default function AccountWishlistPage() {
       name: product.name,
       price: variant.price,
       compareAtPrice: variant.mrp ?? null,
-      image: variant.image_public_ids?.[0] || '',
+      image: imagePublicId,
       quantity: 1,
       color: variant.color,
       size: variant.size,
       slug: product.slug,
-      publicId: variant.image_public_ids?.[0]
+      publicId: imagePublicId,
     });
     setIsOpen(true);
+  };
+
+  const getImageUrl = (product: any) => {
+    const variant = product?.product_variants?.[0];
+    const publicId = variant?.image_public_ids?.[0] || product?.product_images?.[0]?.cloudinary_public_id;
+    if (!publicId) return null;
+    return `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/w_400,h_533,c_fill/${publicId}`;
   };
 
   if (loading) {
@@ -86,23 +78,25 @@ export default function AccountWishlistPage() {
       </div>
       
       {items.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {items.map((item) => {
-            const product = item.products;
+            const product = item.product;
+            if (!product) return null;
             const variant = product.product_variants?.[0];
-            const discount = variant?.mrp ? Math.round(((variant.mrp - variant.price) / variant.mrp) * 100) : 0;
+            const discount = variant?.mrp && variant?.price ? Math.round(((variant.mrp - variant.price) / variant.mrp) * 100) : 0;
+            const imgUrl = getImageUrl(product);
 
             return (
-              <div key={item.id} className="group relative flex flex-col gap-4">
+              <div key={item.wishlist_id} className="group relative flex flex-col gap-4">
                 <div className="relative aspect-[3/4] overflow-hidden bg-sage/5 rounded-none border border-sage/10">
                   <Link href={`/products/${product.slug}`} className="absolute inset-0 block">
-                    {variant?.image_public_ids?.[0] ? (
-                      <ProductImage 
-                        publicId={variant.image_public_ids[0]} 
-                        alt={product.name} 
-                        width={300} 
-                        height={400} 
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                    {imgUrl ? (
+                      <Image
+                        src={imgUrl}
+                        alt={product.name}
+                        fill
+                        className="object-cover transition-transform duration-700 group-hover:scale-110"
+                        sizes="(max-width: 768px) 50vw, 25vw"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-sage/40"><Heart className="w-8 h-8" /></div>
@@ -110,7 +104,7 @@ export default function AccountWishlistPage() {
                   </Link>
                   
                   <button 
-                    onClick={() => handleRemove(item.id)}
+                    onClick={() => handleRemove(item.product_id)}
                     className="absolute top-3 right-3 p-2 rounded-full bg-white/90 backdrop-blur-sm text-destructive hover:bg-destructive hover:text-white transition-all z-10 shadow-sm"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -118,10 +112,10 @@ export default function AccountWishlistPage() {
                   
                   <div className="absolute bottom-4 left-4 right-4 translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                     <Button 
-                      onClick={() => handleAddToCart(product)}
+                      onClick={() => handleAddToCart(item)}
                       className="w-full bg-teal hover:bg-teal/90 text-cream text-[10px] uppercase tracking-widest font-bold h-12 rounded-none gap-2 shadow-xl border-none"
                     >
-                      <ShoppingCart className="w-3.5 h-3.5" /> Quick Buy
+                      <ShoppingCart className="w-3.5 h-3.5" /> Move to Cart
                     </Button>
                   </div>
                   
@@ -137,7 +131,7 @@ export default function AccountWishlistPage() {
                     {product.name}
                   </Link>
                   <div className="flex items-center gap-3 text-sm">
-                    <span className="font-bold text-charcoal">₹{variant?.price.toLocaleString()}</span>
+                    <span className="font-bold text-charcoal">₹{variant?.price?.toLocaleString() ?? '—'}</span>
                     {variant?.mrp > variant?.price && (
                       <span className="text-muted-foreground line-through text-[11px] font-medium opacity-60">₹{variant.mrp.toLocaleString()}</span>
                     )}
@@ -153,13 +147,13 @@ export default function AccountWishlistPage() {
             <Heart className="w-10 h-10 text-sage/40" />
           </div>
           <div className="max-w-xs mx-auto">
-            <h3 className="text-xl font-heading font-semibold text-charcoal mb-2">Wishlist is Empty</h3>
-            <p className="text-sm text-muted-foreground mb-8">Start hearts-ing your favorites and they'll appear here.</p>
+            <h3 className="text-xl font-heading font-semibold text-charcoal mb-2">Your wishlist is empty</h3>
+            <p className="text-sm text-muted-foreground mb-8">Start favoriting products and they'll appear here.</p>
             <Link
-              href="/collections/all"
-              className={buttonVariants({ className: "w-full h-14 bg-charcoal text-cream rounded-none uppercase tracking-widest text-xs font-bold shadow-xl flex items-center justify-center" })}
+              href="/products"
+              className={buttonVariants({ className: 'w-full h-14 bg-charcoal text-cream rounded-none uppercase tracking-widest text-xs font-bold shadow-xl flex items-center justify-center' })}
             >
-              Go Shopping
+              Explore Products
             </Link>
           </div>
         </div>
