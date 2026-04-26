@@ -93,6 +93,30 @@ export async function POST(req: NextRequest) {
           data:  { order_id: order.id, razorpay_payment_id: razorpayPaymentId },
         });
       } catch { /* non-fatal */ }
+
+      // ── Send order confirmation email ───────────────────────────────────
+      try {
+        const { data: fullOrder } = await supabase
+          .from('orders')
+          .select('customer_email, customer_name, id')
+          .eq('id', order.id)
+          .single();
+
+        if (fullOrder?.customer_email) {
+          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co';
+          await fetch(`${siteUrl}/api/send-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to:    fullOrder.customer_email,
+              type:  'order_confirmed',
+              title: 'Your order is confirmed!',
+              body:  `Hi ${fullOrder.customer_name || 'there'}, your Label Wink order has been confirmed.`,
+              data:  { order_id: fullOrder.id },
+            }),
+          });
+        }
+      } catch { /* non-fatal */ }
     }
   }
 

@@ -234,6 +234,9 @@ export function Navbar() {
                   <DropdownMenuItem className="cursor-pointer font-bold uppercase tracking-widest text-[10px] py-3 focus:bg-teal focus:text-white" onClick={() => window.location.href = '/account/orders'}>
                     Orders
                   </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer font-bold uppercase tracking-widest text-[10px] py-3 focus:bg-teal focus:text-white" onClick={() => window.location.href = '/account/wink-points'}>
+                    Wink Points
+                  </DropdownMenuItem>
                   <DropdownMenuItem className="cursor-pointer font-bold uppercase tracking-widest text-[10px] py-3 focus:bg-teal focus:text-white" onClick={() => window.location.href = '/account/wishlist'}>
                     Wishlist
                   </DropdownMenuItem>
