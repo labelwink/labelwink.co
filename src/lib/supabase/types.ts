@@ -444,6 +444,182 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['categories']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['categories']['Insert']>
       }
+      cms_content: {
+        Row: {
+          page: string
+          content: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          page: string
+          content?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          page?: string
+          content?: Json | null
+          updated_at?: string | null
+        }
+      }
+      wink_points_history: {
+        Row: {
+          id: string
+          user_id: string
+          order_id: string | null
+          type: string
+          points: number
+          balance_after: number
+          description: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          order_id?: string | null
+          type: string
+          points: number
+          balance_after?: number
+          description?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          order_id?: string | null
+          type?: string
+          points?: number
+          balance_after?: number
+          description?: string | null
+          created_at?: string
+        }
+      }
+      homepage_sections: {
+        Row: {
+          id: string
+          section_key: string
+          title: string | null
+          config: Json | null
+          sort_order: number | null
+          is_active: boolean | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          section_key: string
+          title?: string | null
+          config?: Json | null
+          sort_order?: number | null
+          is_active?: boolean | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          section_key?: string
+          title?: string | null
+          config?: Json | null
+          sort_order?: number | null
+          is_active?: boolean | null
+          created_at?: string | null
+        }
+      }
+      site_settings: {
+        Row: {
+          key: string
+          value: Json
+          updated_at: string | null
+        }
+        Insert: {
+          key: string
+          value: Json
+          updated_at?: string | null
+        }
+        Update: {
+          key?: string
+          value?: Json
+          updated_at?: string | null
+        }
+      }
+      announcements: {
+        Row: {
+          id: string
+          text: string
+          link: string | null
+          sort_order: number | null
+          is_active: boolean | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          text: string
+          link?: string | null
+          sort_order?: number | null
+          is_active?: boolean | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          text?: string
+          link?: string | null
+          sort_order?: number | null
+          is_active?: boolean | null
+          created_at?: string | null
+        }
+      }
+      policies: {
+        Row: {
+          id: string
+          type: string
+          title: string
+          content: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          type: string
+          title: string
+          content: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          type?: string
+          title?: string
+          content?: string
+          updated_at?: string | null
+        }
+      }
+      customer_notifications: {
+        Row: {
+          id: string
+          user_id: string
+          type: string
+          title: string
+          body: string
+          is_read: boolean
+          data: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: string
+          title: string
+          body?: string
+          is_read?: boolean
+          data?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: string
+          title?: string
+          body?: string
+          is_read?: boolean
+          data?: Json | null
+          created_at?: string
+        }
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

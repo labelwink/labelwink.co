@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     const { error } = await supabase
       .from('wishlists')
-      .insert(insertPayload);
+      .insert(insertPayload as any);
 
     // 23505 = unique_violation — already wishlisted, treat as success
     if (error && error.code === '23505') {

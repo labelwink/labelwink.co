@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await supabase
       .from('collections')
-      .insert([row])
+      .insert([row] as any)
       .select()
       .single()
 

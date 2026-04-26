@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       usage_count:      0,
       is_active:        true,
       expires_at:       new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-    })
+    } as any)
 
   if (couponError) {
     return NextResponse.json({ error: 'Failed to create coupon' }, { status: 500 })
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   const newBalance = balance - points
   await adminSupabase
     .from('profiles')
-    .update({ wink_points: newBalance })
+    .update({ wink_points: newBalance } as any)
     .eq('id', user.id)
 
   // Log the transaction
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       points:       -points,
       balance_after: newBalance,
       description:  `Redeemed ${points} pts → coupon ${code}`,
-    })
+    } as any)
 
   return NextResponse.json({
     success: true,

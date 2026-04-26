@@ -11,8 +11,8 @@ type RouteContext = { params: Promise<{ id: string }> }
 export async function GET(_: NextRequest, { params }: RouteContext) {
   const guard = await requireAdmin()
   if (guard) return guard
+  const { id } = await params
   try {
-    const { id } = await params
     const supabase = createAdminSupabaseClient()
 
     const [orderRes, itemsRes, invoiceRes, historyRes] = await Promise.all([
@@ -100,7 +100,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
   const { data, error } = await supabase
     .from('orders')
-    .update({ ...patch, updated_at: new Date().toISOString() })
+    .update({ ...patch, updated_at: new Date().toISOString() } as any)
     .eq('id', id)
     .select()
     .single()
@@ -132,7 +132,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
             .update({
               shiprocket_order_id: String(srData.order_id),
               label_url:           srData.label_url || null,
-            })
+            } as any)
             .eq('id', id)
           // Add shipping label to response if available
           data.shiprocket_order_id = String(srData.order_id)
@@ -206,7 +206,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
               const newBalance = (prof?.wink_points || 0) + pointsToCredit
               await supabase
                 .from('profiles')
-                .update({ wink_points: newBalance })
+                .update({ wink_points: newBalance } as any)
                 .eq('id', fullOrder.user_id)
               await supabase
                 .from('wink_points_history')
@@ -217,7 +217,7 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
                   balance_after: newBalance,
                   description:   `Earned for order #${fullOrder.id.slice(0, 8).toUpperCase()}`,
                   order_id:      fullOrder.id,
-                })
+                } as any)
             } catch { /* non-fatal */ }
           }
         }

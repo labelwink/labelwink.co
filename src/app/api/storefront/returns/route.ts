@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
       reason,
       description: description || null,
       status: 'pending',
-    })
+    } as any)
     .select()
     .single()
 
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       title: 'New Return Request',
       body: `A customer has requested a return for order #${order_id.slice(0, 8).toUpperCase()}`,
       data: { order_id, return_id: returnReq.id },
-    })
+    } as any)
   } catch { /* ignore */ }
 
   return NextResponse.json({ success: true, return_request: returnReq }, { status: 201 })

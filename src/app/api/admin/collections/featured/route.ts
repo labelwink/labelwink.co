@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     items.map(({ id, is_featured, sort_order }) =>
       supabase
         .from('collections')
-        .update({ is_featured, sort_order })
+        .update({ is_featured, sort_order } as any)
         .eq('id', id)
     )
   )

@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
   if (awbCode)      patch.tracking_number  = awbCode
   if (mappedStatus) patch.status           = mappedStatus
 
-  await supabase.from('orders').update(patch).eq('id', orderId)
+  await supabase.from('orders').update(patch as any).eq('id', orderId)
 
   // ── Admin notification if shipped/delivered ──────────────────────────────────
   if (mappedStatus === 'shipped' || mappedStatus === 'delivered') {
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
         title: `Order ${label} — #${orderId.slice(0, 8).toUpperCase()}`,
         body:  awbCode ? `AWB: ${awbCode}` : `Status: ${srStatus}`,
         data:  { order_id: orderId, awb: awbCode, shiprocket_status: srStatus },
-      })
+      } as any)
     } catch { /* non-fatal */ }
   }
 

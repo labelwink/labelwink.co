@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       razorpay_signature,
       status:               'confirmed',
       updated_at:           new Date().toISOString(),
-    })
+    } as any)
     .eq('id', order_id)
     .eq('razorpay_order_id', razorpay_order_id) // double-check the razorpay order matches
     .select('id, status, total, customer_name, customer_email')
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       title: `Payment Confirmed — #${order.id.slice(0, 8).toUpperCase()}`,
       body:  `₹${Number(order.total).toLocaleString('en-IN')} received from ${order.customer_name || order.customer_email || 'customer'}`,
       data:  { order_id: order.id, razorpay_payment_id },
-    });
+    } as any);
   } catch { /* non-fatal */ }
 
   // ── 4. Send order confirmation email ─────────────────────────────────────────

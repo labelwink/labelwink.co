@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
           razorpay_payment_id: razorpayPaymentId,
           status:              'confirmed',
           updated_at:          new Date().toISOString(),
-        })
+        } as any)
         .eq('id', order.id);
 
       try {
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
           title: `Payment Captured — #${order.id.slice(0, 8).toUpperCase()}`,
           body:  `Razorpay webhook confirmed payment ${razorpayPaymentId}`,
           data:  { order_id: order.id, razorpay_payment_id: razorpayPaymentId },
-        });
+        } as any);
       } catch { /* non-fatal */ }
 
       // ── Send order confirmation email ───────────────────────────────────
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
         .update({
           payment_status: 'failed',
           updated_at:     new Date().toISOString(),
-        })
+        } as any)
         .eq('razorpay_order_id', razorpayOrderId)
         .neq('payment_status', 'paid'); // don't downgrade paid orders
     }

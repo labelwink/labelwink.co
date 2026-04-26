@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     body,
     status: 'pending',
     is_verified_purchase: isVerified,
-  })
+  } as any)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       title: 'New Review Submitted',
       body: `A customer submitted a ${rating}-star review pending approval`,
       data: { product_id },
-    })
+    } as any)
   } catch { /* ignore */ }
 
   return NextResponse.json({ success: true, message: 'Review submitted for approval' })

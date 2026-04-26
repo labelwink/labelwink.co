@@ -57,7 +57,7 @@ export async function PATCH(req: NextRequest) {
   const supabase = createAdminClient()
   const body = await req.json()
 
-  let query = supabase.from('admin_notifications').update({ read: true })
+  let query = supabase.from('admin_notifications').update({ read: true } as any)
 
   if (body.id) {
     query = query.eq('id', body.id)

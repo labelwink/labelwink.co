@@ -19,7 +19,7 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
     await supabase.from('orders').update({
       shiprocket_order_id: String(srData.order_id),
       label_url: srData.label_url || null,
-    }).eq('id', id)
+    } as any).eq('id', id)
 
     return NextResponse.json({ success: true, shiprocket_order_id: srData.order_id, label_url: srData.label_url })
   } catch (err: any) {
