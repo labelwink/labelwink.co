@@ -9,6 +9,7 @@ interface CheckoutData {
   items: any[];
   subtotal: number;
   couponCode?: string;
+  discountAmount?: number;
   address: any;
   paymentMethod: 'razorpay';
   customerName?: string;
