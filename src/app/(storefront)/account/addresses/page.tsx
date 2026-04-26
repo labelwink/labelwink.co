@@ -15,7 +15,8 @@ export default function AccountAddressesPage() {
   const supabase = createClient();
 
   const [formData, setFormData] = useState({
-    name: '',
+    label: 'Home',
+    full_name: '',
     line1: '',
     line2: '',
     city: '',
@@ -58,7 +59,7 @@ export default function AccountAddressesPage() {
 
       if (!error) {
         setShowAddForm(false);
-        setFormData({ name: '', line1: '', line2: '', city: '', state: '', pincode: '', phone: '', is_default: false });
+        setFormData({ label: 'Home', full_name: '', line1: '', line2: '', city: '', state: '', pincode: '', phone: '', is_default: false });
         fetchAddresses();
       }
     }
@@ -104,8 +105,15 @@ export default function AccountAddressesPage() {
           <h2 className="text-lg font-heading font-semibold text-charcoal">New Shipping Address</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input id="name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required className="h-12 border-sage/30 rounded-none focus:border-teal" />
+              <Label htmlFor="label">Label</Label>
+              <select id="label" value={formData.label} onChange={e => setFormData({...formData, label: e.target.value})}
+                className="w-full h-12 border border-sage/30 bg-white rounded-none px-3 text-sm focus:outline-none focus:border-teal">
+                <option>Home</option><option>Work</option><option>Other</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="full_name">Full Name</Label>
+              <Input id="full_name" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} required className="h-12 border-sage/30 rounded-none focus:border-teal" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
@@ -157,7 +165,12 @@ export default function AccountAddressesPage() {
               </span>
             )}
             
-            <h3 className="font-bold text-charcoal mb-3 uppercase tracking-wider">{addr.name}</h3>
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-bold text-charcoal uppercase tracking-wider">{addr.full_name || addr.name}</h3>
+              {addr.label && (
+                <span className="text-[9px] font-bold uppercase tracking-widest text-teal/80 bg-teal/10 px-2 py-0.5 rounded">{addr.label}</span>
+              )}
+            </div>
             <div className="text-sm text-charcoal/70 space-y-1 font-medium leading-relaxed">
               <p>{addr.line1}</p>
               {addr.line2 && <p>{addr.line2}</p>}

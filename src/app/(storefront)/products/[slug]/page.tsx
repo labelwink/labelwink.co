@@ -312,6 +312,12 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                   </div>
                   {r.title && <p className="font-semibold text-charcoal text-sm mt-1">{r.title}</p>}
                   {r.body && <p className="text-charcoal/70 text-sm mt-1.5 leading-relaxed">{r.body}</p>}
+                  {r.admin_reply && (
+                    <div className="mt-3 ml-4 pl-4 border-l-2 border-teal/30 bg-teal/5 rounded-r-lg py-2 pr-3">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-teal mb-1">Label Wink Reply</p>
+                      <p className="text-sm text-charcoal/80 leading-relaxed">{r.admin_reply}</p>
+                    </div>
+                  )}
                   <p className="text-xs text-charcoal/40 mt-3">
                     {reviewerName} · {new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </p>

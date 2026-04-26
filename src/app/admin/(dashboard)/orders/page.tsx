@@ -71,29 +71,16 @@ export default function OrdersPage() {
 
   useEffect(() => { fetchOrders() }, [fetchOrders])
 
-  // Export CSV
+  // Export CSV — calls server-side export (all matching orders, not just current page)
   const exportCSV = () => {
-    const headers = ['Order ID', 'Customer', 'Email', 'Phone', 'Total', 'Status', 'Payment', 'Carrier', 'Tracking', 'Date']
-    const rows = orders.map(o => [
-      o.id.slice(0, 8).toUpperCase(),
-      o.customer_name ?? '',
-      o.customer_email ?? '',
-      o.customer_phone ?? '',
-      o.total,
-      o.status,
-      o.payment_status ?? '',
-      o.shipping_carrier ?? '',
-      o.tracking_number ?? '',
-      new Date(o.created_at).toLocaleDateString('en-IN'),
-    ])
-    const csv = [headers, ...rows].map(r => r.map(String).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url  = URL.createObjectURL(blob)
-    const a    = document.createElement('a')
+    const params = new URLSearchParams()
+    if (status) params.set('status', status)
+    if (search) params.set('search', search)
+    const url = `/api/admin/orders/export?${params}`
+    const a = document.createElement('a')
     a.href = url
-    a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`
+    a.download = `labelwink-orders-${new Date().toISOString().slice(0, 10)}.csv`
     a.click()
-    URL.revokeObjectURL(url)
   }
 
   const STATUS_TABS: Array<{ label: string; value: string }> = [
