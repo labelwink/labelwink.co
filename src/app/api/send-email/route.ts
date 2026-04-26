@@ -70,6 +70,12 @@ function buildHtml(p: Payload): string {
     body = `<h1 style="font-size:22px;color:${DARK_GREEN};margin:0 0 12px;">Return Update</h1>
       <p style="color:#555;line-height:1.6;">Unfortunately we could not approve your return. Please contact our support team.</p>
       ${btn('mailto:support@labelwink.co', 'Contact Support')}`
+  } else if (T === 'back_in_stock') {
+    const productUrl = p.data?.product_url ?? SITE_URL
+    const prodName   = p.data?.product_name ?? 'The item'
+    body = `<h1 style="font-size:22px;color:${DARK_GREEN};margin:0 0 12px;">Back In Stock! 🎉</h1>
+      <p style="color:#555;line-height:1.6;">Good news! <strong>${prodName}</strong> is back in stock. Limited quantities — don't miss out!</p>
+      ${btn(productUrl, 'Shop Now')}`
   } else {
     body = `<h1 style="font-size:22px;color:${DARK_GREEN};margin:0 0 12px;">${p.title}</h1>
       <p style="color:#555;line-height:1.6;">${p.body}</p>${btn(SITE_URL, 'Visit Label Wink')}`
@@ -84,6 +90,7 @@ const SUBJECTS: Record<string, string> = {
   order_delivered: 'Order delivered — enjoy your pieces! ✨',
   return_approved: 'Your return request has been approved',
   return_rejected: 'Update on your return request',
+  back_in_stock:   "Back in stock — grab it before it's gone! 🎉",
 }
 
 export async function POST(req: NextRequest) {

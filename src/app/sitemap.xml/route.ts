@@ -10,15 +10,17 @@ export async function GET() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminSupabaseClient() as any
 
-  const [{ data: products }, { data: collections }, { data: policies }] = await Promise.all([
+  const [{ data: products }, { data: collections }, { data: policies }, { data: blogPosts }] = await Promise.all([
     supabase.from('products').select('slug, updated_at').eq('visible', true),
     supabase.from('categories').select('slug, updated_at'),
     supabase.from('cms_content').select('slug, updated_at').eq('type', 'policy'),
+    supabase.from('blog_posts').select('slug, updated_at, tags').eq('published', true),
   ])
 
   const staticPages = [
     { url: `${SITE}/`,               priority: '1.0', changefreq: 'daily'   },
     { url: `${SITE}/products`,        priority: '0.9', changefreq: 'daily'   },
+    { url: `${SITE}/lookbook`,        priority: '0.8', changefreq: 'weekly'  },
     { url: `${SITE}/about`,           priority: '0.7', changefreq: 'monthly' },
     { url: `${SITE}/contact`,         priority: '0.6', changefreq: 'monthly' },
     { url: `${SITE}/faq`,             priority: '0.6', changefreq: 'monthly' },
@@ -46,7 +48,25 @@ export async function GET() {
     changefreq: 'yearly',
   }))
 
-  const allPages = [...staticPages, ...productPages, ...collectionPages, ...policyPages]
+  const lookbookPages = (blogPosts ?? [])
+    .filter((p: { tags: string[] | null }) => p.tags?.includes('lookbook'))
+    .map((p: { slug: string; updated_at: string }) => ({
+      url:        `${SITE}/lookbook/${p.slug}`,
+      lastmod:    p.updated_at?.slice(0, 10),
+      priority:   '0.8',
+      changefreq: 'monthly',
+    }))
+
+  const blogPages = (blogPosts ?? [])
+    .filter((p: { tags: string[] | null }) => !p.tags?.includes('lookbook'))
+    .map((p: { slug: string; updated_at: string }) => ({
+      url:        `${SITE}/blog/${p.slug}`,
+      lastmod:    p.updated_at?.slice(0, 10),
+      priority:   '0.6',
+      changefreq: 'monthly',
+    }))
+
+  const allPages = [...staticPages, ...productPages, ...collectionPages, ...policyPages, ...lookbookPages, ...blogPages]
 
   const urlset = allPages.map(p => `
   <url>

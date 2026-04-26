@@ -110,3 +110,45 @@ export function getPublicIdFromUrl(url: string): string | null {
   const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[^/.]+)?$/)
   return match ? match[1] : null
 }
+
+// ─── Batch 30E: Preset-based URL builder ─────────────────────────────────────
+type CloudinaryPreset = 'thumbnail' | 'pdp' | 'cart' | 'admin'
+
+const PRESETS: Record<CloudinaryPreset, { width: number; height: number }> = {
+  thumbnail: { width: 400,  height: 500  },
+  pdp:       { width: 800,  height: 1000 },
+  cart:      { width: 80,   height: 100  },
+  admin:     { width: 48,   height: 48   },
+}
+
+/**
+ * Returns an optimized Cloudinary URL using a named preset or explicit dimensions.
+ * Usage:
+ *   cloudinaryUrl(url, 'thumbnail')          → catalog card size
+ *   cloudinaryUrl(url, 'pdp')                → product hero
+ *   cloudinaryUrl(url, 'cart')               → cart thumbnail
+ *   cloudinaryUrl(url, 400, 500)             → explicit w/h
+ */
+export function cloudinaryUrl(
+  url: string | null | undefined,
+  widthOrPreset: number | CloudinaryPreset,
+  height?: number,
+): string {
+  if (!url) return ''
+
+  let w: number, h: number
+  if (typeof widthOrPreset === 'string') {
+    const preset = PRESETS[widthOrPreset]
+    w = preset.width; h = preset.height
+  } else {
+    w = widthOrPreset; h = height ?? widthOrPreset
+  }
+
+  // If it's already a Cloudinary URL, inject transformations
+  if (url.includes('cloudinary.com')) {
+    return url.replace('/upload/', `/upload/w_${w},h_${h},c_fill,f_auto,q_auto/`)
+  }
+
+  // Otherwise treat as public ID
+  return getOptimizedUrl(url, { width: w, height: h, crop: 'fill' })
+}

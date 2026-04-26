@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import crypto from 'crypto';
+import { rateLimit, getIp } from '@/lib/utils/rate-limit';
+import { ConfirmOrderSchema, safeValidate } from '@/lib/utils/validators';
 
 export const runtime = 'nodejs';
 
@@ -13,29 +15,31 @@ export const runtime = 'nodejs';
  * Body: { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id }
  */
 export async function POST(req: NextRequest) {
+  // Rate limit: 5 req/min per IP
+  const ip = getIp(req)
+  if (!rateLimit(`verify:${ip}`, 5, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
   if (!keySecret) {
     return NextResponse.json({ error: 'Payment configuration error' }, { status: 503 });
   }
 
-  let body: {
-    razorpay_order_id: string;
-    razorpay_payment_id: string;
-    razorpay_signature: string;
-    order_id: string; // our DB order ID
-  };
-
+  let rawBody: unknown;
   try {
-    body = await req.json();
+    rawBody = await req.json();
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id } = body;
-
-  if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !order_id) {
-    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  // Validate with Zod
+  const { data: body, error: validationError } = safeValidate(ConfirmOrderSchema, rawBody);
+  if (!body) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
   }
+
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id } = body;
 
   // ── 1. Verify HMAC signature ─────────────────────────────────────────────────
   // Razorpay signs: razorpay_order_id + "|" + razorpay_payment_id
@@ -49,8 +53,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Payment verification failed' }, { status: 400 });
   }
 
-  // ── 2. Update order in DB ────────────────────────────────────────────────────
+  // ── 2. Idempotency check ─────────────────────────────────────────────────────
+  // If this payment_id was already recorded, return the existing order
   const supabase = createAdminClient();
+  const { data: existingOrder } = await supabase
+    .from('orders')
+    .select('id, status')
+    .eq('razorpay_payment_id', razorpay_payment_id)
+    .maybeSingle();
+
+  if (existingOrder) {
+    return NextResponse.json({
+      success:  true,
+      order_id: existingOrder.id,
+      status:   existingOrder.status,
+      idempotent: true,
+    });
+  }
+
+  // ── 3. Update order in DB ────────────────────────────────────────────────────
 
   const { data: order, error } = await supabase
     .from('orders')

@@ -5,15 +5,7 @@ import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
 import { WhatsAppButton } from '@/components/storefront/WhatsAppButton'
 import { CartDrawer } from '@/components/cart/CartDrawer'
-
-function getSettings() {
-  try {
-    const raw = readFileSync(join(process.cwd(), 'data', 'settings.json'), 'utf-8')
-    return JSON.parse(raw)
-  } catch {
-    return {}
-  }
-}
+import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 
 function getNavigation() {
   try {
@@ -24,16 +16,54 @@ function getNavigation() {
   }
 }
 
-export default function StorefrontLayout({ children }: { children: React.ReactNode }) {
-  const settings = getSettings()
-  const nav = getNavigation()
+interface ShopSettings {
+  announcement_text?:    string
+  announcement_url?:     string
+  announcement_enabled?: boolean
+  announcement_bg?:      string
+  announcement_bar_enabled?: boolean
+  announcement_bar_text?:    string
+  announcement_bar_color?:   string
+  social?:                   Record<string, string>
+  tagline?:                  string
+  whatsapp_number?:          string
+}
+
+async function getSettings(): Promise<ShopSettings> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createAdminSupabaseClient() as any
+    const { data } = await supabase
+      .from('shop_settings')
+      .select('*')
+      .limit(1)
+      .single()
+    return data ?? {}
+  } catch {
+    // Fallback to local JSON if DB not available
+    try {
+      const raw = readFileSync(join(process.cwd(), 'data', 'settings.json'), 'utf-8')
+      return JSON.parse(raw)
+    } catch {
+      return {}
+    }
+  }
+}
+
+export default async function StorefrontLayout({ children }: { children: React.ReactNode }) {
+  const [settings, nav] = await Promise.all([getSettings(), Promise.resolve(getNavigation())])
+
+  // Support both old (announcement_bar_*) and new (announcement_*) columns
+  const announcementEnabled = settings.announcement_enabled ?? settings.announcement_bar_enabled ?? false
+  const announcementText    = settings.announcement_text    ?? settings.announcement_bar_text    ?? ''
+  const announcementColor   = settings.announcement_bg      ?? settings.announcement_bar_color   ?? '#c9a84c'
 
   return (
     <>
       <AnnouncementBar
-        enabled={settings.announcement_bar_enabled ?? false}
-        text={settings.announcement_bar_text ?? ''}
-        color={settings.announcement_bar_color ?? '#1b3a34'}
+        enabled={announcementEnabled}
+        text={announcementText}
+        color={announcementColor}
       />
       <Navbar />
       <CartDrawer />

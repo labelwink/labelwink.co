@@ -1,43 +1,75 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// LabelWink — Validation Utilities
-// ─────────────────────────────────────────────────────────────────────────────
+import { z } from 'zod'
 
-/**
- * Validate Indian PIN code (6 digits, starts with 1-9)
- */
-export function isValidPincode(pincode: string): boolean {
-  return /^[1-9][0-9]{5}$/.test(pincode.trim())
+// ── Razorpay IDs ──────────────────────────────────────────────────────────────
+export const RazorpayPaymentIdSchema = z
+  .string()
+  .regex(/^pay_[a-zA-Z0-9]+$/, 'Invalid Razorpay payment ID')
+
+export const RazorpayOrderIdSchema = z
+  .string()
+  .regex(/^order_[a-zA-Z0-9]+$/, 'Invalid Razorpay order ID')
+
+// ── Payment confirmation ──────────────────────────────────────────────────────
+export const ConfirmOrderSchema = z.object({
+  razorpay_payment_id: RazorpayPaymentIdSchema,
+  razorpay_order_id:   RazorpayOrderIdSchema,
+  razorpay_signature:  z.string().length(64, 'Invalid signature length'),
+  order_id:            z.string().uuid('Invalid order ID'),
+})
+
+// ── Address ───────────────────────────────────────────────────────────────────
+export const AddressSchema = z.object({
+  full_name: z.string().min(2).max(100),
+  phone:     z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number'),
+  line1:     z.string().min(5).max(200),
+  line2:     z.string().max(200).optional(),
+  city:      z.string().min(2).max(100),
+  state:     z.string().min(2).max(100),
+  pincode:   z.string().regex(/^\d{6}$/, 'Pincode must be 6 digits'),
+  label:     z.enum(['Home', 'Work', 'Other']).optional(),
+})
+
+// ── Return request ────────────────────────────────────────────────────────────
+export const ReturnRequestSchema = z.object({
+  order_id:    z.string().uuid(),
+  reason:      z.string().min(5).max(500),
+  description: z.string().max(2000).optional(),
+})
+
+// ── Coupon code ───────────────────────────────────────────────────────────────
+export const CouponCodeSchema = z
+  .string()
+  .min(3)
+  .max(50)
+  .transform(s => s.toUpperCase().replace(/[^A-Z0-9]/g, ''))
+
+// ── Admin order status update ─────────────────────────────────────────────────
+export const OrderStatusSchema = z.object({
+  status: z.enum([
+    'pending', 'confirmed', 'processing', 'packed',
+    'shipped', 'delivered', 'cancelled', 'return_requested',
+  ]),
+  admin_note:       z.string().max(1000).optional(),
+  tracking_number:  z.string().max(100).optional(),
+  tracking_url:     z.string().url().optional().or(z.literal('')),
+  shipping_carrier: z.string().max(50).optional(),
+})
+
+// ── Strip HTML tags (basic sanitization) ─────────────────────────────────────
+export function stripHtml(input: string): string {
+  return input.replace(/<[^>]*>/g, '').trim()
 }
 
-/**
- * Validate Indian mobile number (10 digits, starts with 6-9)
- */
-export function isValidPhone(phone: string): boolean {
-  const cleaned = phone.replace(/\D/g, '')
-  // Allow 10-digit or 12-digit with 91 prefix
-  if (cleaned.length === 10) return /^[6-9][0-9]{9}$/.test(cleaned)
-  if (cleaned.length === 12) return cleaned.startsWith('91') && /^[6-9][0-9]{9}$/.test(cleaned.slice(2))
-  return false
-}
-
-/**
- * Validate Indian GST number (15-char GSTIN format)
- * Format: 2-digit state code + 10-char PAN + 1-digit entity + Z + 1-char checksum
- */
-export function isValidGST(gst: string): boolean {
-  return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(gst.trim().toUpperCase())
-}
-
-/**
- * Validate email address
- */
-export function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
-}
-
-/**
- * Validate PAN card (India)
- */
-export function isValidPAN(pan: string): boolean {
-  return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan.trim().toUpperCase())
+/** Parse + validate safely, returns { data, error } */
+export function safeValidate<T>(
+  schema: z.ZodSchema<T>,
+  input: unknown,
+): { data: T; error: null } | { data: null; error: string } {
+  const result = schema.safeParse(input)
+  if (result.success) return { data: result.data, error: null }
+  const issues = (result.error as z.ZodError).issues
+  return {
+    data:  null,
+    error: issues.map((e: z.ZodIssue) => `${e.path.join('.')}: ${e.message}`).join(', '),
+  }
 }

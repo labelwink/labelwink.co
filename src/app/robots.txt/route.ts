@@ -8,9 +8,14 @@ export function GET() {
   const content = `User-agent: *
 Allow: /
 
-# Admin area — no crawling
+# Private / admin areas — no crawling
 Disallow: /admin/
 Disallow: /api/
+Disallow: /account/
+Disallow: /checkout/
+Disallow: /checkout
+Disallow: /order-success/
+Disallow: /order-success
 
 # Sitemap
 Sitemap: ${SITE}/sitemap.xml
