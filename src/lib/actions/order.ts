@@ -221,14 +221,16 @@ export async function createOrder(checkoutData: CheckoutData) {
   // ── 8. Deduct loyalty points ──────────────────────────────────────────────────
   if (pointsUsed > 0 && checkoutData.userId) {
     try {
-      await supabase
+      const { data: prof } = await supabase
         .from('profiles')
-        .update({ wink_points: supabase.rpc('decrement_wink_points', { user_id: checkoutData.userId, amount: pointsUsed }) })
-        .eq('id', checkoutData.userId);
-      // Fallback: direct decrement
-      const { data: prof } = await supabase.from('profiles').select('wink_points').eq('id', checkoutData.userId).single();
+        .select('wink_points')
+        .eq('id', checkoutData.userId)
+        .single();
       if (prof) {
-        await supabase.from('profiles').update({ wink_points: Math.max(0, (prof.wink_points || 0) - pointsUsed) }).eq('id', checkoutData.userId);
+        await supabase
+          .from('profiles')
+          .update({ wink_points: Math.max(0, (prof.wink_points || 0) - pointsUsed) })
+          .eq('id', checkoutData.userId);
       }
     } catch { /* non-fatal */ }
   }
@@ -244,6 +246,24 @@ export async function createOrder(checkoutData: CheckoutData) {
       data:  { order_id: order.id, total },
     });
   } catch { /* non-fatal */ }
+
+  // ── 10. Increment coupon usage count ──────────────────────────────────────────
+  if (checkoutData.couponCode && discountAmount > 0) {
+    try {
+      const { data: couponRow } = await supabase
+        .from('discount_codes')
+        .select('id, used_count, usage_count')
+        .ilike('code', checkoutData.couponCode)
+        .maybeSingle();
+      if (couponRow) {
+        const currentCount = couponRow.used_count ?? couponRow.usage_count ?? 0;
+        await supabase
+          .from('discount_codes')
+          .update({ used_count: currentCount + 1, usage_count: currentCount + 1 })
+          .eq('id', couponRow.id);
+      }
+    } catch { /* non-fatal */ }
+  }
 
   revalidatePath('/admin/orders');
 

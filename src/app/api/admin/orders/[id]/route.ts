@@ -125,6 +125,79 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     }
   }
 
+  // ── Status-change side-effects ────────────────────────────────────────────────
+  if (newStatus === 'shipped' || newStatus === 'delivered') {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co'
+
+    try {
+      // Fetch full order for email + points
+      const { data: fullOrder } = await supabase
+        .from('orders')
+        .select('id, customer_email, customer_name, total, user_id, shiprocket_awb, tracking_number')
+        .eq('id', id)
+        .single()
+
+      if (fullOrder?.customer_email) {
+        if (newStatus === 'shipped') {
+          const awb = fullOrder.shiprocket_awb || fullOrder.tracking_number || patch.tracking_number || ''
+          await fetch(`${siteUrl}/api/send-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to:    fullOrder.customer_email,
+              type:  'order_shipped',
+              title: 'Your order has been shipped!',
+              body:  `Your Label Wink order is on its way.`,
+              data:  { order_id: fullOrder.id, awb: String(awb) },
+            }),
+          }).catch(() => {})
+        }
+
+        if (newStatus === 'delivered') {
+          // Send delivered email
+          await fetch(`${siteUrl}/api/send-email`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to:    fullOrder.customer_email,
+              type:  'order_delivered',
+              title: 'Order delivered!',
+              body:  `Your Label Wink order has been delivered.`,
+              data:  { order_id: fullOrder.id },
+            }),
+          }).catch(() => {})
+
+          // Credit wink points: 1 pt per ₹100 spent (min 10 pts, max 500 pts)
+          if (fullOrder.user_id) {
+            const orderTotal    = Number(fullOrder.total) || 0
+            const pointsToCredit = Math.min(500, Math.max(10, Math.floor(orderTotal / 100)))
+            try {
+              const { data: prof } = await supabase
+                .from('profiles')
+                .select('wink_points')
+                .eq('id', fullOrder.user_id)
+                .single()
+              const newBalance = (prof?.wink_points || 0) + pointsToCredit
+              await supabase
+                .from('profiles')
+                .update({ wink_points: newBalance })
+                .eq('id', fullOrder.user_id)
+              await supabase
+                .from('wink_points_history')
+                .insert({
+                  user_id:       fullOrder.user_id,
+                  type:          'earned',
+                  points:        pointsToCredit,
+                  balance_after: newBalance,
+                  description:   `Earned for order #${fullOrder.id.slice(0, 8).toUpperCase()}`,
+                  order_id:      fullOrder.id,
+                })
+            } catch { /* non-fatal */ }
+          }
+        }
+      }
+    } catch { /* non-fatal */ }
+  }
+
   return NextResponse.json(data)
 }
-

@@ -81,6 +81,26 @@ export async function POST(req: NextRequest) {
     });
   } catch { /* non-fatal */ }
 
+  // ── 4. Send order confirmation email ─────────────────────────────────────────
+  // This fires immediately after verify (Razorpay webhook also sends it, but
+  // may be delayed / not configured in dev). Brevo deduplicates by messageId.
+  if (order.customer_email) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co';
+    try {
+      await fetch(`${siteUrl}/api/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to:    order.customer_email,
+          type:  'order_confirmed',
+          title: 'Your Label Wink order is confirmed!',
+          body:  `Hi ${order.customer_name || 'there'}, your order has been confirmed.`,
+          data:  { order_id: order.id },
+        }),
+      });
+    } catch { /* non-fatal */ }
+  }
+
   return NextResponse.json({
     success: true,
     order_id: order.id,
