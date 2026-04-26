@@ -28,6 +28,7 @@ export default async function AboutPage() {
               src={hero.image || "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop"} 
               alt={hero.title} 
               fill 
+              sizes="100vw"
               className="object-cover brightness-75"
               priority
             />
@@ -78,6 +79,7 @@ export default async function AboutPage() {
                 src="https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?q=80&w=2070&auto=format&fit=crop" 
                 alt="Our craftsmanship" 
                 fill 
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover"
               />
           </div>

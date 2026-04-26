@@ -172,8 +172,9 @@ export function CollectionFiltersClient({
 
       {/* Main content */}
       <div className="flex-1 min-w-0">
-        {/* Top bar: sort + mobile filter trigger is built into FilterSidebar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6 md:justify-end">
+        {/* Top bar: sort + mobile filter trigger */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          {/* Mobile: filter trigger is rendered by FilterSidebar — show sort on right */}
           <SortDropdown value={sortValue} onChange={setSortValue} />
         </div>
 
@@ -208,9 +209,23 @@ export function CollectionFiltersClient({
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-x-4 gap-y-10 sm:gap-x-6">
             {filtered.map(p => {
               const primaryImage =
-                p.product_images?.find((img: any) => img.is_primary || img.is_cover) ||
+                p.product_images?.find((img: any) => img.is_cover || img.is_primary) ||
                 p.product_images?.[0]
               const firstVariant = p.product_variants?.[0]
+
+              // Prefer direct url (Cloudinary secure_url), fall back to building from public_id
+              const directUrl = primaryImage?.url || null
+              const imgPublicId =
+                primaryImage?.cloudinary_public_id &&
+                !primaryImage.cloudinary_public_id.startsWith('http')
+                  ? primaryImage.cloudinary_public_id
+                  : null
+
+              // Pass whichever we have — ProductImage handles both cases
+              const resolvedImage = directUrl || (imgPublicId
+                ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/${imgPublicId}`
+                : '')
+
               return (
                 <ProductCard
                   key={p.id}
@@ -219,8 +234,8 @@ export function CollectionFiltersClient({
                   slug={p.slug}
                   basePrice={firstVariant?.price ?? 0}
                   compareAtPrice={firstVariant?.mrp ?? null}
-                  image=""
-                  publicId={primaryImage?.cloudinary_public_id}
+                  image={resolvedImage}
+                  publicId={directUrl || (imgPublicId ? imgPublicId : undefined)}
                   isNewArrival={p.tags?.includes('new')}
                 />
               )

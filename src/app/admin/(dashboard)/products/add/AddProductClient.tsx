@@ -65,7 +65,9 @@ export default function AddProductClient({ categories }: Props) {
       const imagePayloads = images.map((url, index) => ({
         product_id: product.id,
         url: url,
-        is_main: index === 0,
+        cloudinary_public_id: url, // satisfy NOT NULL until migration adds url column
+        is_primary: index === 0,
+        is_cover: index === 0,
         sort_order: index
       }))
 

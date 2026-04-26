@@ -116,9 +116,9 @@ export default function CheckoutPage() {
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       
       <div className="container mx-auto px-4 py-8 lg:py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+        <div className="flex flex-col-reverse md:flex-row gap-8 md:gap-12 lg:gap-20">
           
-          <div className="space-y-10">
+          <div className="space-y-10 md:w-3/5">
             <div>
               <h1 className="text-4xl font-heading font-semibold mb-6">Checkout</h1>
               <nav className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-8">
@@ -140,33 +140,33 @@ export default function CheckoutPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="email" className="text-[10px] font-bold uppercase text-charcoal/60">Email</Label>
-                      <Input id="email" type="email" value={formData.email} onChange={handleInputChange} required className="h-14 bg-white border-sage/20" />
+                      <Input id="email" type="email" value={formData.email} onChange={handleInputChange} required className="h-14 bg-white border-sage/20 text-base" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="phone" className="text-[10px] font-bold uppercase text-charcoal/60">Phone</Label>
-                      <Input id="phone" type="tel" value={formData.phone} onChange={handleInputChange} required className="h-14 bg-white border-sage/20" />
+                      <Input id="phone" type="tel" value={formData.phone} onChange={handleInputChange} required className="h-14 bg-white border-sage/20 text-base" />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="fullName" className="text-[10px] font-bold uppercase text-charcoal/60">Full Name</Label>
-                    <Input id="fullName" value={formData.fullName} onChange={handleInputChange} required className="h-14 bg-white border-sage/20" />
+                    <Input id="fullName" value={formData.fullName} onChange={handleInputChange} required className="h-14 bg-white border-sage/20 text-base" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="address" className="text-[10px] font-bold uppercase text-charcoal/60">Address</Label>
-                    <Input id="address" value={formData.address} onChange={handleInputChange} required className="h-14 bg-white border-sage/20" />
+                    <Input id="address" value={formData.address} onChange={handleInputChange} required className="h-14 bg-white border-sage/20 text-base" />
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="city" className="text-[10px] font-bold uppercase text-charcoal/60">City</Label>
-                      <Input id="city" value={formData.city} onChange={handleInputChange} required className="h-14 bg-white border-sage/20" />
+                      <Input id="city" value={formData.city} onChange={handleInputChange} required className="h-14 bg-white border-sage/20 text-base" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="state" className="text-[10px] font-bold uppercase text-charcoal/60">State</Label>
-                      <Input id="state" value={formData.state} onChange={handleInputChange} required className="h-14 bg-white border-sage/20" />
+                      <Input id="state" value={formData.state} onChange={handleInputChange} required className="h-14 bg-white border-sage/20 text-base" />
                     </div>
                     <div className="space-y-2 col-span-2 md:col-span-1">
                       <Label htmlFor="pincode" className="text-[10px] font-bold uppercase text-charcoal/60">Pincode</Label>
-                      <Input id="pincode" value={formData.pincode} onChange={handleInputChange} required className="h-14 bg-white border-sage/20" />
+                      <Input id="pincode" value={formData.pincode} onChange={handleInputChange} required className="h-14 bg-white border-sage/20 text-base" />
                     </div>
                   </div>
                 </div>
@@ -213,7 +213,7 @@ export default function CheckoutPage() {
             </form>
           </div>
 
-          <div className="lg:sticky lg:top-24 h-fit bg-white border border-sage/20 p-8 rounded-xl shadow-sm">
+          <div className="md:w-2/5 md:sticky md:top-24 h-fit bg-white border border-sage/20 p-6 md:p-8 rounded-xl shadow-sm">
             <h3 className="font-heading text-2xl font-semibold mb-8 flex items-center gap-3">
               <ShoppingBag className="w-6 h-6 text-teal" />
               Order Summary

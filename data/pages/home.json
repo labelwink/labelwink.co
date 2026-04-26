@@ -2,15 +2,24 @@
   "announcement_bar": {
     "enabled": true,
     "text": "Free Shipping on orders above ₹3499 🚚",
-    "color": "#1b3a34"
+    "color": "#faf7f2"
   },
   "hero": {
     "headline": "",
     "subheadline": "",
-    "cta_text": "Find Your Fit",
-    "cta_link": "/collections",
+    "badge": "NEW COLLECTION 2026",
+    "cta_text": "",
+    "cta_link": "",
     "image_url": "https://res.cloudinary.com/dcmbwtreb/image/upload/v1777125561/Landscape_Poster_1_qaqlh9.webp"
   },
+  "hero_slides": [
+    {
+      "image_url": "https://res.cloudinary.com/dcmbwtreb/image/upload/v1777125561/Landscape_Poster_1_qaqlh9.webp",
+      "badge": "NEW COLLECTION 2026",
+      "headline": "Better Together",
+      "subtext": "From coffee dates to weekend getaways — your perfect pair starts with what you wear"
+    }
+  ],
   "category_links": [
     {
       "label": "Kurtis",
@@ -47,11 +56,18 @@
     "title": "What everyone's buying. See what's trending this week",
     "product_ids": []
   },
+  "sale_banner": {
+    "enabled": false,
+    "headline": "Last Chance to Buy",
+    "subtext": "Your favorite looks now at special prices",
+    "cta": "Shop Sale",
+    "link": "/collections/sale"
+  },
   "brand_story": {
     "pill_tag": "Our Story",
     "headline": "Crafted for the modern Indian woman",
     "body": "At Label Wink, we believe that every woman deserves to feel confident, comfortable, and completely herself. Our collections are thoughtfully designed to blend traditional craftsmanship with contemporary silhouettes — perfect for the woman who moves through life with grace and intention.",
-    "image_url": "https://res.cloudinary.com/dcmbwtreb/image/upload/v1777125561/Landscape_Poster_1_qaqlh9.webp"
+    "image_url": "https://res.cloudinary.com/dcmbwtreb/image/upload/v1777130439/labelwink/products/bl4trqgsbmh3qjoovhr3.jpg"
   },
   "trust_badges": [
     {

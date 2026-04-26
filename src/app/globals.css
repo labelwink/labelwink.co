@@ -254,3 +254,35 @@
     color: #9ca3af;
   }
 }
+
+/* ─── MOBILE RESPONSIVENESS ──────────────────────────────── */
+
+/* Mobile scroll fix */
+html, body {
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Hide scrollbar but keep scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Prevent iOS zoom on input focus — CRITICAL */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+/* Better tap highlighting */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth image rendering on mobile */
+img {
+  -webkit-backface-visibility: hidden;
+}

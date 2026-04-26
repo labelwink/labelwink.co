@@ -74,7 +74,7 @@ export function ProductActions({ productId, productName, productSlug, variants, 
                 disabled={outOfStock}
                 onClick={() => setSelectedSize(v.size)}
                 title={outOfStock ? 'Out of stock' : `Size ${v.size}`}
-                className={`w-14 h-14 flex items-center justify-center text-xs font-bold transition-all border relative
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center text-xs font-bold transition-all border relative
                   ${isSelected
                     ? 'border-charcoal bg-charcoal text-cream'
                     : outOfStock
@@ -108,12 +108,12 @@ export function ProductActions({ productId, productName, productSlug, variants, 
         </p>
       </div>
 
-      {/* CTA row */}
-      <div className="flex gap-4">
+      {/* CTA row — sticky on mobile */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 p-4 bg-white border-t border-sage/20 shadow-lg md:relative md:bottom-auto md:left-auto md:right-auto md:p-0 md:bg-transparent md:border-0 md:shadow-none flex gap-3">
         <button
           onClick={handleAddToCart}
           disabled={isDisabled}
-          className={`flex-1 h-16 rounded-none text-xs font-bold tracking-[0.3em] uppercase transition-colors
+          className={`flex-1 h-14 md:h-16 rounded-none text-xs font-bold tracking-[0.3em] uppercase transition-colors
             ${isDisabled
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
               : 'bg-charcoal text-cream hover:bg-charcoal/90 active:scale-[0.98]'
@@ -128,7 +128,7 @@ export function ProductActions({ productId, productName, productSlug, variants, 
         </button>
         <button
           onClick={handleShare}
-          className="w-16 h-16 border border-sage/30 text-charcoal rounded-none hover:border-charcoal transition-colors flex items-center justify-center"
+          className="w-14 h-14 md:w-16 md:h-16 border border-sage/30 text-charcoal rounded-none hover:border-charcoal transition-colors flex items-center justify-center flex-shrink-0"
           aria-label="Share product"
         >
           <Share2 className="w-5 h-5" />

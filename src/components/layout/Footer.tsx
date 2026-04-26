@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { Facebook, Instagram, Mail, ArrowRight, MessageCircle } from 'lucide-react';
+import { Facebook, Instagram, Mail, ArrowRight, MessageCircle, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
@@ -18,6 +17,7 @@ export function Footer({
   tagline?: string 
 }) {
   const [settings, setSettings] = useState<any>({});
+  const [openSection, setOpenSection] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -37,84 +37,112 @@ export function Footer({
   const whatsapp = settings.whatsapp_number?.number;
   const email = settings.store_email?.email || 'hello@labelwink.in';
 
+  const toggleSection = (section: string) => {
+    setOpenSection(prev => prev === section ? null : section);
+  };
+
   return (
-    <footer className="bg-charcoal text-cream pt-24 pb-12">
+    <footer className="bg-[#1a3a34] text-[#faf7f2] pt-10 pb-6">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-24">
-          {/* Brand & Newsletter */}
-          <div className="lg:col-span-1 space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 md:gap-8 mb-8">
+          {/* Brand & Newsletter — always visible */}
+          <div className="lg:col-span-1 space-y-4 mb-8 md:mb-0">
             <div>
-              <p className="text-brand-wordmark text-white mb-2">LABEL WINK</p>
-              <p className="text-eyebrow text-white/40 text-[10px]" style={{ letterSpacing: '0.15em' }}>
+              <p className="text-[#faf7f2] font-serif tracking-widest text-lg mb-1">Label Wink</p>
+              <p className="text-[#c9a84c]/70 text-xs" style={{ letterSpacing: '0.15em' }}>
                 {tagline}
               </p>
             </div>
-            <p className="text-sm text-cream/70 leading-relaxed font-medium">
-              Curated ethnic & fusion wear for the modern Indian woman. Every piece is handcrafted with love and meticulous detail in the heart of India.
+            <p className="text-xs text-[#faf7f2]/60 leading-relaxed max-w-[200px]">
+              Curated ethnic &amp; fusion wear for the modern Indian woman. Every piece is handcrafted with love and meticulous detail in the heart of India.
             </p>
-            <div className="space-y-4 pt-4 border-t border-cream/10">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-teal">Join The Wink Club</h3>
-              <p className="text-[10px] text-cream/60 uppercase tracking-wider">Unlock exclusive deals and new arrivals!</p>
-              <form className="flex gap-0" onSubmit={(e) => e.preventDefault()}>
+            <div className="space-y-2 pt-4 border-t border-[#2d5a52]">
+              <h3 className="text-xs font-bold tracking-widest text-[#c9a84c]">Join The Wink Club</h3>
+              <p className="text-[10px] text-[#faf7f2]/60 tracking-wider">Unlock exclusive deals and new arrivals!</p>
+              <form className="flex gap-0 mt-4" onSubmit={(e) => e.preventDefault()}>
                 <Input 
                   type="email" 
                   placeholder="Enter your email" 
-                  className="bg-transparent border-cream/20 text-cream placeholder:text-cream/40 focus-visible:ring-teal focus-visible:border-teal rounded-none h-12 text-xs"
+                  className="bg-transparent border-[#2d5a52] text-[#faf7f2] placeholder:text-[#faf7f2]/40 focus-visible:ring-[#c9a84c] focus-visible:border-[#c9a84c] rounded-none h-10 text-xs"
                 />
-                <Button type="submit" className="bg-teal text-cream hover:bg-teal/90 rounded-none h-12 px-6">
-                  <ArrowRight className="h-5 w-5" />
+                <Button type="submit" className="bg-[#c9a84c] text-[#1a3a34] hover:bg-[#c9a84c]/90 rounded-none h-10 px-4">
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
               </form>
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div className="space-y-8">
-            <h3 className="font-heading text-xl tracking-widest uppercase border-b border-cream/10 pb-4">Collections</h3>
-            <ul className="space-y-4 text-[10px] font-bold uppercase tracking-widest text-cream/60">
-              <li><Link href="/collections/all" className="hover:text-teal transition-colors">All Products</Link></li>
-              <li><Link href="/collections/new-arrivals" className="hover:text-teal transition-colors">New Arrivals</Link></li>
-              <li><Link href="/collections/best-sellers" className="hover:text-teal transition-colors">Best Sellers</Link></li>
+          {/* Collections — accordion on mobile */}
+          <div className="border-t border-[#2d5a52] md:border-0">
+            <button
+              className="flex w-full items-center justify-between py-3 md:hidden"
+              onClick={() => toggleSection('collections')}
+              aria-expanded={openSection === 'collections'}
+            >
+              <span className="text-[#c9a84c] tracking-[0.2em] text-xs font-medium">Collections</span>
+              <ChevronDown size={16} className={`text-[#faf7f2]/60 transition-transform duration-200 ${openSection === 'collections' ? 'rotate-180' : ''}`} />
+            </button>
+            <h3 className="hidden md:block text-[#c9a84c] tracking-[0.2em] text-xs border-b border-[#2d5a52] pb-3 mb-3">Collections</h3>
+            <ul className={`space-y-2 text-[10px] font-bold tracking-widest text-[#faf7f2]/70 pb-3 md:pb-0 ${openSection === 'collections' ? 'block' : 'hidden'} md:block`}>
+              <li><Link href="/products" className="hover:text-[#c9a84c] transition-colors block py-1">All Products</Link></li>
+              <li><Link href="/products?sort=newest" className="hover:text-[#c9a84c] transition-colors block py-1">New Arrivals</Link></li>
+              <li><Link href="/products?sort=bestseller" className="hover:text-[#c9a84c] transition-colors block py-1">Best Sellers</Link></li>
             </ul>
           </div>
 
-          <div className="space-y-8">
-            <h3 className="font-heading text-xl tracking-widest uppercase border-b border-cream/10 pb-4">Customer Care</h3>
-            <ul className="space-y-4 text-[10px] font-bold uppercase tracking-widest text-cream/60">
-              <li><Link href="/about" className="hover:text-teal transition-colors">Our Story</Link></li>
-              <li><Link href="/faq" className="hover:text-teal transition-colors">FAQ</Link></li>
-              <li><Link href="/size-guide" className="hover:text-teal transition-colors">Size Guide</Link></li>
-              <li><Link href="/contact" className="hover:text-teal transition-colors">Contact Us</Link></li>
-              <li><Link href="/policy/shipping-policy" className="hover:text-teal transition-colors">Shipping &amp; Returns</Link></li>
-              <li><Link href="/policy/privacy-policy" className="hover:text-teal transition-colors">Privacy Policy</Link></li>
-              <li><Link href="/policy/return-refund-policy" className="hover:text-teal transition-colors">Return Policy</Link></li>
-              <li><Link href="/policy/terms-and-conditions" className="hover:text-teal transition-colors">Terms of Service</Link></li>
+          {/* Customer Care — accordion on mobile */}
+          <div className="border-t border-[#2d5a52] md:border-0">
+            <button
+              className="flex w-full items-center justify-between py-3 md:hidden"
+              onClick={() => toggleSection('customer-care')}
+              aria-expanded={openSection === 'customer-care'}
+            >
+              <span className="text-[#c9a84c] tracking-[0.2em] text-xs font-medium">Customer Care</span>
+              <ChevronDown size={16} className={`text-[#faf7f2]/60 transition-transform duration-200 ${openSection === 'customer-care' ? 'rotate-180' : ''}`} />
+            </button>
+            <h3 className="hidden md:block text-[#c9a84c] tracking-[0.2em] text-xs border-b border-[#2d5a52] pb-3 mb-3">Customer Care</h3>
+            <ul className={`space-y-2 text-[10px] font-bold tracking-widest text-[#faf7f2]/70 pb-3 md:pb-0 ${openSection === 'customer-care' ? 'block' : 'hidden'} md:block`}>
+              <li><Link href="/about" className="hover:text-[#c9a84c] transition-colors block py-1">Our Story</Link></li>
+              <li><Link href="/faq" className="hover:text-[#c9a84c] transition-colors block py-1">FAQ</Link></li>
+              <li><Link href="/size-guide" className="hover:text-[#c9a84c] transition-colors block py-1">Size Guide</Link></li>
+              <li><Link href="/contact" className="hover:text-[#c9a84c] transition-colors block py-1">Contact Us</Link></li>
+              <li><Link href="/policy/shipping-policy" className="hover:text-[#c9a84c] transition-colors block py-1">Shipping &amp; Returns</Link></li>
+              <li><Link href="/policy/privacy-policy" className="hover:text-[#c9a84c] transition-colors block py-1">Privacy Policy</Link></li>
+              <li><Link href="/policy/return-refund-policy" className="hover:text-[#c9a84c] transition-colors block py-1">Return Policy</Link></li>
+              <li><Link href="/policy/terms-and-conditions" className="hover:text-[#c9a84c] transition-colors block py-1">Terms of Service</Link></li>
             </ul>
           </div>
 
-
-          {/* Contact & Social */}
-          <div className="space-y-8">
-            <h3 className="font-heading text-xl tracking-widest uppercase border-b border-cream/10 pb-4">Contact</h3>
-            <div className="space-y-6">
+          {/* Contact & Social — accordion on mobile */}
+          <div className="border-t border-[#2d5a52] md:border-0">
+            <button
+              className="flex w-full items-center justify-between py-3 md:hidden"
+              onClick={() => toggleSection('contact')}
+              aria-expanded={openSection === 'contact'}
+            >
+              <span className="text-[#c9a84c] tracking-[0.2em] text-xs font-medium">Contact</span>
+              <ChevronDown size={16} className={`text-[#faf7f2]/60 transition-transform duration-200 ${openSection === 'contact' ? 'rotate-180' : ''}`} />
+            </button>
+            <h3 className="hidden md:block text-[#c9a84c] tracking-[0.2em] text-xs border-b border-[#2d5a52] pb-3 mb-3">Contact</h3>
+            <div className={`space-y-6 pb-3 md:pb-0 ${openSection === 'contact' ? 'block' : 'hidden'} md:block`}>
               <div className="space-y-1">
-                <p className="text-[10px] uppercase tracking-widest text-teal font-bold">Email us</p>
-                <a href={`mailto:${email}`} className="text-sm font-medium hover:text-teal transition-colors">{email}</a>
+                <p className="text-[10px] tracking-widest text-[#c9a84c] font-bold">Email us</p>
+                <a href={`mailto:${email}`} className="text-xs text-[#faf7f2]/70 hover:text-[#c9a84c] transition-colors">{email}</a>
               </div>
               {whatsapp && (
                 <div className="space-y-1">
-                  <p className="text-[10px] uppercase tracking-widest text-teal font-bold">WhatsApp Support</p>
-                  <a href={`https://wa.me/91${whatsapp}`} className="flex items-center gap-2 text-sm font-medium hover:text-teal transition-colors">
+                  <p className="text-[10px] tracking-widest text-[#c9a84c] font-bold">WhatsApp Support</p>
+                  <a href={`https://wa.me/91${whatsapp}`} className="flex items-center gap-2 text-xs text-[#faf7f2]/70 hover:text-[#c9a84c] transition-colors">
                     <MessageCircle className="w-4 h-4 text-green-500" /> +91 {whatsapp}
                   </a>
                 </div>
               )}
               
-              <div className="flex gap-4 pt-4">
-                <a href="https://instagram.com/labelwink" target="_blank" className="h-10 w-10 border border-cream/10 flex items-center justify-center hover:bg-teal hover:border-teal transition-all">
+              <div className="flex gap-4 pt-2">
+                <a href="https://instagram.com/labelwink" target="_blank" className="w-8 h-8 rounded-full border border-[#faf7f2]/20 flex items-center justify-center text-[#faf7f2]/60 hover:border-[#c9a84c] hover:text-[#c9a84c] transition-colors">
                   <Instagram className="h-4 w-4" />
                 </a>
-                <a href="https://facebook.com/labelwink" target="_blank" className="h-10 w-10 border border-cream/10 flex items-center justify-center hover:bg-teal hover:border-teal transition-all">
+                <a href="https://facebook.com/labelwink" target="_blank" className="w-8 h-8 rounded-full border border-[#faf7f2]/20 flex items-center justify-center text-[#faf7f2]/60 hover:border-[#c9a84c] hover:text-[#c9a84c] transition-colors">
                   <Facebook className="h-4 w-4" />
                 </a>
               </div>
@@ -123,17 +151,19 @@ export function Footer({
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-cream/10 pt-12 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="text-[9px] font-bold uppercase tracking-[0.3em] text-cream/40 text-center md:text-left flex items-center gap-4">
-            &copy; {new Date().getFullYear()} LABEL WINK. All rights reserved.
-            <Link href="/admin" className="hover:text-teal transition-colors underline">Admin</Link>
-          </div>
-          
-          {/* Payment Icons */}
-          <div className="flex items-center gap-6 opacity-40 grayscale hover:grayscale-0 transition-all">
-            <Image src="https://upload.wikimedia.org/wikipedia/commons/2/24/Visa_2014_logo_detail.svg" alt="Visa" width={36} height={12} loading="lazy" />
-            <Image src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" width={40} height={20} loading="lazy" />
-            <Image src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo.png" alt="UPI" width={40} height={16} loading="lazy" className="bg-white px-1" />
+        <div className="bg-[#132e28] -mx-4 px-4 mt-6 border-t border-[#2d5a52]/50">
+          <div className="container mx-auto py-3 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="text-[9px] font-bold tracking-[0.3em] text-[#faf7f2]/40 text-center md:text-left flex items-center gap-4">
+              &copy; {new Date().getFullYear()} Label Wink. All rights reserved.
+              <Link href="/admin" className="hover:text-[#c9a84c] transition-colors underline">Admin</Link>
+            </div>
+            {/* Payment Badges */}
+            <div className="flex flex-wrap justify-center md:justify-end gap-2 text-[#faf7f2]/40 text-xs">
+              <span className="border border-[#faf7f2]/20 rounded px-2 py-1">VISA</span>
+              <span className="border border-[#faf7f2]/20 rounded px-2 py-1">MASTERCARD</span>
+              <span className="border border-[#faf7f2]/20 rounded px-2 py-1">UPI</span>
+              <span className="border border-[#faf7f2]/20 rounded px-2 py-1">RAZORPAY</span>
+            </div>
           </div>
         </div>
       </div>

@@ -3,13 +3,29 @@
 import { useState } from 'react'
 import { ProductImageZoom } from '@/components/storefront/ProductImageZoom'
 
+interface ProductImage {
+  cloudinary_public_id?: string | null
+  url?: string | null
+  alt_text?: string | null
+  alt?: string | null
+}
+
 interface Props {
-  images: Array<{ cloudinary_public_id: string }>
+  images: ProductImage[]
   cloudName: string
 }
 
-function buildUrl(publicId: string, cloudName: string) {
-  return `https://res.cloudinary.com/${cloudName}/image/upload/f_auto,q_auto:best/${publicId}`
+function buildUrl(img: ProductImage, cloudName: string): string {
+  // Prefer direct Cloudinary URL (secure_url stored in `url` column)
+  if (img.url && img.url.startsWith('http')) {
+    return img.url
+  }
+  // Build from public_id if it's a real Cloudinary public ID (not a URL)
+  if (img.cloudinary_public_id && !img.cloudinary_public_id.startsWith('http')) {
+    return `https://res.cloudinary.com/${cloudName}/image/upload/f_auto,q_auto:best/${img.cloudinary_public_id}`
+  }
+  // Last resort: use cloudinary_public_id if it's a full URL
+  return img.cloudinary_public_id || img.url || ''
 }
 
 export function ProductImageGallery({ images, cloudName }: Props) {
@@ -28,7 +44,19 @@ export function ProductImageGallery({ images, cloudName }: Props) {
     )
   }
 
-  const urls = images.map(img => buildUrl(img.cloudinary_public_id, cloudName))
+  const urls = images
+    .map(img => buildUrl(img, cloudName))
+    .filter(Boolean) // drop empty strings
+
+  if (urls.length === 0) {
+    return (
+      <div className="w-full aspect-[3/4] bg-[#f5f0e8] flex items-center justify-center rounded-2xl">
+        <div className="text-center text-gray-400">
+          <p className="text-sm font-medium">No image available</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <ProductImageZoom

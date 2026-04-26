@@ -31,7 +31,7 @@ export default async function CollectionPage({
     .select(`
       id, name, slug, tags, fabric, occasion, is_active,
       product_variants (id, size, color, color_hex, price, mrp, stock_qty, image_cloudinary_ids),
-      product_images (cloudinary_public_id, is_primary, sort_order)
+      product_images (cloudinary_public_id, url, is_primary, is_cover, sort_order)
     `)
     .eq('visible', true)
     .order('created_at', { ascending: false });

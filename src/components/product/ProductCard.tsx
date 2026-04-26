@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { ProductImage } from '@/components/storefront/ProductImage';
 
 export interface ProductCardProps {
@@ -50,12 +49,12 @@ export function ProductCard({
               alt={name} 
               width={400} 
               height={500} 
-              className="w-full h-full object-cover transition-opacity duration-500 group-hover:opacity-0"
+              className={`w-full h-full object-cover transition-opacity duration-500 ${(hoverPublicId || hoverImage) ? 'group-hover:opacity-0' : ''}`}
               sizes="(max-width: 768px) 50vw, 25vw"
             />
           ) : (
             <div 
-              className="absolute inset-0 bg-cover bg-center transition-opacity duration-500 ease-in-out group-hover:opacity-0"
+              className={`absolute inset-0 bg-cover bg-center transition-opacity duration-500 ease-in-out ${(hoverPublicId || hoverImage) ? 'group-hover:opacity-0' : ''}`}
               style={{ backgroundImage: `url(${image})` }}
             />
           )}
@@ -109,11 +108,14 @@ export function ProductCard({
           <Heart className={`w-4 h-4 transition-colors ${wishlisted ? 'fill-red-500 text-red-500' : ''}`} />
         </button>
 
-        {/* Quick Add (Desktop Hover) */}
-        <div className={`absolute bottom-0 left-0 right-0 translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 z-20`}>
-          <Button disabled={isOutOfStock} className={`w-full rounded-none h-12 text-btn ${isOutOfStock ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-charcoal/90 hover:bg-charcoal text-white'}`}>
-            {isOutOfStock ? 'Out of Stock' : 'Quick Add'}
-          </Button>
+        {/* Quick Add — always visible on mobile, hover-only on desktop */}
+        <div className={`absolute bottom-0 left-0 right-0 z-20 transition-all duration-300 md:translate-y-full md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100`}>
+          <Link
+            href={`/products/${slug}`}
+            className={`flex items-center justify-center w-full h-10 md:h-12 text-btn text-xs ${isOutOfStock ? 'bg-gray-300 text-gray-500 cursor-not-allowed pointer-events-none' : 'bg-[#1a3a34]/90 hover:bg-[#1a3a34] text-white'}`}
+          >
+            {isOutOfStock ? 'Out of Stock' : 'View Product'}
+          </Link>
         </div>
       </div>
 

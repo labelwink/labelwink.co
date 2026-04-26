@@ -19,10 +19,11 @@ export default function EditProductClient({ product, categories }: Props) {
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
   
-  // Extract images from product
+  // Extract images from product — prefer url field, fall back to cloudinary_public_id
   const initialImages = product.product_images
     ?.sort((a: any, b: any) => a.sort_order - b.sort_order)
-    ?.map((img: any) => img.url) || []
+    ?.map((img: any) => img.url || img.cloudinary_public_id || '')
+    ?.filter(Boolean) || []
     
   const [images, setImages] = useState<string[]>(initialImages)
 
@@ -71,7 +72,9 @@ export default function EditProductClient({ product, categories }: Props) {
       const imagePayloads = images.map((url, index) => ({
         product_id: product.id,
         url: url,
-        is_main: index === 0,
+        cloudinary_public_id: url, // satisfy NOT NULL until migration adds url column
+        is_primary: index === 0,
+        is_cover: index === 0,
         sort_order: index
       }))
 

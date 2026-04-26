@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/admin/Toast'
-import { Loader2, X, Crown, Upload } from 'lucide-react'
+import { Loader2, X, Crown, Upload, Star } from 'lucide-react'
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 const TABS = ['Basic Info', 'Pricing', 'Variants & Stock', 'Specifications', 'Images', 'SEO']
@@ -48,9 +48,14 @@ export default function ProductForm({ product }: { product?: any }) {
   // Specs
   const [specs, setSpecs] = useState<Record<string, string>>(product?.specifications || {})
 
-  // Images
-  const [images, setImages] = useState<Array<{ url: string; alt: string }>>(
-    (product?.images || []).map((img: any) => typeof img === 'string' ? { url: img, alt: '' } : img)
+  // Images — seeded from product_images table
+  const [images, setImages] = useState<Array<{ url: string; public_id: string | null; alt: string; is_cover: boolean }>>(
+    (product?.product_images || []).map((img: any, i: number) => ({
+      url: img.url || '',
+      public_id: img.cloudinary_public_id || null,
+      alt: img.alt || '',
+      is_cover: img.is_cover ?? (i === 0),
+    }))
   )
   const [uploading, setUploading] = useState<number[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
@@ -75,17 +80,17 @@ export default function ProductForm({ product }: { product?: any }) {
 
     const indices = toUpload.map((_, i) => images.length + i)
     setUploading(indices)
-    setImages(prev => [...prev, ...toUpload.map(() => ({ url: '', alt: '' }))])
+    setImages(prev => [...prev, ...toUpload.map(() => ({ url: '', public_id: null, alt: '', is_cover: false }))])
 
     for (let i = 0; i < toUpload.length; i++) {
       const fd = new FormData()
       fd.append('file', toUpload[i])
       try {
         const res = await fetch('/api/admin/upload', { method: 'POST', body: fd })
-        const { url } = await res.json()
+        const { url, public_id } = await res.json()
         setImages(prev => {
           const next = [...prev]
-          next[indices[i]] = { url, alt: '' }
+          next[indices[i]] = { url, public_id: public_id || null, alt: '', is_cover: indices[i] === 0 && prev.filter(im => im.url).length === 0 }
           return next
         })
       } catch {
@@ -111,7 +116,14 @@ export default function ProductForm({ product }: { product?: any }) {
     const body = {
       name, slug, category, short_description: shortDesc, description,
       tags, occasion: occasions, mrp: Number(mrp), price: Number(price),
-      first_order_discount: firstOrderDiscount, images, specifications: specs,
+      first_order_discount: firstOrderDiscount,
+      images: images.filter(img => img.url).map((img, i) => ({
+        url: img.url,
+        public_id: img.public_id || null,
+        is_cover: i === 0 || img.is_cover,
+        sort_order: i,
+      })),
+      specifications: specs,
       visible, meta_title: metaTitle, meta_description: metaDesc, variants,
     }
 
@@ -352,31 +364,65 @@ export default function ProductForm({ product }: { product?: any }) {
               </div>
 
               {images.length > 0 && (
-                <div className="grid grid-cols-3 gap-3">
-                  {images.map((img, i) => (
-                    <div key={i} className="relative border border-[#e5e7eb] rounded-xl overflow-hidden">
-                      {i === 0 && (
-                        <div className="absolute top-2 left-2 bg-[#1b3a34] text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1 z-10">
-                          <Crown size={10} /> Cover
+                <>
+                  <p className="text-xs text-[#6b7280]">Click the ★ star on any image to set it as the cover photo. The cover image appears first on the storefront.</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    {images.map((img, i) => {
+                      const isCover = i === 0 || img.is_cover
+                      return (
+                        <div key={i} className={`relative border-2 rounded-xl overflow-hidden transition-colors ${
+                          isCover ? 'border-[#1b3a34]' : 'border-[#e5e7eb]'
+                        }`}>
+                          {/* Cover badge */}
+                          {isCover && (
+                            <div className="absolute top-2 left-2 bg-[#1b3a34] text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1 z-10">
+                              <Crown size={10} /> Cover
+                            </div>
+                          )}
+
+                          {/* Set as cover button (only on non-cover images) */}
+                          {!isCover && !uploading.includes(i) && img.url && (
+                            <button
+                              type="button"
+                              title="Set as cover image"
+                              onClick={() => setImages(prev => {
+                                const target = prev[i]
+                                const rest = prev.filter((_, idx) => idx !== i)
+                                return [{ ...target, is_cover: true }, ...rest.map(im => ({ ...im, is_cover: false }))]
+                              })}
+                              className="absolute top-2 left-2 bg-white/80 text-[#c9a84c] rounded-full p-1 z-10 hover:bg-[#c9a84c] hover:text-white transition-colors"
+                            >
+                              <Star size={13} />
+                            </button>
+                          )}
+
+                          {/* Delete button */}
+                          <button
+                            type="button"
+                            onClick={() => setImages(prev => prev.filter((_, idx) => idx !== i))}
+                            className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-0.5 z-10 hover:bg-red-700"
+                          >
+                            <X size={14} />
+                          </button>
+
+                          {uploading.includes(i) ? (
+                            <div className="aspect-[3/4] bg-gray-100 flex items-center justify-center">
+                              <Loader2 size={24} className="animate-spin text-[#1b3a34]" />
+                            </div>
+                          ) : (
+                            <img src={img.url} alt="" className="w-full aspect-[3/4] object-cover" />
+                          )}
+                          <input
+                            value={img.alt}
+                            onChange={e => setImages(prev => prev.map((im, idx) => idx === i ? { ...im, alt: e.target.value } : im))}
+                            className="w-full px-2 py-1.5 text-xs border-t border-[#e5e7eb] focus:outline-none"
+                            placeholder="Alt text (optional)"
+                          />
                         </div>
-                      )}
-                      <button onClick={() => setImages(prev => prev.filter((_, idx) => idx !== i))}
-                        className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-0.5 z-10 hover:bg-red-700">
-                        <X size={14} />
-                      </button>
-                      {uploading.includes(i) ? (
-                        <div className="aspect-[3/4] bg-gray-100 flex items-center justify-center">
-                          <Loader2 size={24} className="animate-spin text-[#1b3a34]" />
-                        </div>
-                      ) : (
-                        <img src={img.url} alt="" className="w-full aspect-[3/4] object-cover" />
-                      )}
-                      <input value={img.alt} onChange={e => setImages(prev => prev.map((im, idx) => idx === i ? { ...im, alt: e.target.value } : im))}
-                        className="w-full px-2 py-1.5 text-xs border-t border-[#e5e7eb] focus:outline-none"
-                        placeholder="Alt text" />
-                    </div>
-                  ))}
-                </div>
+                      )
+                    })}
+                  </div>
+                </>
               )}
             </div>
           )}

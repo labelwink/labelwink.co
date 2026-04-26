@@ -9,7 +9,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   const supabase = createAdminClient()
   const { data: product } = await supabase
     .from('products')
-    .select('*, product_variants(*)')
+    .select('*, product_variants(*), product_images(*)')
     .eq('id', id)
     .single()
 

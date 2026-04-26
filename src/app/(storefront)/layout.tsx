@@ -4,6 +4,7 @@ import { AnnouncementBar } from '@/components/storefront/AnnouncementBar'
 import { Navbar } from '@/components/layout/Navbar'
 import { Footer } from '@/components/layout/Footer'
 import { WhatsAppButton } from '@/components/storefront/WhatsAppButton'
+import { CartDrawer } from '@/components/cart/CartDrawer'
 
 function getSettings() {
   try {
@@ -35,6 +36,7 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
         color={settings.announcement_bar_color ?? '#1b3a34'}
       />
       <Navbar navItems={nav.main_nav} />
+      <CartDrawer />
       <main>{children}</main>
       <Footer columns={nav.footer_columns} social={settings.social} tagline={settings.tagline} />
       <WhatsAppButton />

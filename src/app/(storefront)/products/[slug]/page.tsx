@@ -72,8 +72,11 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     : 0;
 
   const firstVariant = product.product_variants?.[0];
-  const discount = (firstVariant?.mrp && firstVariant?.price)
-    ? Math.round(((firstVariant.mrp - firstVariant.price) / firstVariant.mrp) * 100) 
+  // Fall back to product-level price/mrp if variant price is 0 or missing
+  const displayPrice = firstVariant?.price || product.price || product.selling_price || null;
+  const displayMrp = firstVariant?.mrp || product.mrp || product.compare_at_price || null;
+  const discount = (displayMrp && displayPrice)
+    ? Math.round(((displayMrp - displayPrice) / displayMrp) * 100) 
     : 0;
 
   const jsonLd = {
@@ -84,14 +87,14 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     brand: { '@type': 'Brand', name: 'Label Wink' },
     offers: {
       '@type': 'Offer',
-      price: firstVariant?.price,
+      price: displayPrice,
       priceCurrency: 'INR',
       availability: firstVariant?.stock_qty > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 pb-28 md:pb-8">
       <Script
         id="product-jsonld"
         type="application/ld+json"
@@ -110,8 +113,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <span className="text-charcoal font-bold">{product.name}</span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20 mb-20">
-        <div>
+      <div className="flex flex-col md:flex-row gap-6 md:gap-12 lg:gap-20 mb-20">
+        <div className="w-full md:w-1/2">
           {product.product_images && product.product_images.length > 0 ? (
             <ProductImageGallery
               images={product.product_images}
@@ -131,7 +134,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           )}
         </div>
 
-        <div className="flex flex-col space-y-10">
+        <div className="w-full md:w-1/2 flex flex-col space-y-10 px-0 md:px-0">
           <div className="space-y-4">
             <h1 className="font-heading text-4xl md:text-5xl text-charcoal font-medium">{product.name}</h1>
             <div className="flex items-center gap-6">
@@ -144,16 +147,21 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
           <div className="flex items-baseline gap-4 border-b border-sage/10 pb-6">
             <span className="text-4xl font-heading font-bold text-charcoal">
-              {firstVariant?.price
-                ? `₹${Number(firstVariant.price).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              {displayPrice
+                ? `₹${Number(displayPrice).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                 : 'Price not available'}
             </span>
-            {firstVariant?.mrp && firstVariant?.price && firstVariant.mrp > firstVariant.price && (
-              <span className="text-xl text-muted-foreground line-through opacity-50">₹{Number(firstVariant.mrp).toLocaleString('en-IN')}</span>
+            {displayMrp && displayPrice && displayMrp > displayPrice && (
+              <span className="text-xl text-muted-foreground line-through opacity-50">₹{Number(displayMrp).toLocaleString('en-IN')}</span>
             )}
           </div>
 
-          <div className="text-charcoal/70 leading-relaxed font-medium">{product.description}</div>
+          {product.short_description && product.short_description.length > 3 && (
+            <p className="text-charcoal/60 text-sm leading-relaxed">{product.short_description}</p>
+          )}
+          {product.description && product.description.length > 3 && (
+            <div className="text-charcoal/70 leading-relaxed font-medium">{product.description}</div>
+          )}
 
           {/* Stock status */}
           {(() => {
@@ -164,13 +172,27 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             return null
           })()}
 
-          <ProductActions
-            productId={product.id}
-            productName={product.name}
-            productSlug={product.slug}
-            variants={product.product_variants ?? []}
-            publicId={product.product_images?.[0]?.cloudinary_public_id}
-          />
+          {/* Desktop ProductActions */}
+          <div className="hidden md:block">
+            <ProductActions
+              productId={product.id}
+              productName={product.name}
+              productSlug={product.slug}
+              variants={product.product_variants ?? []}
+              publicId={product.product_images?.[0]?.cloudinary_public_id}
+            />
+          </div>
+
+          {/* Mobile ProductActions */}
+          <div className="md:hidden">
+            <ProductActions
+              productId={product.id}
+              productName={product.name}
+              productSlug={product.slug}
+              variants={product.product_variants ?? []}
+              publicId={product.product_images?.[0]?.cloudinary_public_id}
+            />
+          </div>
 
           <PincodeChecker />
 

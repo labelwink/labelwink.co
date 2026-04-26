@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from('products')
-    .select('*, product_variants(*)')
+    .select('*, product_variants(*), product_images(*)')
     .order('created_at', { ascending: false })
 
   if (search) query = query.ilike('name', `%${search}%`)
@@ -33,8 +33,13 @@ export async function POST(req: NextRequest) {
 
   // Auto-generate slug if missing
   if (!productData.slug) {
-    productData.slug = productData.name
+    productData.slug = (productData.name as string)
       .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  }
+
+  // Sync is_active with visible so both RLS policies work
+  if (typeof productData.visible === 'boolean') {
+    productData.is_active = productData.visible
   }
 
   // Step 1: Insert the product
@@ -46,7 +51,10 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('Product insert error:', JSON.stringify(error, null, 2))
-    return NextResponse.json({ error: error.message, hint: error.hint, details: error.details, code: error.code }, { status: 500 })
+    return NextResponse.json(
+      { error: error.message, hint: error.hint, details: error.details, code: error.code },
+      { status: 500 }
+    )
   }
 
   // Step 2: Insert variants (sequential — needs product.id)
@@ -54,15 +62,19 @@ export async function POST(req: NextRequest) {
     const variantRows = variants.map((v: any) => ({
       product_id: product.id,
       size: v.size,
+      color: v.color || '',
       stock_qty: v.stock_qty ?? 0,
       sku: v.sku || null,
-      price: productData.price,
-      mrp: productData.mrp,
+      price: Number(productData.price) || 0,
+      mrp: Number(productData.mrp) || 0,
     }))
     const { error: variantError } = await supabase
       .from('product_variants')
       .insert(variantRows)
-    if (variantError) return NextResponse.json({ error: variantError.message }, { status: 500 })
+    if (variantError) {
+      console.error('Variant insert error:', variantError)
+      return NextResponse.json({ error: variantError.message }, { status: 500 })
+    }
   }
 
   // Step 3: Insert images (sequential — needs product.id)
@@ -72,16 +84,20 @@ export async function POST(req: NextRequest) {
       .map((img: any, i: number) => ({
         product_id: product.id,
         url: img.url,
-        cloudinary_public_id: img.url, // store url as fallback public_id
+        cloudinary_public_id: img.public_id || img.cloudinary_public_id || null,
+        alt: img.alt || null,
         sort_order: i,
-        is_cover: i === 0,
-        is_primary: i === 0,
+        is_cover: i === 0 || img.is_cover === true,
+        is_primary: i === 0 || img.is_cover === true,
       }))
     if (imageRows.length > 0) {
       const { error: imgError } = await supabase
         .from('product_images')
         .insert(imageRows)
-      if (imgError) return NextResponse.json({ error: imgError.message }, { status: 500 })
+      if (imgError) {
+        console.error('Image insert error:', imgError)
+        return NextResponse.json({ error: imgError.message }, { status: 500 })
+      }
     }
   }
 
@@ -94,4 +110,3 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json(full, { status: 201 })
 }
-
