@@ -15,13 +15,19 @@ export async function GET(
   const { data, error } = await supabase
     .from('orders')
     .select(`
-      id, status, total, subtotal, shipping_amount, discount_amount,
+      id, status, total, subtotal,
+      shipping_amount, shipping_fee, discount_amount,
       customer_name, customer_email, customer_phone,
       payment_status, payment_method, razorpay_payment_id,
       shipping_carrier, tracking_number, tracking_url,
-      shipping_address, shipping_method, created_at,
+      shipping_address, shipping_method, coupon_code,
+      created_at,
       order_items (
-        id, quantity, price, size, color,
+        id, quantity,
+        price_at_purchase,
+        variant_size, variant_color,
+        product_name,
+        size, color,
         products ( id, name, slug )
       )
     `)

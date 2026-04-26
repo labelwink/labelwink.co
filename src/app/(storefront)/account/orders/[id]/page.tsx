@@ -25,9 +25,13 @@ const STATUS_COLORS: Record<string, string> = {
 interface OrderItem {
   id: string;
   quantity: number;
-  price: number;
-  size: string;
-  color: string | null;
+  price_at_purchase?: number;
+  price?: number;  // alias
+  variant_size?: string;
+  variant_color?: string | null;
+  product_name?: string;
+  size?: string;
+  color?: string | null;
   products: { id: string; name: string; slug: string } | null;
 }
 
@@ -36,8 +40,10 @@ interface Order {
   status: string;
   total: number;
   subtotal: number;
-  shipping_amount: number;
+  shipping_amount?: number;
+  shipping_fee?: number;
   discount_amount: number;
+  coupon_code?: string | null;
   customer_name: string | null;
   customer_email: string | null;
   customer_phone: string | null;
@@ -273,6 +279,11 @@ export default function OrderDetailPage() {
             <div className="divide-y divide-sage/10">
               {order.order_items?.map(item => {
                 const product  = item.products;
+                // Handle both old and new field names
+                const itemPrice = item.price_at_purchase ?? item.price ?? 0;
+                const itemSize  = item.variant_size  || item.size  || '—';
+                const itemColor = item.variant_color || item.color || null;
+                const itemName  = item.product_name  || product?.name || '—';
                 const alreadyReviewed = reviewedIds.has(item.products?.id || '');
                 return (
                   <div key={item.id} className="flex gap-4 py-4">
@@ -281,10 +292,10 @@ export default function OrderDetailPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-charcoal text-sm truncate">
-                        {product?.name || '—'}
+                        {itemName}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Size: {item.size}{item.color ? ` · ${item.color}` : ''} · Qty: {item.quantity}
+                        Size: {itemSize}{itemColor ? ` · ${itemColor}` : ''} · Qty: {item.quantity}
                       </p>
                       {product && (
                         <Link
@@ -296,7 +307,7 @@ export default function OrderDetailPage() {
                       )}
                       {isDelivered && product && !alreadyReviewed && (
                         <button
-                          onClick={() => setReviewTarget({ id: product.id, name: product.name })}
+                          onClick={() => setReviewTarget({ id: product.id, name: itemName })}
                           className="ml-4 text-[10px] text-amber-600 font-bold uppercase tracking-wider hover:underline inline-flex items-center gap-1"
                         >
                           <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> Write Review
@@ -307,7 +318,7 @@ export default function OrderDetailPage() {
                       )}
                     </div>
                     <p className="font-bold text-charcoal text-sm flex-shrink-0">
-                      ₹{(Number(item.price) * item.quantity).toLocaleString('en-IN')}
+                      ₹{(Number(itemPrice) * item.quantity).toLocaleString('en-IN')}
                     </p>
                   </div>
                 );
@@ -320,11 +331,13 @@ export default function OrderDetailPage() {
               </div>
               <div className="flex justify-between text-charcoal/60">
                 <span>Shipping</span>
-                <span>{Number(order.shipping_amount || 0) === 0 ? 'FREE' : `₹${Number(order.shipping_amount).toLocaleString('en-IN')}`}</span>
+                <span>{Number(order.shipping_amount || order.shipping_fee || 0) === 0 ? 'FREE' : `₹${Number(order.shipping_amount || order.shipping_fee).toLocaleString('en-IN')}`}</span>
               </div>
               {(order.discount_amount || 0) > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>Discount</span>
+                  <span className="flex items-center gap-1">
+                    Discount {order.coupon_code && <span className="font-mono text-[10px] bg-green-50 border border-green-100 px-1.5 py-0.5 rounded">{order.coupon_code}</span>}
+                  </span>
                   <span>−₹{Number(order.discount_amount).toLocaleString('en-IN')}</span>
                 </div>
               )}

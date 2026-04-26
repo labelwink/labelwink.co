@@ -4,13 +4,34 @@ import { createAdminClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import Razorpay from 'razorpay';
 
-interface CheckoutData {
+export interface CartItem {
+  id: string;           // variant ID
+  variantId?: string;   // alias
+  name: string;
+  quantity: number;
+  price: number;
+  size?: string;
+  color?: string;
+  publicId?: string;    // cloudinary_public_id
+}
+
+export interface CheckoutData {
   userId?: string;
-  items: any[];
+  items: CartItem[];
   subtotal: number;
   couponCode?: string;
   discountAmount?: number;
-  address: any;
+  address: {
+    email?: string;
+    fullName?: string;
+    full_name?: string;
+    address?: string;
+    line1?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    phone?: string;
+  };
   paymentMethod: 'razorpay';
   customerName?: string;
   customerEmail?: string;
@@ -24,96 +45,178 @@ export async function createOrder(checkoutData: CheckoutData) {
     key_secret: process.env.RAZORPAY_KEY_SECRET!,
   });
 
-  // 1. Verify stock for all items
+  // ── 1. Verify stock ──────────────────────────────────────────────────────────
   for (const item of checkoutData.items) {
+    const variantId = item.variantId || item.id;
     const { data: variant } = await supabase
       .from('product_variants')
-      .select('stock_qty')
-      .eq('id', item.variantId)
+      .select('stock_qty, size, color, price, product_id, products(name)')
+      .eq('id', variantId)
       .single();
-    
+
     if (!variant || variant.stock_qty < item.quantity) {
-      return { error: `${item.name} is out of stock` };
+      return { error: `"${item.name}" is out of stock or unavailable` };
     }
   }
 
-  // 2. Fetch site settings for threshold
+  // ── 2. Shipping threshold ────────────────────────────────────────────────────
   const { data: thresholdSetting } = await supabase
     .from('site_settings')
     .select('value')
     .eq('key', 'free_shipping_threshold')
-    .single();
-  
-  const threshold = thresholdSetting?.value?.amount || 999;
+    .maybeSingle();
+
+  const threshold = (thresholdSetting?.value as Record<string, number> | null)?.amount ?? 999;
   let shippingFee = checkoutData.subtotal >= threshold ? 0 : 99;
   let discountAmount = 0;
 
-  // 3. Validate coupon if applied
+  // ── 3. Validate coupon against discount_codes ────────────────────────────────
   if (checkoutData.couponCode) {
+    const code = checkoutData.couponCode.toUpperCase();
+    const now = new Date().toISOString();
+
     const { data: coupon } = await supabase
-      .from('coupons')
-      .select('*')
-      .eq('code', checkoutData.couponCode.toUpperCase())
+      .from('discount_codes')
+      .select('id, type, value, max_uses, used_count, starts_at, expires_at, is_active, min_order_amount')
       .eq('is_active', true)
-      .single();
-    
+      .ilike('code', code)
+      .maybeSingle();
+
     if (coupon) {
-      if (coupon.type === 'percentage') discountAmount = (checkoutData.subtotal * Number(coupon.value)) / 100;
-      if (coupon.type === 'fixed_amount') discountAmount = Number(coupon.value);
-      if (coupon.type === 'free_shipping') shippingFee = 0;
+      const withinMaxUses = !coupon.max_uses || (coupon.used_count ?? 0) < coupon.max_uses;
+      const notExpired    = !coupon.expires_at || coupon.expires_at > now;
+      const hasStarted    = !coupon.starts_at  || coupon.starts_at  <= now;
+      const meetsMinOrder = !coupon.min_order_amount || checkoutData.subtotal >= Number(coupon.min_order_amount);
+
+      if (withinMaxUses && notExpired && hasStarted && meetsMinOrder) {
+        if (coupon.type === 'percentage') {
+          discountAmount = Math.min(
+            (checkoutData.subtotal * Number(coupon.value)) / 100,
+            checkoutData.subtotal
+          );
+        } else if (coupon.type === 'fixed_amount' || coupon.type === 'fixed') {
+          discountAmount = Math.min(Number(coupon.value), checkoutData.subtotal);
+        } else if (coupon.type === 'free_shipping') {
+          shippingFee = 0;
+        }
+      }
     }
   }
 
-  const total = checkoutData.subtotal - discountAmount + shippingFee;
+  // Use client-provided discount if server calc is 0 and client has one
+  // (e.g. free_shipping coupon doesn't set discountAmount but client validated it)
+  if (discountAmount === 0 && checkoutData.discountAmount && checkoutData.discountAmount > 0) {
+    discountAmount = checkoutData.discountAmount;
+  }
 
-  // 4. Create Razorpay order
+  const total = Math.max(0, checkoutData.subtotal - discountAmount + shippingFee);
+
+  // ── 4. Create Razorpay order ─────────────────────────────────────────────────
   const razorpayOrder = await razorpay.orders.create({
-    amount: Math.round(total * 100), // in paise
+    amount:   Math.round(total * 100),
     currency: 'INR',
-    receipt: `lw-${Date.now()}`,
+    receipt:  `lw-${Date.now()}`,
+    notes: {
+      customer: checkoutData.customerName || '',
+      email:    checkoutData.customerEmail || '',
+    },
   });
 
-  const { data: order } = await supabase
+  // ── 5. Insert order row ──────────────────────────────────────────────────────
+  const addr = checkoutData.address;
+  const customerName  = checkoutData.customerName  || addr.fullName  || addr.full_name  || '';
+  const customerEmail = checkoutData.customerEmail || addr.email     || '';
+  const customerPhone = checkoutData.customerPhone || addr.phone     || '';
+
+  const { data: order, error: orderError } = await supabase
     .from('orders')
     .insert({
-      user_id: checkoutData.userId,
-      payment_method: 'razorpay',
-      payment_status: 'pending',
+      user_id:           checkoutData.userId      || null,
+      payment_method:    'razorpay',
+      payment_status:    'pending',
       razorpay_order_id: razorpayOrder.id,
-      shipping_address: checkoutData.address,
-      subtotal: checkoutData.subtotal,
-      discount_amount: discountAmount,
-      coupon_code: checkoutData.couponCode,
-      shipping_fee: shippingFee,
+      shipping_address:  addr,
+      subtotal:          checkoutData.subtotal,
+      discount_amount:   discountAmount,
+      coupon_code:       checkoutData.couponCode  || null,
+      shipping_fee:      shippingFee,
+      shipping_amount:   shippingFee,
       total,
-      status: 'pending',
-      customer_name: checkoutData.customerName || checkoutData.address?.fullName || checkoutData.address?.full_name || '',
-      customer_email: checkoutData.customerEmail || checkoutData.address?.email || '',
-      customer_phone: checkoutData.customerPhone || checkoutData.address?.phone || '',
+      status:            'pending',
+      customer_name:     customerName,
+      customer_email:    customerEmail,
+      customer_phone:    customerPhone,
     })
-    .select()
+    .select('id')
     .single();
 
-  // 5. Insert admin notification for new order
-  if (order) {
-    const shortId = order.id.slice(0, 8).toUpperCase();
-    const customerLabel = checkoutData.customerName || checkoutData.customerEmail || 'A customer';
-    await supabase.from('admin_notifications').insert({
-      type: 'new_order',
-      title: `New Order #${shortId}`,
-      body: `${customerLabel} placed an order for ₹${total}`,
-      data: { order_id: order.id, total },
-    });
+  if (orderError || !order) {
+    console.error('Order insert error:', orderError);
+    return { error: orderError?.message || 'Failed to create order' };
   }
+
+  // ── 6. Insert order_items ────────────────────────────────────────────────────
+  const orderItems = checkoutData.items.map(item => ({
+    order_id:          order.id,
+    variant_id:        item.variantId || item.id,
+    product_name:      item.name,
+    variant_size:      item.size  || '',
+    variant_color:     item.color || '',
+    image_cloudinary_id: item.publicId || null,
+    quantity:          item.quantity,
+    price_at_purchase: item.price,
+    // Also write to new canonical columns
+    size:              item.size  || '',
+    color:             item.color || '',
+  }));
+
+  const { error: itemsError } = await supabase
+    .from('order_items')
+    .insert(orderItems);
+
+  if (itemsError) {
+    console.error('Order items insert error:', itemsError);
+    // Don't fail the whole order — log and continue
+  }
+
+  // ── 7. Decrement stock for each variant ──────────────────────────────────────
+  for (const item of checkoutData.items) {
+    const variantId = item.variantId || item.id;
+    try {
+      const { data: variant } = await supabase
+        .from('product_variants')
+        .select('stock_qty')
+        .eq('id', variantId)
+        .single();
+      if (variant) {
+        await supabase
+          .from('product_variants')
+          .update({ stock_qty: Math.max(0, variant.stock_qty - item.quantity) })
+          .eq('id', variantId);
+      }
+    } catch { /* non-fatal */ }
+  }
+
+  // ── 8. Admin notification ────────────────────────────────────────────────────
+  const shortId       = order.id.slice(0, 8).toUpperCase();
+  const customerLabel = customerName || customerEmail || 'A customer';
+  try {
+    await supabase.from('admin_notifications').insert({
+      type:  'new_order',
+      title: `New Order #${shortId}`,
+      body:  `${customerLabel} placed an order for ₹${total.toLocaleString('en-IN')}`,
+      data:  { order_id: order.id, total },
+    });
+  } catch { /* non-fatal */ }
 
   revalidatePath('/admin/orders');
 
   return {
-    success: true,
+    success:        true,
     razorpayOrderId: razorpayOrder.id,
-    razorpayKeyId: process.env.RAZORPAY_KEY_ID,
-    orderId: order!.id,
-    amount: razorpayOrder.amount,
-    currency: 'INR',
+    razorpayKeyId:   process.env.RAZORPAY_KEY_ID,
+    orderId:         order.id,
+    amount:          razorpayOrder.amount,
+    currency:        'INR',
   };
 }

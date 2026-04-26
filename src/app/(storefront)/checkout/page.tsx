@@ -155,7 +155,16 @@ export default function CheckoutPage() {
 
       const result = await createOrder({
         userId:        user?.id,
-        items:         items.map(item => ({ variantId: item.id, name: item.name, quantity: item.quantity, price: item.price })),
+        items:         items.map(item => ({
+          id:         item.id,
+          variantId:  item.id,
+          name:       item.name,
+          quantity:   item.quantity,
+          price:      item.price,
+          size:       item.size,
+          color:      item.color,
+          publicId:   item.publicId,
+        })),
         subtotal,
         address:       formData,
         paymentMethod: 'razorpay',
