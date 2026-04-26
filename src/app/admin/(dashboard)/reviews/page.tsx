@@ -5,7 +5,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import {
   Star, CheckCircle2, XCircle, Clock, Trash2,
   MessageSquare, BadgeCheck, ChevronLeft, ChevronRight,
-  RefreshCw, ExternalLink,
+  RefreshCw, ExternalLink, Send, X as XIcon,
 } from 'lucide-react'
 import { useToast } from '@/components/admin/Toast'
 import { formatDate } from '@/lib/utils/format'
@@ -60,6 +60,8 @@ export default function ReviewsPage() {
   const [loading,    setLoading]    = useState(true)
   const [counts,     setCounts]     = useState({ pending: 0, approved: 0, rejected: 0 })
   const [actioning,  setActioning]  = useState<Set<string>>(new Set())
+  // Reply state: reviewId -> { open, text, saving }
+  const [replyState, setReplyState] = useState<Record<string, { open: boolean; text: string; saving: boolean }>>({})
 
   const status = (searchParams.get('status') ?? 'pending') as 'pending' | 'approved' | 'rejected'
   const page   = Number(searchParams.get('page') ?? '0')
@@ -135,6 +137,39 @@ export default function ReviewsPage() {
       showToast('Delete failed', 'error')
     } finally {
       setActioning(prev => { const n = new Set(prev); n.delete(id); return n })
+    }
+  }
+
+  const toggleReply = (id: string, currentReply: string | null) => {
+    setReplyState(prev => ({
+      ...prev,
+      [id]: {
+        open:   !(prev[id]?.open),
+        text:   prev[id]?.text ?? (currentReply || ''),
+        saving: false,
+      },
+    }))
+  }
+
+  const saveReply = async (id: string) => {
+    const text = replyState[id]?.text ?? ''
+    setReplyState(prev => ({ ...prev, [id]: { ...prev[id], saving: true } }))
+    try {
+      const res = await fetch(`/api/admin/reviews/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ admin_reply: text || null }),
+      })
+      if (!res.ok) throw new Error()
+      // Update local review
+      setReviews(prev => prev.map(r =>
+        r.id === id ? { ...r, admin_reply: text || null } : r
+      ))
+      setReplyState(prev => ({ ...prev, [id]: { open: false, text, saving: false } }))
+      showToast(text ? 'Reply saved' : 'Reply cleared', 'success')
+    } catch {
+      showToast('Failed to save reply', 'error')
+      setReplyState(prev => ({ ...prev, [id]: { ...prev[id], saving: false } }))
     }
   }
 
@@ -249,6 +284,53 @@ export default function ReviewsPage() {
                   </p>
                 </div>
 
+                {/* Existing admin reply */}
+                {review.admin_reply && !replyState[review.id]?.open && (
+                  <div className="mb-3 ml-1 pl-3 border-l-2 border-[#1b3a34]/30 bg-[#1b3a34]/5 rounded-r-lg py-2 pr-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#1b3a34] mb-1">Admin Reply</p>
+                    <p className="text-xs text-[#374151] leading-relaxed">{review.admin_reply}</p>
+                  </div>
+                )}
+
+                {/* Reply textarea (expanded) */}
+                {replyState[review.id]?.open && (
+                  <div className="mb-3 bg-[#f0fafa] border border-[#1b3a34]/20 rounded-xl p-3.5 space-y-2 animate-in slide-in-from-top-1">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#1b3a34]">Write Admin Reply</p>
+                    <textarea
+                      value={replyState[review.id]?.text ?? ''}
+                      onChange={e => setReplyState(prev => ({ ...prev, [review.id]: { ...prev[review.id], text: e.target.value } }))}
+                      rows={3}
+                      placeholder="Type your reply to the customer…"
+                      className="w-full text-sm border border-[#1b3a34]/20 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-[#1b3a34]/30 bg-white"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => saveReply(review.id)}
+                        disabled={replyState[review.id]?.saving}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1b3a34] text-white rounded-lg text-xs font-semibold hover:bg-[#16312b] disabled:opacity-50 transition-colors"
+                      >
+                        <Send size={11} />
+                        {replyState[review.id]?.saving ? 'Saving…' : 'Save Reply'}
+                      </button>
+                      {review.admin_reply && (
+                        <button
+                          onClick={() => saveReply(review.id)}
+                          disabled={replyState[review.id]?.saving || !!replyState[review.id]?.text}
+                          className="flex items-center gap-1.5 px-3 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs font-semibold hover:bg-red-50 disabled:opacity-40 transition-colors"
+                        >
+                          <XIcon size={11} /> Clear Reply
+                        </button>
+                      )}
+                      <button
+                        onClick={() => toggleReply(review.id, review.admin_reply)}
+                        className="ml-auto px-3 py-1.5 text-xs text-[#6b7280] hover:text-[#1a1a1a] transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Actions */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {status !== 'approved' && (
@@ -287,6 +369,18 @@ export default function ReviewsPage() {
                       <BadgeCheck size={12} /> Mark Verified
                     </button>
                   )}
+                  {/* Reply toggle button */}
+                  <button
+                    onClick={() => toggleReply(review.id, review.admin_reply)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                      review.admin_reply
+                        ? 'border border-[#1b3a34]/30 text-[#1b3a34] bg-[#1b3a34]/5 hover:bg-[#1b3a34]/10'
+                        : 'border border-[#e5e7eb] text-[#6b7280] hover:bg-gray-50'
+                    }`}
+                  >
+                    <MessageSquare size={12} />
+                    {review.admin_reply ? 'Edit Reply' : 'Reply'}
+                  </button>
                   <button
                     onClick={() => deleteReview(review.id)}
                     disabled={isActioning}
