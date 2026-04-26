@@ -59,7 +59,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
   const { data: reviews } = await supabase
     .from('reviews')
-    .select('*, users(name)')
+    .select('id, rating, title, body, is_verified, created_at, profiles(full_name)')
     .eq('product_id', product.id)
     .eq('status', 'approved')
     .order('created_at', { ascending: false });
@@ -220,42 +220,79 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         </div>
       </div>
 
-      {/* Reviews Section */}
+        {/* Reviews Section */}
       <section className="mt-12 border-t border-sage/10 pt-10">
         <h2 className="text-2xl font-heading font-semibold mb-8 text-charcoal">Customer Reviews</h2>
 
-        {/* Rating summary */}
-        {reviews && reviews.length > 0 && (
-          <div className="flex items-center gap-5 mb-8 p-5 bg-sage/5 rounded-xl">
-            <span className="text-5xl font-heading font-bold text-charcoal">{Number(avgRating).toFixed(1)}</span>
-            <div>
-              <div className="flex text-yellow-400 mb-1">
-                {[1,2,3,4,5].map(i => (
-                  <Star key={i} className={`w-5 h-5 ${i <= Math.round(Number(avgRating)) ? 'fill-current' : 'text-gray-200'}`} />
-                ))}
+        {reviews && reviews.length > 0 && (() => {
+          const avg = Number(avgRating);
+          // Rating distribution
+          const dist = [5,4,3,2,1].map(star => ({
+            star,
+            count: reviews.filter((r: any) => r.rating === star).length,
+          }));
+          return (
+            <div className="flex flex-col sm:flex-row gap-8 mb-10 p-6 bg-sage/5 rounded-2xl">
+              {/* Big score */}
+              <div className="flex flex-col items-center justify-center min-w-[100px]">
+                <span className="text-6xl font-heading font-bold text-charcoal leading-none">{avg.toFixed(1)}</span>
+                <div className="flex text-yellow-400 my-2">
+                  {[1,2,3,4,5].map(i => (
+                    <Star key={i} className={`w-4 h-4 ${i <= Math.round(avg) ? 'fill-current' : 'text-gray-200'}`} />
+                  ))}
+                </div>
+                <span className="text-xs text-charcoal/50 font-semibold">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</span>
               </div>
-              <span className="text-sm text-charcoal/60">{reviews.length} review{reviews.length !== 1 ? 's' : ''}</span>
+              {/* Distribution bars */}
+              <div className="flex-1 space-y-2">
+                {dist.map(({ star, count }) => {
+                  const pct = reviews.length ? Math.round((count / reviews.length) * 100) : 0;
+                  return (
+                    <div key={star} className="flex items-center gap-3">
+                      <span className="text-xs font-bold text-charcoal/60 w-4 text-right">{star}</span>
+                      <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                      <div className="flex-1 bg-sage/20 rounded-full h-2">
+                        <div
+                          className="bg-yellow-400 h-2 rounded-full transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-charcoal/40 w-6 text-right">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Review list */}
         {reviews && reviews.length > 0 ? (
           <div className="space-y-0 divide-y divide-sage/10">
-            {reviews.map((r: any) => (
-              <div key={r.id} className="py-5">
-                <div className="flex text-yellow-400 mb-2">
-                  {[1,2,3,4,5].map(i => (
-                    <Star key={i} className={`w-4 h-4 ${i <= r.rating ? 'fill-current' : 'text-gray-200'}`} />
-                  ))}
+            {reviews.map((r: any) => {
+              const reviewerName = (r.profiles as { full_name?: string } | null)?.full_name || 'Verified Buyer';
+              return (
+                <div key={r.id} className="py-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex text-yellow-400 mb-2">
+                      {[1,2,3,4,5].map(i => (
+                        <Star key={i} className={`w-4 h-4 ${i <= r.rating ? 'fill-current' : 'text-gray-200'}`} />
+                      ))}
+                    </div>
+                    {r.is_verified && (
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-green-700 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full flex-shrink-0">
+                        ✓ Verified Purchase
+                      </span>
+                    )}
+                  </div>
+                  {r.title && <p className="font-semibold text-charcoal text-sm mt-1">{r.title}</p>}
+                  {r.body && <p className="text-charcoal/70 text-sm mt-1.5 leading-relaxed">{r.body}</p>}
+                  <p className="text-xs text-charcoal/40 mt-3">
+                    {reviewerName} · {new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
                 </div>
-                {r.title && <p className="font-semibold text-charcoal text-sm mt-1">{r.title}</p>}
-                {r.body && <p className="text-charcoal/70 text-sm mt-1 leading-relaxed">{r.body}</p>}
-                <p className="text-xs text-charcoal/40 mt-2">
-                  {r.users?.name || r.reviewer_name || 'Verified Buyer'} · {new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p className="text-sm text-charcoal/50 italic mb-6">No reviews yet. Be the first to review this product!</p>

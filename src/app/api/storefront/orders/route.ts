@@ -10,21 +10,20 @@ export async function GET() {
   const { data, error } = await supabase
     .from('orders')
     .select(`
-      *,
+      id, status, total, created_at,
+      tracking_number, tracking_url, shipping_carrier,
       order_items (
         id,
         quantity,
         price,
-        product_variants (
-          size,
-          color,
-          image_public_ids,
-          products ( name, slug )
-        )
+        size,
+        color,
+        products ( name, slug )
       )
     `)
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
+
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
