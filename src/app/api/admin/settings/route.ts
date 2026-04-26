@@ -7,10 +7,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server'
+import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+
+export const runtime = 'nodejs'
 
 export async function GET() {
-  const supabase = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createAdminSupabaseClient() as any
   const { data, error } = await supabase.from('settings').select('key, value')
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   const map: Record<string, unknown> = {}
@@ -19,9 +22,20 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createAdminSupabaseClient() as any
   const { key, value } = await req.json()
   if (!key) return NextResponse.json({ error: 'key is required' }, { status: 400 })
+
+  // Allowlist known setting keys
+  const ALLOWED_KEYS = [
+    'store_info', 'trust_badges', 'social_links',
+    'shipping_config', 'razorpay_config',
+  ]
+  if (!ALLOWED_KEYS.includes(key)) {
+    return NextResponse.json({ error: 'Unknown setting key' }, { status: 400 })
+  }
+
   const { error } = await supabase
     .from('settings')
     .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })

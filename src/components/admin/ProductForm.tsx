@@ -5,7 +5,11 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/admin/Toast'
 import { Loader2, X, Crown, Upload, Star } from 'lucide-react'
 
-const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
+const SIZES      = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size']
+const CATEGORIES = ['Kurtis', 'Co-ord Sets', 'Festive', 'Casual', 'Dresses', 'Tops', 'Bottoms', 'Sets', 'Accessories']
+const GENDERS    = ['Women', 'Men', 'Unisex', 'Girls', 'Boys']
+const FITS       = ['Regular', 'Slim', 'Loose', 'Oversized', 'Flared']
+const SEASONS    = ['All Season', 'Summer', 'Winter', 'Monsoon', 'Festive']
 const TABS = ['Basic Info', 'Pricing', 'Variants & Stock', 'Specifications', 'Images', 'SEO']
 
 function slugify(s: string) {
@@ -26,6 +30,14 @@ export default function ProductForm({ product }: { product?: any }) {
   const [tags, setTags] = useState<string[]>(product?.tags || [])
   const [tagInput, setTagInput] = useState('')
   const [occasions, setOccasions] = useState<string[]>(product?.occasion || [])
+  const [colour, setColour]   = useState(product?.colour || '')
+  const [fabric, setFabric]   = useState(product?.fabric || '')
+  const [fit, setFit]         = useState(product?.fit || '')
+  const [season, setSeason]   = useState(product?.season || '')
+  const [gender, setGender]   = useState(product?.gender || '')
+  const [collection, setCollection] = useState(product?.collection || '')
+  const [hsnCode, setHsnCode] = useState(product?.hsn_code || '')
+  const [weight, setWeight]   = useState(product?.weight_grams || '')
 
   // Pricing
   const [mrp, setMrp] = useState(product?.mrp || '')
@@ -117,6 +129,9 @@ export default function ProductForm({ product }: { product?: any }) {
       name, slug, category, short_description: shortDesc, description,
       tags, occasion: occasions, mrp: Number(mrp), price: Number(price),
       first_order_discount: firstOrderDiscount,
+      colour, fabric, fit, season, gender, collection,
+      hsn_code: hsnCode || null,
+      weight_grams: weight ? Number(weight) : null,
       images: images.filter(img => img.url).map((img, i) => ({
         url: img.url,
         public_id: img.public_id || null,
@@ -176,13 +191,21 @@ export default function ProductForm({ product }: { product?: any }) {
                   className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                   placeholder="e.g. Floral Kurta Set" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Category *</label>
-                <select value={category} onChange={e => setCategory(e.target.value)}
-                  className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] bg-white">
-                  <option value="">Select category</option>
-                  <option>Kurtis</option><option>Co-ord Sets</option><option>Festive</option><option>Casual</option>
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Category *</label>
+                  <select value={category} onChange={e => setCategory(e.target.value)}
+                    className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] bg-white">
+                    <option value="">Select category</option>
+                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Collection</label>
+                  <input value={collection} onChange={e => setCollection(e.target.value)}
+                    className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
+                    placeholder="e.g. Summer Bloom 2025" />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Short Description</label>
@@ -211,6 +234,58 @@ export default function ProductForm({ product }: { product?: any }) {
                   onKeyDown={e => { if (e.key === 'Enter' && tagInput.trim()) { setTags([...tags, tagInput.trim()]); setTagInput(''); e.preventDefault() }}}
                   className="border border-[#e5e7eb] rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                   placeholder="Type tag + Enter" />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Colour</label>
+                  <input value={colour} onChange={e => setColour(e.target.value)}
+                    className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
+                    placeholder="e.g. Rust Orange" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Fabric</label>
+                  <input value={fabric} onChange={e => setFabric(e.target.value)}
+                    className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
+                    placeholder="e.g. Cotton Blend" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Fit</label>
+                  <select value={fit} onChange={e => setFit(e.target.value)}
+                    className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] bg-white">
+                    <option value="">Select fit</option>
+                    {FITS.map(f => <option key={f}>{f}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Gender</label>
+                  <select value={gender} onChange={e => setGender(e.target.value)}
+                    className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] bg-white">
+                    <option value="">Select</option>
+                    {GENDERS.map(g => <option key={g}>{g}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Season</label>
+                  <select value={season} onChange={e => setSeason(e.target.value)}
+                    className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] bg-white">
+                    <option value="">Select</option>
+                    {SEASONS.map(s => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">HSN Code</label>
+                  <input value={hsnCode} onChange={e => setHsnCode(e.target.value)}
+                    className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
+                    placeholder="e.g. 6211" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Weight (grams)</label>
+                  <input type="number" min="0" value={weight} onChange={e => setWeight(e.target.value)}
+                    className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
+                    placeholder="e.g. 350" />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#1a1a1a] mb-2">Occasion</label>

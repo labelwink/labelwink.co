@@ -35,7 +35,7 @@ export default function StorefrontLayout({ children }: { children: React.ReactNo
         text={settings.announcement_bar_text ?? ''}
         color={settings.announcement_bar_color ?? '#1b3a34'}
       />
-      <Navbar navItems={nav.main_nav} />
+      <Navbar />
       <CartDrawer />
       <main>{children}</main>
       <Footer columns={nav.footer_columns} social={settings.social} tagline={settings.tagline} />

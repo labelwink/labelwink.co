@@ -1,19 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server'
+import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string; size: string }> }
-) {
+export const runtime = 'nodejs'
+type Ctx = { params: Promise<{ id: string; size: string }> }
+
+/** PATCH /api/admin/products/[id]/variants/[size] — update stock_qty (and optionally sku) */
+export async function PATCH(req: NextRequest, { params }: Ctx) {
   const { id, size } = await params
-  const supabase = createAdminClient()
-  const body = await req.json()
+  const decodedSize  = decodeURIComponent(size)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase     = createAdminSupabaseClient() as any
+  const body         = await req.json()
+
+  const allowed: Record<string, unknown> = {}
+  if ('stock_qty'          in body) allowed.stock_qty          = Number(body.stock_qty)
+  if ('sku'                in body) allowed.sku                = body.sku
+  if ('low_stock_threshold' in body) allowed.low_stock_threshold = Number(body.low_stock_threshold)
 
   const { data, error } = await supabase
     .from('product_variants')
-    .update({ stock_qty: body.stock_qty })
+    .update(allowed)
     .eq('product_id', id)
-    .eq('size', decodeURIComponent(size))
+    .eq('size', decodedSize)
     .select()
     .single()
 

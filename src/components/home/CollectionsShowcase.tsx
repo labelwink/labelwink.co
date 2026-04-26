@@ -56,7 +56,7 @@ export async function CollectionsShowcase() {
                 width={600}
                 height={800}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                quality="auto:good"
+                quality="auto:best"
                 sizes="(max-width: 768px) 50vw, 33vw"
               />
             ) : col.image_url ? (

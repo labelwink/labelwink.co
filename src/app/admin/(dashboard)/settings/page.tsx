@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-const TABS = ['Store Info', 'Trust Badges', 'Social Links', 'Shipping'] as const
+const TABS = ['Store Info', 'Trust Badges', 'Social Links', 'Shipping', 'Razorpay'] as const
 type Tab = typeof TABS[number]
 
 async function saveSetting(key: string, value: unknown) {
@@ -49,6 +49,7 @@ const DEFAULT_TRUST = [
 const DEFAULT_STORE = { name: '', tagline: '', email: '', phone: '', address: '', gst: '', logo_url: '' }
 const DEFAULT_SOCIAL = { instagram: '', facebook: '', whatsapp: '', youtube: '' }
 const DEFAULT_SHIPPING = { free_threshold: 3499, cod_available: true, cod_charge: 0 }
+const DEFAULT_RAZORPAY = { key_id: '', key_secret: '', webhook_secret: '', test_mode: true }
 
 // ─── tab components ───────────────────────────────────────────────────────────
 
@@ -222,6 +223,92 @@ function ShippingTab({ init }: { init: typeof DEFAULT_SHIPPING }) {
   )
 }
 
+// ─── Razorpay tab ─────────────────────────────────────────────────────────────
+
+function RazorpayTab({ init }: { init: typeof DEFAULT_RAZORPAY }) {
+  const [form, setForm] = useState({ ...DEFAULT_RAZORPAY, ...init })
+  const [saving, setSaving] = useState(false)
+  const [showSecret, setShowSecret] = useState(false)
+  const { showToast, ToastComponent } = useToast()
+
+  const save = async () => {
+    setSaving(true)
+    const res = await saveSetting('razorpay_config', form)
+    showToast(res.ok ? 'Saved ✓' : 'Save failed', res.ok ? 'success' : 'error')
+    setSaving(false)
+  }
+
+  return (
+    <div className="space-y-5">
+      {ToastComponent}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-xs text-amber-800">
+        ⚠️ Sensitive fields. These values are stored encrypted in the database and never exposed to the frontend.
+      </div>
+      {/* Test / Live toggle */}
+      <label className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setForm(f => ({ ...f, test_mode: !f.test_mode }))}
+          className={`relative w-10 h-5 rounded-full transition-colors ${
+            form.test_mode ? 'bg-amber-400' : 'bg-[#1b3a34]'
+          }`}
+        >
+          <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+            form.test_mode ? '' : 'translate-x-5'
+          }`} />
+        </button>
+        <span className="text-sm font-medium">
+          {form.test_mode ? '🧪 Test Mode (sandbox)' : '✅ Live Mode (production)'}
+        </span>
+      </label>
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Field
+          label={`Key ID (${form.test_mode ? 'test' : 'live'})`}
+          id="rzp-key-id"
+          value={form.key_id}
+          onChange={e => setForm(f => ({ ...f, key_id: e.target.value }))}
+          placeholder={form.test_mode ? 'rzp_test_...' : 'rzp_live_...'}
+        />
+        <div>
+          <label htmlFor="rzp-secret" className="block text-sm font-medium text-[#1a1a1a] mb-1">Key Secret</label>
+          <div className="relative">
+            <input
+              id="rzp-secret"
+              type={showSecret ? 'text' : 'password'}
+              value={form.key_secret}
+              onChange={e => setForm(f => ({ ...f, key_secret: e.target.value }))}
+              placeholder="••••••••••••••••"
+              className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
+            />
+            <button
+              type="button"
+              onClick={() => setShowSecret(s => !s)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#9ca3af] hover:text-[#6b7280]"
+            >
+              {showSecret ? 'Hide' : 'Show'}
+            </button>
+          </div>
+        </div>
+        <div className="sm:col-span-2">
+          <label htmlFor="rzp-webhook" className="block text-sm font-medium text-[#1a1a1a] mb-1">Webhook Secret</label>
+          <input
+            id="rzp-webhook"
+            type={showSecret ? 'text' : 'password'}
+            value={form.webhook_secret}
+            onChange={e => setForm(f => ({ ...f, webhook_secret: e.target.value }))}
+            placeholder="Webhook secret from Razorpay dashboard"
+            className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
+          />
+          <p className="text-[11px] text-[#9ca3af] mt-1">
+            Set the webhook URL in Razorpay dashboard to: <code className="font-mono bg-gray-100 px-1 rounded">{typeof window !== 'undefined' ? window.location.origin : ''}/api/webhooks/razorpay</code>
+          </p>
+        </div>
+      </div>
+      <SaveBtn saving={saving} onClick={save} />
+    </div>
+  )
+}
+
 // ─── main page ────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -258,6 +345,7 @@ export default function SettingsPage() {
         {activeTab === 'Trust Badges' && <TrustBadgesTab init={(settings.trust_badges as typeof DEFAULT_TRUST) || DEFAULT_TRUST} />}
         {activeTab === 'Social Links' && <SocialLinksTab init={(settings.social_links as typeof DEFAULT_SOCIAL) || DEFAULT_SOCIAL} />}
         {activeTab === 'Shipping' && <ShippingTab init={(settings.shipping_config as typeof DEFAULT_SHIPPING) || DEFAULT_SHIPPING} />}
+        {activeTab === 'Razorpay' && <RazorpayTab init={(settings.razorpay_config as typeof DEFAULT_RAZORPAY) || DEFAULT_RAZORPAY} />}
       </div>
     </div>
   )

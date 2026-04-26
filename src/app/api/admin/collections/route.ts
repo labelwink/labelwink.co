@@ -1,27 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server'
+import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+
+export const runtime = 'nodejs'
 
 export async function GET() {
-  const supabase = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createAdminSupabaseClient() as any
   const { data, error } = await supabase
     .from('collections')
-    .select('*')
+    .select('*, products:products(count)')
     .order('sort_order', { ascending: true })
-
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data ?? [])
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createAdminSupabaseClient() as any
   const body = await req.json()
 
-  const { data, error } = await supabase
-    .from('collections')
-    .insert([body])
-    .select()
-    .single()
+  const row = {
+    name:        body.name,
+    slug:        body.slug,
+    description: body.description || null,
+    image_url:   body.image_url   || null,
+    sort_order:  body.sort_order  ?? 0,
+    visible:     body.visible     ?? true,
+  }
 
+  const { data, error } = await supabase.from('collections').insert([row]).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data, { status: 201 })
 }

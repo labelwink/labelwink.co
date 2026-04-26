@@ -12,10 +12,10 @@ export async function GET(req: NextRequest) {
   const PAGE_SIZE = 25
 
   let query = supabase
-    .from('reviews')
+    .from('return_requests')
     .select(
-      `id, rating, title, body, status, is_verified, created_at,
-       products ( id, name, slug ),
+      `id, reason, status, admin_note, refund_amount, created_at,
+       orders ( id, total, customer_name, customer_email, customer_phone ),
        profiles ( id, full_name, email )`,
       { count: 'exact' }
     )
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({
-    reviews: data ?? [],
+    returns: data ?? [],
     total: count ?? 0,
     page,
     totalPages: Math.ceil((count ?? 0) / PAGE_SIZE),
