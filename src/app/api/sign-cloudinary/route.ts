@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import cloudinary from '@/lib/cloudinary'
+import { requireAdmin } from '@/lib/requireAdmin'
 
 export async function POST(req: NextRequest) {
+  const guard = await requireAdmin()
+  if (guard) return guard
   try {
     const body = await req.json()
     const { paramsToSign } = body

@@ -94,6 +94,12 @@ const SUBJECTS: Record<string, string> = {
 }
 
 export async function POST(req: NextRequest) {
+  // ── Internal-only guard ──────────────────────────────────────────────────────
+  const internalSecret = process.env.INTERNAL_SECRET
+  if (!internalSecret || req.headers.get('x-internal-secret') !== internalSecret) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const payload: Payload = await req.json()
 
   if (!payload.to || !payload.type) {

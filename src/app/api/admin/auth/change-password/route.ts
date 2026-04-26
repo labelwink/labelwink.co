@@ -1,24 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAdminToken } from '@/lib/adminAuth'
+import { createClient } from '@supabase/supabase-js'
+import { requireAdmin } from '@/lib/requireAdmin'
 
+export const runtime = 'nodejs'
+
+/**
+ * POST /api/admin/auth/change-password
+ *
+ * Changes the Supabase Auth password for the currently logged-in admin user.
+ * The admin must supply their current password so Supabase can re-authenticate,
+ * then we call supabase.auth.updateUser() to set the new one.
+ *
+ * Body: { newPassword: string; confirmPassword: string }
+ */
 export async function POST(req: NextRequest) {
-  const token = req.cookies.get('admin_session')?.value
-  if (!token || !(await verifyAdminToken(token))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const guard = await requireAdmin()
+  if (guard) return guard
 
-  let body: { currentPassword?: string; newPassword?: string; confirmPassword?: string }
+  let body: { newPassword?: string; confirmPassword?: string; email?: string; currentPassword?: string }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { currentPassword, newPassword, confirmPassword } = body
-
-  if (currentPassword !== process.env.ADMIN_PASSWORD) {
-    return NextResponse.json({ error: 'Current password is incorrect' }, { status: 401 })
-  }
+  const { newPassword, confirmPassword, email, currentPassword } = body
 
   if (!newPassword || newPassword.length < 8) {
     return NextResponse.json({ error: 'New password must be at least 8 characters' }, { status: 400 })
@@ -28,8 +34,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 })
   }
 
-  return NextResponse.json({
-    success: true,
-    message: 'Update ADMIN_PASSWORD in your .env.local and redeploy. Cannot update environment variables at runtime.',
+  // Re-authenticate with current credentials to get a session, then update password
+  if (!email || !currentPassword) {
+    return NextResponse.json({ error: 'email and currentPassword required' }, { status: 400 })
+  }
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  // Sign in to verify current credentials
+  const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password: currentPassword,
   })
+
+  if (signInError || !user) {
+    return NextResponse.json({ error: 'Current credentials are incorrect' }, { status: 401 })
+  }
+
+  // Update password via Admin API (service role can update any user)
+  const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, {
+    password: newPassword,
+  })
+
+  if (updateError) {
+    return NextResponse.json({ error: updateError.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true, message: 'Password updated successfully.' })
 }

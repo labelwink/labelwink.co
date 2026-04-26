@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/requireAdmin'
 
 export const runtime = 'nodejs'
 type Ctx = { params: Promise<{ id: string }> }
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
+  const guard = await requireAdmin()
+  if (guard) return guard
   const { id }    = await params
   const supabase  = createAdminClient()
   const body      = await req.json()
@@ -51,7 +54,10 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     try {
       await fetch(`${siteUrl}/api/send-email`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-secret': process.env.INTERNAL_SECRET ?? '',
+        },
         body: JSON.stringify({
           to:   customerEmail,
           type: emailType,

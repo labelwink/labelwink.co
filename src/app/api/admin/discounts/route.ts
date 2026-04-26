@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/requireAdmin'
 
 export const runtime = 'nodejs'
 
@@ -15,6 +16,8 @@ const toISO = (dateStr: string | undefined | null): string | null => {
 
 // ── GET — list discount codes ───────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
+  const guard = await requireAdmin()
+  if (guard) return guard
   const supabase = createAdminClient()
   const { searchParams } = new URL(req.url)
   const active = searchParams.get('active')
@@ -45,6 +48,8 @@ export async function GET(req: NextRequest) {
 
 // ── POST — create discount code ─────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const guard = await requireAdmin()
+  if (guard) return guard
   const supabase = createAdminClient()
   const body = await req.json()
 
@@ -84,6 +89,8 @@ export async function POST(req: NextRequest) {
 
 // ── PATCH — update discount code ────────────────────────────────────────────────
 export async function PATCH(req: NextRequest) {
+  const guard = await requireAdmin()
+  if (guard) return guard
   const supabase = createAdminClient()
   const { id, ...updates } = await req.json()
   if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 })
@@ -109,6 +116,8 @@ export async function PATCH(req: NextRequest) {
 
 // ── DELETE — remove discount code ───────────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
+  const guard = await requireAdmin()
+  if (guard) return guard
   const supabase = createAdminClient()
   const { id } = await req.json()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

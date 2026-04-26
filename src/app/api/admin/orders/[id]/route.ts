@@ -2,63 +2,71 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 import { createAdminClient } from '@/lib/supabase/server'
 import { createShiprocketOrder } from '@/lib/shiprocket'
+import { requireAdmin } from '@/lib/requireAdmin'
 
 export const runtime = 'nodejs'
 
 type RouteContext = { params: Promise<{ id: string }> }
 
 export async function GET(_: NextRequest, { params }: RouteContext) {
-  const { id } = await params
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = createAdminSupabaseClient() as any
+  const guard = await requireAdmin()
+  if (guard) return guard
+  try {
+    const { id } = await params
+    const supabase = createAdminSupabaseClient()
 
-  // Fetch order + related items + invoice + status history in parallel
-  const [orderRes, itemsRes, invoiceRes, historyRes] = await Promise.all([
-    supabase.from('orders').select('*').eq('id', id).single(),
+    const [orderRes, itemsRes, invoiceRes, historyRes] = await Promise.all([
+      supabase.from('orders').select('*').eq('id', id).single(),
 
-    supabase
-      .from('order_items')
-      .select(`
-        id, quantity,
-        price_at_purchase, price,
-        variant_size, size,
-        variant_color, color,
-        product_name,
-        product_id,
-        products:product_id(name, id, slug)
-      `)
-      .eq('order_id', id),
+      supabase
+        .from('order_items')
+        .select(`
+          id, quantity,
+          price_at_purchase,
+          variant_size, variant_color,
+          product_name,
+          product_id,
+          image_url,
+          products:product_id(name, id, slug)
+        `)
+        .eq('order_id', id),
 
-    supabase
-      .from('invoices')
-      .select('invoice_number, issued_at, cgst, sgst, igst, total')
-      .eq('order_id', id)
-      .maybeSingle(),
+      supabase
+        .from('invoices')
+        .select('invoice_number, issued_at, cgst, sgst, igst, total')
+        .eq('order_id', id)
+        .maybeSingle(),
 
-    supabase
-      .from('order_status_history')
-      .select('status, note, changed_by, created_at')
-      .eq('order_id', id)
-      .order('created_at', { ascending: false })
-      .limit(20),
-  ])
+      supabase
+        .from('order_status_history')
+        .select('status, note, changed_by, created_at')
+        .eq('order_id', id)
+        .order('created_at', { ascending: false })
+        .limit(20),
+    ])
 
-  if (orderRes.error || !orderRes.data) {
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    if (orderRes.error || !orderRes.data) {
+      console.error('[GET /api/admin/orders/[id]]', orderRes.error)
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      ...orderRes.data,
+      order_items: itemsRes.data ?? [],
+      invoice: invoiceRes.data ?? null,
+      status_history: historyRes.data ?? [],
+    })
+  } catch (err: any) {
+    console.error('[GET /api/admin/orders/[id]] unexpected:', { id, error: err })
+    return NextResponse.json({ error: err?.message ?? 'Unknown error' }, { status: 500 })
   }
-
-  return NextResponse.json({
-    ...orderRes.data,
-    order_items: itemsRes.data ?? [],
-    invoice: invoiceRes.data ?? null,
-    status_history: historyRes.data ?? [],
-  })
 }
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
+  const guard = await requireAdmin()
+  if (guard) return guard
   const { id } = await params
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = createAdminSupabaseClient() as any
+  const supabase = createAdminSupabaseClient()
 
   let body: Record<string, unknown>
   try {
@@ -68,17 +76,26 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
   }
 
   // Only allow safe fields to be patched
-  const allowed = [
+  const allowedFields = [
     'status', 'admin_note', 'shipping_carrier', 'tracking_number',
     'tracking_url', 'shiprocket_order_id', 'shiprocket_awb', 'label_url',
   ]
   const patch: Record<string, unknown> = {}
-  for (const key of allowed) {
+  for (const key of allowedFields) {
     if (key in body) patch[key] = body[key]
   }
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+  }
+
+  // Validate status value if being changed
+  const VALID_STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'cancelled']
+  if ('status' in patch && !VALID_STATUSES.includes(patch.status as string)) {
+    return NextResponse.json(
+      { error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}` },
+      { status: 400 }
+    )
   }
 
   const { data, error } = await supabase
@@ -88,7 +105,10 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[PATCH /api/admin/orders/[id]]', { id, patch, error })
+    return NextResponse.json({ error: error.message ?? 'DB update failed' }, { status: 500 })
+  }
 
   // ── Auto-push to Shiprocket when status moves to 'processing' ─────────────────
   const newStatus = patch.status as string | undefined
@@ -142,7 +162,10 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
           const awb = fullOrder.shiprocket_awb || fullOrder.tracking_number || patch.tracking_number || ''
           await fetch(`${siteUrl}/api/send-email`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'x-internal-secret': process.env.INTERNAL_SECRET ?? '',
+            },
             body: JSON.stringify({
               to:    fullOrder.customer_email,
               type:  'order_shipped',
@@ -157,7 +180,10 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
           // Send delivered email
           await fetch(`${siteUrl}/api/send-email`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'x-internal-secret': process.env.INTERNAL_SECRET ?? '',
+            },
             body: JSON.stringify({
               to:    fullOrder.customer_email,
               type:  'order_delivered',

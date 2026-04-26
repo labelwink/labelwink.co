@@ -66,7 +66,10 @@ export async function POST(req: Request) {
       try {
         await fetch(`${siteUrl}/api/send-email`, {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-internal-secret': process.env.INTERNAL_SECRET ?? '',
+          },
           body: JSON.stringify({
             to:    profile.email,
             type:  'back_in_stock',

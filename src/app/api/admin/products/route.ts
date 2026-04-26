@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/requireAdmin'
 
 export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
+  const guard = await requireAdmin()
+  if (guard) return guard
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminSupabaseClient() as any
   const { searchParams } = new URL(req.url)
@@ -42,6 +45,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const guard = await requireAdmin()
+  if (guard) return guard
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminSupabaseClient() as any
   const body = await req.json()

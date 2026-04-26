@@ -225,9 +225,9 @@ export function Navbar() {
                 </button>
               } />
               <DropdownMenuContent align="end" className="w-56 rounded-none border-sage/20 shadow-xl">
-                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest opacity-50">My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
                 <DropdownMenuGroup>
+                  <DropdownMenuLabel className="text-[10px] uppercase tracking-widest opacity-50">My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem className="cursor-pointer font-bold uppercase tracking-widest text-[10px] py-3 focus:bg-teal focus:text-white" onClick={() => window.location.href = '/account'}>
                     Dashboard
                   </DropdownMenuItem>

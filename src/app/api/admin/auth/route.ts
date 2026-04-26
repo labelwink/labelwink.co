@@ -1,34 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { signAdminToken } from '@/lib/adminAuth'
+import { adminAuthLimiter } from '@/lib/ratelimit'
 
-// In-memory rate limiting
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-
-function getRateLimitKey(req: NextRequest): string {
-  return req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown'
-}
-
-function checkRateLimit(key: string): boolean {
-  const now = Date.now()
-  const record = rateLimitMap.get(key)
-
-  if (!record || now > record.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + 60_000 })
-    return true
-  }
-
-  if (record.count >= 5) return false
-
-  record.count++
-  return true
-}
+export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
-  const ip = getRateLimitKey(req)
+  // ── Persistent rate limit: 5 attempts per 15 min per IP ─────────────────────
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+    req.headers.get('x-real-ip') ??
+    'unknown'
 
-  if (!checkRateLimit(ip)) {
-    return NextResponse.json({ error: 'Too many attempts. Try again in 1 minute.' }, { status: 429 })
+  const { success } = await adminAuthLimiter.limit(ip)
+  if (!success) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Try again in 15 minutes.' },
+      { status: 429 }
+    )
   }
 
   let body: { email?: string; password?: string }
@@ -63,7 +52,7 @@ export async function POST(req: NextRequest) {
   const response = NextResponse.json({ success: true })
   response.cookies.set('admin_session', token, {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: 'strict',
     path: '/',
     maxAge: 86400,
     secure: process.env.NODE_ENV === 'production',
@@ -71,3 +60,4 @@ export async function POST(req: NextRequest) {
 
   return response
 }
+

@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/requireAdmin'
 
 // GET — fetch last 20 notifications
 export async function GET() {
+  const guard = await requireAdmin()
+  if (guard) return guard
   const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('admin_notifications')
@@ -16,6 +19,8 @@ export async function GET() {
 
 // PATCH — mark one or all as read
 export async function PATCH(req: NextRequest) {
+  const guard = await requireAdmin()
+  if (guard) return guard
   const supabase = createAdminClient()
   const body = await req.json()
 

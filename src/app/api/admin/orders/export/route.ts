@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/requireAdmin'
 
 export const runtime = 'nodejs'
 
@@ -36,6 +37,8 @@ interface ExportOrder {
  * No pagination — exports all matching rows (max 10 000).
  */
 export async function GET(req: NextRequest) {
+  const guard = await requireAdmin()
+  if (guard) return guard
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminSupabaseClient() as any
   const { searchParams } = new URL(req.url)

@@ -7,75 +7,99 @@ async function getUser() {
   return { supabase, user };
 }
 
-// GET /api/storefront/wishlist — fetch all wishlisted products for current user
+// GET /api/storefront/wishlist
 export async function GET() {
-  const { supabase, user } = await getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const { supabase, user } = await getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { data, error } = await supabase
-    .from('wishlists')
-    .select(`
-      id,
-      product_id,
-      products (
+    const { data, error } = await supabase
+      .from('wishlists')
+      .select(`
         id,
-        name,
-        slug,
-        product_variants ( id, price, mrp, image_public_ids, color, size ),
-        product_images ( url, cloudinary_public_id )
-      )
-    `)
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+        product_id,
+        products (
+          id,
+          name,
+          slug,
+          product_variants ( id, price, mrp, color, size ),
+          product_images ( url, alt, is_cover )
+        )
+      `)
+      .eq('user_id', user.id)
+      .eq('product_images.is_cover', true)
+      .order('added_at', { ascending: false });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[GET /api/storefront/wishlist]', { userId: user.id, error });
+      return NextResponse.json({ error: error.message ?? 'Fetch failed' }, { status: 500 });
+    }
 
-  const items = (data || []).map((row: any) => ({
-    wishlist_id: row.id,
-    product_id: row.product_id,
-    product: row.products,
-  }));
+    const items = (data || []).map((row: any) => ({
+      wishlist_id: row.id,
+      product_id: row.product_id,
+      product: row.products,
+    }));
 
-  return NextResponse.json(items);
+    return NextResponse.json(items);
+  } catch (err: any) {
+    console.error('[GET /api/storefront/wishlist] unexpected:', { error: err });
+    return NextResponse.json({ error: err?.message ?? 'Unknown error' }, { status: 500 });
+  }
 }
 
-// POST /api/storefront/wishlist — add product to wishlist
+// POST /api/storefront/wishlist
 export async function POST(req: NextRequest) {
-  const { supabase, user } = await getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const { supabase, user } = await getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { product_id } = await req.json();
-  if (!product_id) return NextResponse.json({ error: 'product_id required' }, { status: 400 });
+    const body = await req.json();
+    const { product_id } = body;
+    if (!product_id) return NextResponse.json({ error: 'product_id required' }, { status: 400 });
 
-  const { error } = await supabase
-    .from('wishlists')
-    .insert({ user_id: user.id, product_id })
-    .select()
-    .single();
+    const { error } = await supabase
+      .from('wishlists')
+      .insert({ user_id: user.id, product_id })
+      .select()
+      .single();
 
-  // ON CONFLICT DO NOTHING — Supabase returns 409/23505 for unique violations; ignore
-  if (error && error.code !== '23505') {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // 23505 = unique_violation — already wishlisted, treat as success
+    if (error && error.code !== '23505') {
+      console.error('[POST /api/storefront/wishlist]', { userId: user.id, product_id, error });
+      return NextResponse.json({ error: error.message ?? 'Insert failed' }, { status: 500 });
+    }
+
+    return NextResponse.json({ added: true });
+  } catch (err: any) {
+    console.error('[POST /api/storefront/wishlist] unexpected:', { error: err });
+    return NextResponse.json({ error: err?.message ?? 'Unknown error' }, { status: 500 });
   }
-
-  return NextResponse.json({ added: true });
 }
 
 // DELETE /api/storefront/wishlist?product_id=xxx
 export async function DELETE(req: NextRequest) {
-  const { supabase, user } = await getUser();
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const { supabase, user } = await getUser();
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const product_id = new URL(req.url).searchParams.get('product_id');
-  if (!product_id) return NextResponse.json({ error: 'product_id required' }, { status: 400 });
+    const product_id = new URL(req.url).searchParams.get('product_id');
+    if (!product_id) return NextResponse.json({ error: 'product_id required' }, { status: 400 });
 
-  const { error } = await supabase
-    .from('wishlists')
-    .delete()
-    .eq('user_id', user.id)
-    .eq('product_id', product_id);
+    const { error } = await supabase
+      .from('wishlists')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('product_id', product_id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error('[DELETE /api/storefront/wishlist]', { userId: user.id, product_id, error });
+      return NextResponse.json({ error: error.message ?? 'Delete failed' }, { status: 500 });
+    }
 
-  return NextResponse.json({ removed: true });
+    return NextResponse.json({ removed: true });
+  } catch (err: any) {
+    console.error('[DELETE /api/storefront/wishlist] unexpected:', { error: err });
+    return NextResponse.json({ error: err?.message ?? 'Unknown error' }, { status: 500 });
+  }
 }

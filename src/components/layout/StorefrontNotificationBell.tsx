@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Bell, Package, RotateCcw, Star, X, CheckCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import Link from 'next/link';
 
 interface OrderNotification {
@@ -48,6 +49,8 @@ export function StorefrontNotificationBell() {
   const [user, setUser] = useState<{ id: string } | null>(null);
   const [notifications, setNotifications] = useState<OrderNotification[]>([]);
   const [open, setOpen] = useState(false);
+  // Keep a stable ref so cleanup always has access to the latest channel
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const unread = notifications.filter(n => !n.is_read).length;
 
@@ -59,29 +62,47 @@ export function StorefrontNotificationBell() {
       .order('created_at', { ascending: false })
       .limit(20);
     if (data) setNotifications(data as OrderNotification[]);
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
+    let cancelled = false;
+
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled || !user) return;
+
       setUser(user);
       fetchNotifications(user.id);
 
-      // Real-time subscription
+      // IMPORTANT: chain .on() BEFORE .subscribe()
       const channel = supabase
         .channel(`customer_notifications_${user.id}`)
-        .on('postgres_changes', {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'customer_notifications',
-          filter: `user_id=eq.${user.id}`,
-        }, (payload) => {
-          setNotifications(prev => [payload.new as OrderNotification, ...prev]);
-        })
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'customer_notifications',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            setNotifications(prev => [payload.new as OrderNotification, ...prev]);
+          }
+        )
         .subscribe();
 
-      return () => { supabase.removeChannel(channel); };
-    });
+      channelRef.current = channel;
+    }
+
+    init();
+
+    return () => {
+      cancelled = true;
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

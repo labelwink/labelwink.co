@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/requireAdmin'
 
 export const runtime = 'nodejs'
 type Ctx = { params: Promise<{ id: string }> }
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
+  const guard = await requireAdmin()
+  if (guard) return guard
   const { id } = await params
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminSupabaseClient() as any
@@ -24,6 +27,8 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 }
 
 export async function DELETE(_: NextRequest, { params }: Ctx) {
+  const guard = await requireAdmin()
+  if (guard) return guard
   const { id } = await params
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminSupabaseClient() as any

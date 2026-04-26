@@ -110,7 +110,10 @@ export async function POST(req: NextRequest) {
     try {
       await fetch(`${siteUrl}/api/send-email`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-secret': process.env.INTERNAL_SECRET ?? '',
+        },
         body: JSON.stringify({
           to:    order.customer_email,
           type:  'order_confirmed',
