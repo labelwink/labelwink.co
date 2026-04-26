@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   ShoppingBag, ChevronRight, Truck, ShieldCheck,
-  CreditCard, Loader2, Tag, CheckCircle2, MapPin, ChevronDown,
+  CreditCard, Loader2, Tag, CheckCircle2, MapPin, ChevronDown, Gift,
 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -55,6 +55,10 @@ export default function CheckoutPage() {
     code: '', status: 'idle', discount: 0, type: null, value: 0, message: '',
   });
 
+  const [availablePoints, setAvailablePoints] = useState(0);
+  const [pointsToRedeem, setPointsToRedeem]   = useState(0);
+  const [usePoints,      setUsePoints]         = useState(false);
+
   const [formData, setFormData] = useState({
     email: '', fullName: '', address: '',
     city: '', state: '', pincode: '', phone: '',
@@ -84,12 +88,19 @@ export default function CheckoutPage() {
         }
       })
       .catch(() => {});
+
+    // Load loyalty points balance
+    fetch('/api/storefront/loyalty')
+      .then(r => r.json())
+      .then(d => { if (d.points) setAvailablePoints(d.points); })
+      .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const shipping = subtotal >= freeThreshold ? 0 : 99;
-  const discountAmt = coupon.status === 'valid' ? coupon.discount : 0;
-  const total = subtotal + shipping - discountAmt;
+  const shipping     = subtotal >= freeThreshold ? 0 : 99;
+  const discountAmt  = coupon.status === 'valid' ? coupon.discount : 0;
+  const pointsDiscount = usePoints ? Math.min(pointsToRedeem, availablePoints, Math.floor(subtotal * 0.5)) : 0;
+  const total        = subtotal + shipping - discountAmt - pointsDiscount;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -173,6 +184,7 @@ export default function CheckoutPage() {
         customerPhone: formData.phone,
         couponCode:    coupon.status === 'valid' ? coupon.code.toUpperCase() : undefined,
         discountAmount: discountAmt,
+        pointsToRedeem: pointsDiscount > 0 ? pointsDiscount : undefined,
       });
 
       if (result.error) {
@@ -386,6 +398,55 @@ export default function CheckoutPage() {
                 )}
               </section>
 
+              {/* Section 2b: Wink Points */}
+              {availablePoints > 0 && (
+                <section className="space-y-3">
+                  <div className="flex items-center justify-between p-4 border border-amber-200 bg-amber-50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Gift className="w-4 h-4 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-charcoal">
+                          {availablePoints.toLocaleString('en-IN')} Wink Points available
+                        </p>
+                        <p className="text-[10px] text-charcoal/50 mt-0.5">1 point = ₹1 off (max 50% of subtotal)</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUsePoints(u => !u);
+                        if (!usePoints) setPointsToRedeem(Math.min(availablePoints, Math.floor(subtotal * 0.5)));
+                        else setPointsToRedeem(0);
+                      }}
+                      className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
+                        usePoints ? 'bg-amber-500' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                        usePoints ? 'translate-x-5' : 'translate-x-0'
+                      }`} />
+                    </button>
+                  </div>
+                  {usePoints && (
+                    <div className="flex items-center gap-3 px-1">
+                      <input
+                        type="range"
+                        min={1}
+                        max={Math.min(availablePoints, Math.floor(subtotal * 0.5))}
+                        value={pointsToRedeem}
+                        onChange={e => setPointsToRedeem(Number(e.target.value))}
+                        className="flex-1 accent-amber-500"
+                      />
+                      <span className="text-sm font-bold text-amber-600 w-16 text-right">
+                        ₹{pointsToRedeem.toLocaleString('en-IN')} off
+                      </span>
+                    </div>
+                  )}
+                </section>
+              )}
+
               {/* Section 3: Payment */}
               <section className="space-y-4">
                 <h2 className="text-sm font-bold uppercase tracking-[0.2em] flex items-center gap-3">
@@ -471,8 +532,14 @@ export default function CheckoutPage() {
               </div>
               {discountAmt > 0 && (
                 <div className="flex justify-between text-green-600 font-semibold">
-                  <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> Discount</span>
+                  <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> Coupon</span>
                   <span>−₹{discountAmt.toLocaleString('en-IN')}</span>
+                </div>
+              )}
+              {pointsDiscount > 0 && (
+                <div className="flex justify-between text-amber-600 font-semibold">
+                  <span className="flex items-center gap-1"><Gift className="w-3.5 h-3.5" /> Wink Points</span>
+                  <span>−₹{pointsDiscount.toLocaleString('en-IN')}</span>
                 </div>
               )}
               <div className="flex justify-between text-xl font-heading font-bold pt-3 border-t border-sage/10 text-charcoal">

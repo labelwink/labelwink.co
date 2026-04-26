@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/supabase/server'
+import { createShiprocketOrder } from '@/lib/shiprocket'
 
 export const runtime = 'nodejs'
 
@@ -12,15 +14,19 @@ export async function GET(_: NextRequest, { params }: RouteContext) {
 
   // Fetch order + related items + invoice + status history in parallel
   const [orderRes, itemsRes, invoiceRes, historyRes] = await Promise.all([
-    supabase
-      .from('orders')
-      .select('*')
-      .eq('id', id)
-      .single(),
+    supabase.from('orders').select('*').eq('id', id).single(),
 
     supabase
       .from('order_items')
-      .select('id, quantity, price, size, color, product_id, products:product_id(name, id)')
+      .select(`
+        id, quantity,
+        price_at_purchase, price,
+        variant_size, size,
+        variant_color, color,
+        product_name,
+        product_id,
+        products:product_id(name, id, slug)
+      `)
       .eq('order_id', id),
 
     supabase
@@ -77,11 +83,48 @@ export async function PATCH(req: NextRequest, { params }: RouteContext) {
 
   const { data, error } = await supabase
     .from('orders')
-    .update(patch)
+    .update({ ...patch, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // ── Auto-push to Shiprocket when status moves to 'processing' ─────────────────
+  const newStatus = patch.status as string | undefined
+  if (
+    (newStatus === 'processing' || newStatus === 'confirmed') &&
+    !data.shiprocket_order_id
+  ) {
+    try {
+      const adminSupabase = createAdminClient()
+      const { data: fullOrder } = await adminSupabase
+        .from('orders')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (fullOrder) {
+        const srData = await createShiprocketOrder(fullOrder)
+        if (srData?.order_id) {
+          await adminSupabase
+            .from('orders')
+            .update({
+              shiprocket_order_id: String(srData.order_id),
+              label_url:           srData.label_url || null,
+            })
+            .eq('id', id)
+          // Add shipping label to response if available
+          data.shiprocket_order_id = String(srData.order_id)
+          data.label_url           = srData.label_url || null
+        }
+      }
+    } catch (srErr) {
+      // Non-fatal — Shiprocket push can be retried manually
+      console.warn('[Shiprocket] Auto-push failed:', srErr)
+    }
+  }
+
   return NextResponse.json(data)
 }
+

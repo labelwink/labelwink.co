@@ -21,6 +21,7 @@ export interface CheckoutData {
   subtotal: number;
   couponCode?: string;
   discountAmount?: number;
+  pointsToRedeem?: number;   // wink_points to spend (each = ₹1 off)
   address: {
     email?: string;
     fullName?: string;
@@ -103,10 +104,29 @@ export async function createOrder(checkoutData: CheckoutData) {
     }
   }
 
-  // Use client-provided discount if server calc is 0 and client has one
-  // (e.g. free_shipping coupon doesn't set discountAmount but client validated it)
+  // Use client-provided discount if server calc is 0
   if (discountAmount === 0 && checkoutData.discountAmount && checkoutData.discountAmount > 0) {
     discountAmount = checkoutData.discountAmount;
+  }
+
+  // ── 4. Loyalty points redemption ─────────────────────────────────────────────
+  let pointsUsed = 0;
+  if (checkoutData.pointsToRedeem && checkoutData.pointsToRedeem > 0 && checkoutData.userId) {
+    // Validate the user actually has enough points
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('wink_points')
+      .eq('id', checkoutData.userId)
+      .single();
+
+    const availablePoints = profile?.wink_points || 0;
+    const requestedPoints = Math.floor(checkoutData.pointsToRedeem);
+    const maxPointsAllowed = Math.floor(checkoutData.subtotal * 0.5); // max 50% of subtotal
+
+    pointsUsed = Math.min(requestedPoints, availablePoints, maxPointsAllowed);
+    if (pointsUsed > 0) {
+      discountAmount += pointsUsed; // 1 point = ₹1
+    }
   }
 
   const total = Math.max(0, checkoutData.subtotal - discountAmount + shippingFee);
@@ -141,6 +161,7 @@ export async function createOrder(checkoutData: CheckoutData) {
       coupon_code:       checkoutData.couponCode  || null,
       shipping_fee:      shippingFee,
       shipping_amount:   shippingFee,
+      loyalty_points_used: pointsUsed,
       total,
       status:            'pending',
       customer_name:     customerName,
@@ -197,7 +218,22 @@ export async function createOrder(checkoutData: CheckoutData) {
     } catch { /* non-fatal */ }
   }
 
-  // ── 8. Admin notification ────────────────────────────────────────────────────
+  // ── 8. Deduct loyalty points ──────────────────────────────────────────────────
+  if (pointsUsed > 0 && checkoutData.userId) {
+    try {
+      await supabase
+        .from('profiles')
+        .update({ wink_points: supabase.rpc('decrement_wink_points', { user_id: checkoutData.userId, amount: pointsUsed }) })
+        .eq('id', checkoutData.userId);
+      // Fallback: direct decrement
+      const { data: prof } = await supabase.from('profiles').select('wink_points').eq('id', checkoutData.userId).single();
+      if (prof) {
+        await supabase.from('profiles').update({ wink_points: Math.max(0, (prof.wink_points || 0) - pointsUsed) }).eq('id', checkoutData.userId);
+      }
+    } catch { /* non-fatal */ }
+  }
+
+  // ── 9. Admin notification ────────────────────────────────────────────────────
   const shortId       = order.id.slice(0, 8).toUpperCase();
   const customerLabel = customerName || customerEmail || 'A customer';
   try {

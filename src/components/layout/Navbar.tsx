@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import { useCartStore } from '@/store/useCartStore';
 import { createClient } from '@/lib/supabase/client';
 import { SearchModal } from '@/components/storefront/SearchModal';
+import { StorefrontNotificationBell } from '@/components/layout/StorefrontNotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -210,6 +211,9 @@ export function Navbar() {
           >
             <Search className="h-5 w-5" />
           </button>
+
+          {/* Notification bell — only visible when logged in */}
+          <StorefrontNotificationBell />
 
           {/* Account — desktop dropdown only */}
           {user ? (
