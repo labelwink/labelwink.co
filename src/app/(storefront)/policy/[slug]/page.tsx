@@ -1,26 +1,27 @@
-import { readFileSync } from 'fs'
-import { join } from 'path'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { createAdminClient } from '@/lib/supabase/server'
 
 export const revalidate = 60
 
+// Map URL slugs → cms_content page keys
 const policyMap: Record<string, string> = {
-  'privacy-policy': 'privacy',
-  'return-refund-policy': 'returns',
-  'shipping-policy': 'shipping',
-  'terms-and-conditions': 'terms',
+  'privacy-policy': 'privacy-policy',
+  'return-refund-policy': 'return-refund-policy',
+  'shipping-policy': 'shipping-policy',
+  'terms-and-conditions': 'terms-and-conditions',
 }
 
-function getPolicyData(slug: string) {
-  const key = policyMap[slug]
-  if (!key) return null
-  try {
-    const raw = readFileSync(join(process.cwd(), 'data', 'policies', `${key}.json`), 'utf-8')
-    return JSON.parse(raw)
-  } catch {
-    return null
-  }
+async function getPolicyData(slug: string) {
+  const page = policyMap[slug]
+  if (!page) return null
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('cms_content')
+    .select('content')
+    .eq('page', page)
+    .single()
+  return (data?.content as { title?: string; body?: string; last_updated?: string } | null) ?? null
 }
 
 function formatDate(dateStr: string) {
@@ -33,38 +34,42 @@ function formatDate(dateStr: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const data = getPolicyData(slug)
+  const data = await getPolicyData(slug)
   if (!data) return { title: 'Policy Not Found' }
   return {
-    title: `${data.title} | Label Wink`,
-    description: data.description || data.title,
+    title: `${data.title || slug} | Label Wink`,
+    description: data.title || slug,
   }
 }
 
 export default async function PolicyPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const data = getPolicyData(slug)
+  const data = await getPolicyData(slug)
   if (!data) notFound()
 
+  const { title, body, last_updated } = data
+
   return (
-    <div>
+    <div className="max-w-3xl mx-auto px-4 py-12">
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-500 mb-6 flex items-center gap-2 flex-wrap">
         <Link href="/" className="hover:text-[#1b3a34] transition-colors">Home</Link>
         <span>›</span>
         <Link href="/policy/privacy-policy" className="hover:text-[#1b3a34] transition-colors">Policies</Link>
         <span>›</span>
-        <span className="text-gray-700">{data.title}</span>
+        <span className="text-gray-700">{title || slug}</span>
       </nav>
 
-      <h1 className="text-3xl font-bold text-[#1b3a34] mb-2">{data.title}</h1>
-      {data.last_updated && (
-        <p className="text-gray-400 text-sm mb-8">Last Updated: {formatDate(data.last_updated)}</p>
+      <h1 className="text-2xl md:text-4xl font-serif text-[#1a3a34] mb-4">{title || slug}</h1>
+
+      {last_updated && (
+        <p className="text-gray-400 text-sm mb-8">Last Updated: {formatDate(last_updated)}</p>
       )}
 
-      <article className="prose prose-headings:text-[#1b3a34] max-w-none">
-        <div dangerouslySetInnerHTML={{ __html: data.content }} />
-      </article>
+      <div
+        className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+        dangerouslySetInnerHTML={{ __html: body || '<p>Content coming soon.</p>' }}
+      />
     </div>
   )
 }

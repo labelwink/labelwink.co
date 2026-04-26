@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, ShoppingBag, User, Menu, Heart, LogOut } from 'lucide-react';
+import { Search, ShoppingBag, User, Menu, Heart, LogOut, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { useCartStore } from '@/store/useCartStore';
@@ -19,18 +19,19 @@ import {
   DropdownMenuGroup
 } from "@/components/ui/dropdown-menu";
 
-// Initial fallback items
-const defaultNavItems = [
-  { label: 'New Arrivals', href: '/collections/new-arrivals' },
-  { label: 'Kurtas', href: '/collections/kurtas' },
-  { label: 'Co-ords', href: '/collections/co-ords' },
-  { label: 'Dresses', href: '/collections/dresses' },
-  { label: 'Sale', href: '/collections/sale', className: 'text-red-400' },
+const categories = [
+  { name: 'Kurtas', href: '/products?category=kurtas' },
+  { name: 'Sarees', href: '/products?category=sarees' },
+  { name: 'Lehengas', href: '/products?category=lehengas' },
+  { name: 'Suits', href: '/products?category=suits' },
+  { name: 'Dupattas', href: '/products?category=dupattas' },
+  { name: 'Fusion Wear', href: '/products?category=fusion-wear' },
 ];
 
-export function Navbar({ navItems = defaultNavItems }: { navItems?: Array<{ label: string, href: string, className?: string }> }) {
+export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileCatOpen, setMobileCatOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
   const { getTotals, setIsOpen } = useCartStore();
@@ -77,16 +78,50 @@ export function Navbar({ navItems = defaultNavItems }: { navItems?: Array<{ labe
                   Label Wink
                 </div>
                 <nav className="flex-1 py-2 overflow-y-auto">
-                  {navItems.map((item) => (
-                    <Link
-                      key={item.label || (item as any).name}
-                      href={item.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`block px-6 py-4 text-xl border-b border-[#2d5a52] w-full text-center tracking-wider ${item.className || 'text-[#faf7f2]'}`}
-                    >
-                      {item.label || (item as any).name}
-                    </Link>
-                  ))}
+                  <Link
+                    href="/collections"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-6 py-4 text-xl border-b border-[#2d5a52] w-full text-center tracking-wider text-[#faf7f2]"
+                  >
+                    Collection
+                  </Link>
+                  <Link
+                    href="/products?sort=newest"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-6 py-4 text-xl border-b border-[#2d5a52] w-full text-center tracking-wider text-[#faf7f2]"
+                  >
+                    New Arrivals
+                  </Link>
+                  <Link
+                    href="/products?discount=true"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-6 py-4 text-xl border-b border-[#2d5a52] w-full text-center tracking-wider text-red-400"
+                  >
+                    Sale
+                  </Link>
+
+                  {/* Collapsible Categories */}
+                  <button
+                    onClick={() => setMobileCatOpen(o => !o)}
+                    className="flex items-center justify-center gap-2 px-6 py-4 text-xl border-b border-[#2d5a52] w-full text-center tracking-wider text-[#faf7f2]"
+                  >
+                    Categories
+                    <ChevronDown className={`w-4 h-4 transition-transform ${mobileCatOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {mobileCatOpen && (
+                    <div className="bg-[#132e28]">
+                      {categories.map(cat => (
+                        <Link
+                          key={cat.name}
+                          href={cat.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="block px-10 py-3 text-base border-b border-[#2d5a52]/50 text-[#faf7f2]/80 hover:text-[#c9a84c] tracking-wide"
+                        >
+                          {cat.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </nav>
                 <div className="p-6 bg-[#132e28] space-y-4">
                   {user ? (
@@ -113,15 +148,42 @@ export function Navbar({ navItems = defaultNavItems }: { navItems?: Array<{ labe
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.label || (item as any).name}
-                href={item.href}
-                className={`text-xs tracking-[0.2em] font-medium text-[#faf7f2] hover:text-[#c9a84c] transition-colors ${item.className || ''}`}
-              >
-                {item.label || (item as any).name}
-              </Link>
-            ))}
+            <Link
+              href="/collections"
+              className="text-xs tracking-[0.2em] font-medium text-[#faf7f2] hover:text-[#c9a84c] transition-colors"
+            >
+              Collection
+            </Link>
+            <Link
+              href="/products?sort=newest"
+              className="text-xs tracking-[0.2em] font-medium text-[#faf7f2] hover:text-[#c9a84c] transition-colors"
+            >
+              New Arrivals
+            </Link>
+            <Link
+              href="/products?discount=true"
+              className="text-xs tracking-[0.2em] font-medium text-red-400 hover:text-red-300 transition-colors"
+            >
+              Sale
+            </Link>
+
+            {/* Categories dropdown */}
+            <div className="relative group">
+              <button className="flex items-center gap-1 text-xs tracking-[0.2em] font-medium text-[#faf7f2] hover:text-[#c9a84c] transition-colors">
+                Categories <ChevronDown className="w-3 h-3" />
+              </button>
+              <div className="absolute top-full left-0 mt-1 w-48 bg-white shadow-lg border border-[#e8e0d0] rounded z-50 py-2 hidden group-hover:block">
+                {categories.map(cat => (
+                  <Link
+                    key={cat.name}
+                    href={cat.href}
+                    className="block px-4 py-2 text-sm text-[#1a3a34] hover:text-[#c9a84c] hover:bg-[#faf7f2]"
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
           </nav>
         </div>
 

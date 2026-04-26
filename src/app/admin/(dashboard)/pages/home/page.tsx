@@ -1,8 +1,15 @@
 'use client'
 
+/*
+ * ADD COLUMN IF MISSING:
+ * ALTER TABLE collections ADD COLUMN IF NOT EXISTS is_featured boolean DEFAULT false;
+ * ALTER TABLE collections ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0;
+ */
+
 import { useState, useEffect } from 'react'
 import { useToast } from '@/components/admin/Toast'
-import { ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp, ExternalLink, GripVertical } from 'lucide-react'
+import Link from 'next/link'
 
 function Section({ title, children, defaultOpen = false }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
@@ -16,6 +23,123 @@ function Section({ title, children, defaultOpen = false }: { title: string; chil
     </div>
   )
 }
+
+// ─── Collections section ──────────────────────────────────────────────────────
+
+type Collection = {
+  id: string
+  name: string
+  slug: string
+  is_featured: boolean
+  sort_order: number
+}
+
+function CollectionsSection() {
+  const [collections, setCollections] = useState<Collection[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const { showToast, ToastComponent } = useToast()
+
+  useEffect(() => {
+    fetch('/api/admin/collections?all=true')
+      .then(r => r.json())
+      .then((d: { collections?: Collection[] } | Collection[]) => {
+        const arr: Collection[] = Array.isArray(d) ? d : (d as { collections?: Collection[] }).collections || []
+        setCollections(arr.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)))
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [])
+
+  const toggle = (id: string) =>
+    setCollections(cs => cs.map(c => c.id === id ? { ...c, is_featured: !c.is_featured } : c))
+
+  const moveUp = (i: number) => {
+    if (i === 0) return
+    setCollections(cs => {
+      const arr = [...cs]
+      ;[arr[i - 1], arr[i]] = [arr[i], arr[i - 1]]
+      return arr.map((c, idx) => ({ ...c, sort_order: idx }))
+    })
+  }
+
+  const moveDown = (i: number) => {
+    setCollections(cs => {
+      if (i >= cs.length - 1) return cs
+      const arr = [...cs]
+      ;[arr[i], arr[i + 1]] = [arr[i + 1], arr[i]]
+      return arr.map((c, idx) => ({ ...c, sort_order: idx }))
+    })
+  }
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/admin/collections/featured', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          collections.map(c => ({ id: c.id, is_featured: c.is_featured, sort_order: c.sort_order }))
+        ),
+      })
+      showToast(res.ok ? 'Saved ✓' : 'Save failed', res.ok ? 'success' : 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) return <p className="text-sm text-[#6b7280] pt-4">Loading collections…</p>
+
+  return (
+    <div className="pt-4 space-y-3">
+      {ToastComponent}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-[#6b7280]">Toggle visibility and drag to reorder collections on the homepage.</p>
+        <Link href="/admin/collections" className="flex items-center gap-1 text-sm text-[#1b3a34] hover:underline">
+          Manage Collections <ExternalLink size={12} />
+        </Link>
+      </div>
+
+      {collections.length === 0 && (
+        <p className="text-sm text-[#6b7280] py-4 text-center">No collections found.{' '}
+          <Link href="/admin/collections" className="text-[#1b3a34] underline">Add one</Link>
+        </p>
+      )}
+
+      <div className="space-y-2">
+        {collections.map((c, i) => (
+          <div key={c.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-[#e5e7eb]">
+            {/* Reorder buttons */}
+            <div className="flex flex-col gap-0.5">
+              <button onClick={() => moveUp(i)} disabled={i === 0}
+                className="text-gray-400 hover:text-gray-700 disabled:opacity-30 p-0.5"><ChevronUp size={14} /></button>
+              <button onClick={() => moveDown(i)} disabled={i === collections.length - 1}
+                className="text-gray-400 hover:text-gray-700 disabled:opacity-30 p-0.5"><ChevronDown size={14} /></button>
+            </div>
+            <GripVertical size={14} className="text-gray-300" />
+            <span className="flex-1 text-sm font-medium text-[#1a1a1a]">{c.name}</span>
+            <span className="text-xs text-[#6b7280]">/{c.slug}</span>
+            {/* Toggle */}
+            <button type="button" onClick={() => toggle(c.id)}
+              className={`relative w-10 h-5 rounded-full transition-colors ${c.is_featured ? 'bg-[#1b3a34]' : 'bg-gray-300'}`}>
+              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${c.is_featured ? 'translate-x-5' : ''}`} />
+            </button>
+            <span className={`text-xs w-16 text-right font-medium ${c.is_featured ? 'text-[#1b3a34]' : 'text-[#6b7280]'}`}>
+              {c.is_featured ? 'Featured' : 'Hidden'}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <button onClick={save} disabled={saving || collections.length === 0}
+        className="flex items-center gap-2 px-5 py-2 bg-[#1b3a34] text-white rounded-xl text-sm hover:bg-[#234d44] disabled:opacity-60">
+        {saving ? 'Saving…' : 'Save Collections Order'}
+      </button>
+    </div>
+  )
+}
+
+// ─── main page ────────────────────────────────────────────────────────────────
 
 export default function HomePageEditor() {
   const [data, setData] = useState<any>(null)
@@ -130,6 +254,11 @@ export default function HomePageEditor() {
             className="text-sm text-[#1b3a34] hover:underline">+ Add Badge</button>
           <button onClick={() => save('trust_badges', data.trust_badges)} className="block px-5 py-2 bg-[#1b3a34] text-white rounded-xl text-sm hover:bg-[#234d44]">Save All Badges</button>
         </div>
+      </Section>
+
+      {/* Collections */}
+      <Section title="Collections (Homepage Visibility)">
+        <CollectionsSection />
       </Section>
     </div>
   )

@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ProductImage } from '@/components/storefront/ProductImage';
+import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Banner {
   id: string;
   title: string;
-  cloudinary_public_id: string;
+  cloudinary_public_id?: string;
+  image_url?: string;
+  image?: string;
   subheadline?: string;
   badge?: string;
   cta_text?: string;
@@ -40,23 +42,32 @@ export function Hero({ banners }: HeroProps) {
   const current = displayBanners[currentIndex];
 
   return (
-    <section className="relative w-full h-[60vh] md:h-[85vh] min-h-[480px] overflow-hidden bg-[#1a3a34]">
+    <section className="relative w-full overflow-hidden h-[60vh] md:h-[85vh]" style={{ background: '#1a3a34' }}>
       {/* Slides */}
       {displayBanners.map((slide, i) => (
         <div
           key={slide.id}
           className={`absolute inset-0 transition-opacity duration-700 ${i === currentIndex ? 'opacity-100' : 'opacity-0'}`}
         >
-          <ProductImage
-            publicId={slide.cloudinary_public_id}
-            alt={slide.title}
-            width={1920}
-            height={1080}
-            className="w-full h-full object-cover object-top"
-            priority={i === 0}
-            quality="auto:best"
-            sizes="100vw"
-          />
+          <div className="relative w-full h-full">
+            {slide.cloudinary_public_id ? (
+              <Image
+                src={
+                  slide.cloudinary_public_id.startsWith('http')
+                    ? slide.cloudinary_public_id
+                    : `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${slide.cloudinary_public_id}`
+                }
+                alt={slide.title || 'Hero'}
+                fill
+                sizes="100vw"
+                priority={i === 0}
+                loading={i === 0 ? 'eager' : 'lazy'}
+                style={{ objectFit: 'cover', objectPosition: 'center top' }}
+              />
+            ) : (
+              <div className="w-full h-full bg-[#1a3a34]" />
+            )}
+          </div>
           {/* Subtle dark overlay for text legibility */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/10 to-transparent" />
         </div>
@@ -69,13 +80,21 @@ export function Hero({ banners }: HeroProps) {
             {current.badge}
           </span>
         )}
-        <h1 className="font-serif text-3xl md:text-5xl leading-tight mb-2">
+        <h1 className="font-serif text-xl md:text-4xl lg:text-6xl leading-tight mb-2">
           {current.title}
         </h1>
         {current.subheadline && (
-          <p className="text-xs md:text-sm text-white/75 leading-relaxed">
+          <p className="text-xs md:text-sm text-white/75 leading-relaxed mb-4">
             {current.subheadline}
           </p>
+        )}
+        {current.cta_text && current.cta_link && (
+          <a
+            href={current.cta_link}
+            className="inline-block bg-[#c9a84c] text-[#1a3a34] font-semibold text-xs tracking-wider px-5 py-2 md:px-8 md:py-3 rounded hover:bg-white transition-colors"
+          >
+            {current.cta_text}
+          </a>
         )}
       </div>
 

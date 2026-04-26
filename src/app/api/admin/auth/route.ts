@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { signAdminToken } from '@/lib/adminAuth'
 
 // In-memory rate limiting
@@ -30,15 +31,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Too many attempts. Try again in 1 minute.' }, { status: 429 })
   }
 
-  let body: { password?: string }
+  let body: { email?: string; password?: string }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  if (body.password !== process.env.ADMIN_PASSWORD) {
-    return NextResponse.json({ error: 'Invalid password' }, { status: 401 })
+  const { email, password } = body
+  if (!email || !password) {
+    return NextResponse.json({ error: 'Email and password are required' }, { status: 400 })
+  }
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data: { user }, error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error || !user) {
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+  }
+
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
   }
 
   const token = await signAdminToken({ role: 'admin' })

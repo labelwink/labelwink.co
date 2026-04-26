@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: ['10.10.1.199'],
   typescript: {
     // WASM SWC bug on Windows causes tsc to crash — skip type check at build time
     ignoreBuildErrors: true,

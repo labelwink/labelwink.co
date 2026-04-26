@@ -8,6 +8,7 @@ interface Collection {
   slug: string;
   image_cloudinary_id?: string;
   image_url?: string;
+  description?: string;
   product_count?: number;
 }
 
@@ -16,8 +17,8 @@ async function getCollections(): Promise<Collection[]> {
     const supabase = createClient();
     const { data } = await supabase
       .from('collections')
-      .select('id, name, slug, image_cloudinary_id, image_url')
-      .eq('is_active', true)
+      .select('id, name, slug, image_cloudinary_id, image_url, description')
+      .eq('visible', true)
       .order('sort_order', { ascending: true })
       .limit(6);
     return data || [];

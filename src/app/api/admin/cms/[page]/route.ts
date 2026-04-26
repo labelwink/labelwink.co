@@ -1,27 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { readFileSync, writeFileSync } from 'fs'
-import { join } from 'path'
+/*
+ * CREATE TABLE IF NOT EXISTS cms_content (
+ *   page text PRIMARY KEY,
+ *   content jsonb DEFAULT '{}',
+ *   updated_at timestamptz DEFAULT now()
+ * );
+ */
 
-const ALLOWED = ['home', 'about', 'faq', 'contact']
+import { NextRequest, NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/server'
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ page: string }> }) {
   const { page } = await params
-  if (!ALLOWED.includes(page)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  const raw = readFileSync(join(process.cwd(), 'data', 'pages', `${page}.json`), 'utf-8')
-  return NextResponse.json(JSON.parse(raw))
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('cms_content')
+    .select('content')
+    .eq('page', page)
+    .single()
+  return NextResponse.json(data?.content || {})
 }
 
-// TODO: Replace fs.writeFileSync with Supabase or Vercel Blob for production
 export async function POST(req: NextRequest, { params }: { params: Promise<{ page: string }> }) {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({
-      error: 'File writes not supported on this deployment. Configure a writable data store.',
-      hint: 'Move to Supabase JSONB columns or use Vercel Blob storage for CMS content.'
-    }, { status: 501 })
-  }
   const { page } = await params
-  if (!ALLOWED.includes(page)) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  const supabase = createAdminClient()
   const body = await req.json()
-  writeFileSync(join(process.cwd(), 'data', 'pages', `${page}.json`), JSON.stringify(body, null, 2))
+  const { error } = await supabase
+    .from('cms_content')
+    .upsert(
+      { page, content: body, updated_at: new Date().toISOString() },
+      { onConflict: 'page' }
+    )
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }
+
+export { POST as PUT }

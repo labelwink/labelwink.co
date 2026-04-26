@@ -21,6 +21,7 @@ export default function CheckoutPage() {
   const supabase = createClient();
 
   const [loading, setLoading] = useState(false);
+  const [pincodeLoading, setPincodeLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'cod'>('razorpay');
   const [formData, setFormData] = useState({
     email: '',
@@ -31,6 +32,21 @@ export default function CheckoutPage() {
     pincode: '',
     phone: ''
   });
+
+  const lookupPincode = async (pin: string) => {
+    if (pin.length !== 6) return;
+    setPincodeLoading(true);
+    try {
+      const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+      const [data] = await res.json();
+      if (data.Status === 'Success') {
+        const po = data.PostOffice[0];
+        setFormData(a => ({ ...a, city: po.District, state: po.State, country: 'India' }));
+      }
+    } finally {
+      setPincodeLoading(false);
+    }
+  };
 
   const shipping = subtotal >= 999 ? 0 : 99;
   const total = subtotal + shipping;
@@ -158,15 +174,40 @@ export default function CheckoutPage() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="city" className="text-[10px] font-bold uppercase text-charcoal/60">City</Label>
-                      <Input id="city" value={formData.city} onChange={handleInputChange} required className="h-14 bg-white border-sage/20 text-base" />
+                      <Input
+                        id="city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        required
+                        disabled={pincodeLoading}
+                        placeholder={pincodeLoading ? 'Auto-filling...' : ''}
+                        className={`h-14 bg-white border-sage/20 text-base ${pincodeLoading ? 'opacity-50' : ''}`}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="state" className="text-[10px] font-bold uppercase text-charcoal/60">State</Label>
-                      <Input id="state" value={formData.state} onChange={handleInputChange} required className="h-14 bg-white border-sage/20 text-base" />
+                      <Input
+                        id="state"
+                        value={formData.state}
+                        onChange={handleInputChange}
+                        required
+                        disabled={pincodeLoading}
+                        placeholder={pincodeLoading ? 'Auto-filling...' : ''}
+                        className={`h-14 bg-white border-sage/20 text-base ${pincodeLoading ? 'opacity-50' : ''}`}
+                      />
                     </div>
                     <div className="space-y-2 col-span-2 md:col-span-1">
                       <Label htmlFor="pincode" className="text-[10px] font-bold uppercase text-charcoal/60">Pincode</Label>
-                      <Input id="pincode" value={formData.pincode} onChange={handleInputChange} required className="h-14 bg-white border-sage/20 text-base" />
+                      <Input
+                        id="pincode"
+                        value={formData.pincode}
+                        onChange={(e) => {
+                          setFormData(a => ({ ...a, pincode: e.target.value }));
+                          lookupPincode(e.target.value);
+                        }}
+                        required
+                        className="h-14 bg-white border-sage/20 text-base"
+                      />
                     </div>
                   </div>
                 </div>
