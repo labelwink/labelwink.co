@@ -18,7 +18,8 @@ import { ProductImage } from '@/components/storefront/ProductImage';
 
 interface SavedAddress {
   id: string;
-  name: string;
+  full_name: string | null;
+  name?: string; // legacy fallback
   line1: string;
   line2?: string;
   city: string;
@@ -58,6 +59,7 @@ export default function CheckoutPage() {
   const [availablePoints, setAvailablePoints] = useState(0);
   const [pointsToRedeem, setPointsToRedeem]   = useState(0);
   const [usePoints,      setUsePoints]         = useState(false);
+  const [saveAddress,    setSaveAddress]       = useState(false);
 
   const [formData, setFormData] = useState({
     email: '', fullName: '', address: '',
@@ -124,7 +126,7 @@ export default function CheckoutPage() {
   const applyAddress = (addr: SavedAddress) => {
     setFormData(f => ({
       ...f,
-      fullName: addr.name,
+      fullName: addr.full_name || addr.name || '',
       address:  addr.line1 + (addr.line2 ? `, ${addr.line2}` : ''),
       city:     addr.city,
       state:    addr.state,
@@ -132,6 +134,7 @@ export default function CheckoutPage() {
       phone:    addr.phone,
     }));
     setShowSavedAddr(false);
+    setSaveAddress(false); // already saved
   };
 
   const validateCoupon = async () => {
@@ -186,6 +189,25 @@ export default function CheckoutPage() {
         discountAmount: discountAmt,
         pointsToRedeem: pointsDiscount > 0 ? pointsDiscount : undefined,
       });
+
+      // Save address to book if checkbox ticked (non-fatal, fire-and-forget)
+      if (saveAddress && user?.id) {
+        const parts = formData.address.split(',')
+        try {
+          await supabase.from('addresses').insert({
+            user_id:    user.id,
+            full_name:  formData.fullName,
+            phone:      formData.phone,
+            line1:      parts[0]?.trim() || formData.address,
+            line2:      parts.slice(1).join(',').trim() || null,
+            city:       formData.city,
+            state:      formData.state,
+            pincode:    formData.pincode,
+            label:      'Home',
+            is_default: savedAddresses.length === 0,
+          })
+        } catch { /* ignore */ }
+      }
 
       if (result.error) {
         alert(result.error);
@@ -297,7 +319,7 @@ export default function CheckoutPage() {
                               onClick={() => applyAddress(addr)}
                               className="w-full text-left px-4 py-3 hover:bg-sage/5 transition-colors border-b border-sage/10 last:border-0"
                             >
-                              <p className="font-semibold text-xs text-charcoal">{addr.name} {addr.is_default && <span className="text-teal">(Default)</span>}</p>
+                              <p className="font-semibold text-xs text-charcoal">{addr.full_name || addr.name} {addr.is_default && <span className="text-teal">(Default)</span>}</p>
                               <p className="text-[11px] text-muted-foreground mt-0.5">{addr.line1}, {addr.city}, {addr.pincode}</p>
                             </button>
                           ))}
@@ -360,6 +382,15 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Save address checkbox */}
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${saveAddress ? 'bg-teal border-teal' : 'border-sage/30 group-hover:border-teal/50'}`}>
+                    {saveAddress && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                  </div>
+                  <input type="checkbox" checked={saveAddress} onChange={e => setSaveAddress(e.target.checked)} className="sr-only" />
+                  <span className="text-xs text-charcoal/70 font-medium">Save this address to my address book</span>
+                </label>
               </section>
 
               {/* Section 2: Coupon */}
