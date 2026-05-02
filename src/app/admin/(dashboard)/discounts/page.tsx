@@ -1,393 +1,521 @@
 'use client'
 
-import { useState, useEffect, useCallback, useTransition } from 'react'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import {
-  Tag, Plus, Trash2, ToggleLeft, ToggleRight,
-  RefreshCw, Copy, ChevronLeft, ChevronRight,
-  Percent, IndianRupee, Clock,
-} from 'lucide-react'
-import { useToast } from '@/components/admin/Toast'
-import { formatDate } from '@/lib/utils/format'
-
-// ── Types ──────────────────────────────────────────────────────────────────────
-interface Coupon {
-  id: string
-  code: string
-  type: string          // 'percentage' | 'fixed_amount' | 'free_shipping'
-  value: number
-  min_order_amount: number | null
-  min_order: number | null        // legacy alias
-  max_uses: number | null
-  used_count: number
-  expires_at: string | null
-  is_active: boolean
-  created_at: string
-  description: string | null
-}
-
-const EMPTY_FORM = { code: '', type: 'percent', value: '', min_order: '', max_uses: '', expires_at: '' }
-const PAGE_SIZE  = 25
-
-function isExpired(expires_at: string | null) {
-  return expires_at ? new Date(expires_at) < new Date() : false
-}
-
-function couponLabel(c: Coupon) {
-  const isPerc = c.type === 'percent' || c.type === 'percentage'
-  const isFree = c.type === 'free_shipping'
-  if (isFree) return 'Free Shipping'
-  return isPerc ? `${c.value}% off` : `₹${c.value} off`
-}
+import React, { useState, useEffect } from 'react'
+import { Tag, Plus, Search, Trash2, Copy, AlertTriangle, CheckCircle, Clock, XCircle, MoreVertical, X, Settings2, Percent, DollarSign, Truck } from 'lucide-react'
+import { formatIndianCurrency } from '@/lib/invoice-helpers'
 
 export default function DiscountsPage() {
-  const router       = useRouter()
-  const pathname     = usePathname()
-  const searchParams = useSearchParams()
-  const { showToast, ToastComponent } = useToast()
-  const [, startTransition] = useTransition()
+  const [discounts, setDiscounts] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [statusTab, setStatusTab] = useState('all')
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
 
-  const [coupons,    setCoupons]    = useState<Coupon[]>([])
-  const [total,      setTotal]      = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
-  const [loading,    setLoading]    = useState(true)
-  const [showForm,   setShowForm]   = useState(false)
-  const [form,       setForm]       = useState(EMPTY_FORM)
-  const [saving,     setSaving]     = useState(false)
-  const [toggling,   setToggling]   = useState<Set<string>>(new Set())
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [expandedRow, setExpandedRow] = useState<string | null>(null)
+  const [detailData, setDetailData] = useState<any>(null)
+  const [detailLoading, setDetailLoading] = useState(false)
 
-  const page = Number(searchParams.get('page') ?? '0')
+  // Form State
+  const [form, setForm] = useState({
+    code: '',
+    type: 'percentage',
+    value: '',
+    min_order_amount: '',
+    max_uses: '',
+    single_use_per_customer: false,
+    starts_at: '',
+    expires_at: '',
+    description: '',
+    is_active: true
+  })
+  const [formError, setFormError] = useState('')
+  const [formSubmitting, setFormSubmitting] = useState(false)
 
-  const updateUrl = (updates: Record<string, string>) => {
-    const p = new URLSearchParams(searchParams.toString())
-    for (const [k, v] of Object.entries(updates)) {
-      if (v) p.set(k, v); else p.delete(k)
-    }
-    startTransition(() => router.push(`${pathname}?${p}`))
-  }
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 500)
+    return () => clearTimeout(t)
+  }, [search])
 
-  const fetchCoupons = useCallback(async () => {
+  const fetchDiscounts = async () => {
     setLoading(true)
     try {
-      const res  = await fetch(`/api/admin/discounts?page=${page}`)
+      const res = await fetch(`/api/admin/discounts?search=${encodeURIComponent(debouncedSearch)}&status=${statusTab}`)
       const data = await res.json()
-      setCoupons(data.coupons ?? [])
-      setTotal(data.total ?? 0)
-      setTotalPages(data.totalPages ?? Math.ceil((data.total ?? 0) / PAGE_SIZE))
-    } catch {
-      setCoupons([])
-    } finally {
-      setLoading(false)
+      setDiscounts(data)
+    } catch (err) {
+      console.error(err)
     }
-  }, [page])
+    setLoading(false)
+  }
 
-  useEffect(() => { fetchCoupons() }, [fetchCoupons])
+  useEffect(() => { fetchDiscounts() }, [debouncedSearch, statusTab])
 
-  const create = async () => {
-    if (!form.code.trim() || !form.value) return showToast('Code and value are required', 'error')
-    setSaving(true)
-    const res = await fetch('/api/admin/discounts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        code:             form.code.toUpperCase().trim(),
-        type:             form.type,
-        value:            Number(form.value),
-        min_order:        form.min_order  ? Number(form.min_order)  : null,
-        min_order_amount: form.min_order  ? Number(form.min_order)  : null,
-        max_uses:         form.max_uses   ? Number(form.max_uses)   : null,
-        expires_at:       form.expires_at || null,
-        is_active:        true,
-      }),
-    })
-    setSaving(false)
-    if (res.ok) {
-      const c = await res.json()
-      setCoupons(prev => [c, ...prev])
-      setForm(EMPTY_FORM)
-      setShowForm(false)
-      showToast('Coupon created ✓', 'success')
+  const fetchDetail = async (id: string) => {
+    setDetailLoading(true)
+    try {
+      const res = await fetch(`/api/admin/discounts/${id}`)
+      const data = await res.json()
+      setDetailData(data)
+    } catch (err) {
+      console.error(err)
+    }
+    setDetailLoading(false)
+  }
+
+  const handleRowClick = (id: string) => {
+    if (expandedRow === id) {
+      setExpandedRow(null)
     } else {
-      const err = await res.json()
-      showToast(err.error || 'Failed to create coupon', 'error')
+      setExpandedRow(id)
+      setDetailData(null)
+      fetchDetail(id)
     }
   }
 
-  const toggle = async (c: Coupon) => {
-    setToggling(prev => new Set(prev).add(c.id))
-    const res = await fetch('/api/admin/discounts', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: c.id, is_active: !c.is_active }),
-    })
-    setToggling(prev => { const n = new Set(prev); n.delete(c.id); return n })
-    if (res.ok) {
-      setCoupons(prev => prev.map(x => x.id === c.id ? { ...x, is_active: !x.is_active } : x))
-      showToast(c.is_active ? 'Coupon deactivated' : 'Coupon activated', 'success')
+  const handleToggleActive = async (id: string, current: boolean, e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      await fetch(`/api/admin/discounts/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !current })
+      })
+      fetchDiscounts()
+      if (expandedRow === id) fetchDetail(id)
+    } catch (err) {
+      console.error(err)
     }
   }
 
-  const remove = async (id: string) => {
-    await fetch('/api/admin/discounts', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    })
-    setCoupons(prev => prev.filter(c => c.id !== id))
-    showToast('Coupon deleted', 'success')
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm('Are you sure you want to delete this discount?')) return
+    try {
+      const res = await fetch(`/api/admin/discounts/${id}`, { method: 'DELETE' })
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else {
+        fetchDiscounts()
+      }
+    } catch (err) {
+      console.error(err)
+    }
   }
 
-  const copyCode = (code: string) => {
-    navigator.clipboard.writeText(code)
-    showToast(`Copied "${code}"`, 'success')
+  const handleDuplicate = (d: any, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setForm({
+      code: `COPY-${d.code.substring(0, 10)}`,
+      type: d.type,
+      value: String(d.value || ''),
+      min_order_amount: String(d.min_order_amount || ''),
+      max_uses: String(d.max_uses || ''),
+      single_use_per_customer: d.single_use_per_customer,
+      starts_at: d.starts_at ? new Date(d.starts_at).toISOString().slice(0, 16) : '',
+      expires_at: d.expires_at ? new Date(d.expires_at).toISOString().slice(0, 16) : '',
+      description: d.description || '',
+      is_active: d.is_active
+    })
+    setIsModalOpen(true)
   }
+
+  const generateCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    let str = ''
+    for (let i = 0; i < 4; i++) str += chars.charAt(Math.floor(Math.random() * chars.length))
+    setForm({ ...form, code: `LABEL${str}` })
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormError('')
+    setFormSubmitting(true)
+    try {
+      const res = await fetch('/api/admin/discounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      })
+      const json = await res.json()
+      if (res.ok) {
+        setIsModalOpen(false)
+        fetchDiscounts()
+      } else {
+        setFormError(json.error || 'Failed to create discount')
+      }
+    } catch (err) {
+      console.error(err)
+      setFormError('An unexpected error occurred')
+    }
+    setFormSubmitting(false)
+  }
+
+  // Live preview calculations
+  const previewOrderVal = 1500
+  let previewDiscount = 0
+  if (form.type === 'percentage') {
+    previewDiscount = (previewOrderVal * (Number(form.value) || 0)) / 100
+  } else if (form.type === 'flat') {
+    previewDiscount = Math.min(Number(form.value) || 0, previewOrderVal)
+  } else if (form.type === 'free_shipping') {
+    previewDiscount = 0 // Represents free shipping visually
+  }
+  const pays = Math.max(previewOrderVal - previewDiscount, 0)
 
   return (
-    <div className="space-y-5 max-w-[1000px]">
-      {ToastComponent}
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-xl font-bold text-[#1a1a1a]">Discounts & Coupons</h1>
-          <p className="text-xs text-[#6b7280] mt-0.5">{total} coupon{total !== 1 ? 's' : ''} total</p>
+          <h1 className="text-3xl font-bold tracking-tight text-[#1a1a1a]">Discounts</h1>
+          <p className="text-muted-foreground mt-1 text-[#1a1a1a]/70">
+            Create and manage promotional codes.
+          </p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={fetchCoupons} disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-[#e5e7eb] rounded-lg text-xs text-[#6b7280] hover:bg-gray-50 disabled:opacity-50 transition-colors">
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
-          </button>
-          <button
-            onClick={() => { setShowForm(s => !s); setForm(EMPTY_FORM) }}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-[#1b3a34] text-white rounded-lg text-xs font-semibold hover:bg-[#16312b] transition-colors"
-          >
-            <Plus size={13} /> New Coupon
-          </button>
+        <button onClick={() => {
+          setForm({ code: '', type: 'percentage', value: '', min_order_amount: '', max_uses: '', single_use_per_customer: false, starts_at: '', expires_at: '', description: '', is_active: true })
+          setIsModalOpen(true)
+        }} className="flex items-center space-x-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-md hover:bg-[#1a1a1a]/90 transition-colors">
+          <Plus className="h-4 w-4" />
+          <span>Create Discount</span>
+        </button>
+      </div>
+
+      <div className="bg-white p-4 rounded-xl border border-[#1a1a1a]/10 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+        <div className="flex space-x-1 border-b border-[#1a1a1a]/10 pb-1 overflow-x-auto w-full md:w-auto">
+          {['all', 'active', 'scheduled', 'expired', 'inactive'].map(t => (
+            <button
+              key={t}
+              onClick={() => setStatusTab(t)}
+              className={`px-4 py-2 text-sm capitalize whitespace-nowrap transition-colors border-b-2 -mb-[5px] ${statusTab === t ? 'border-[#c9a84c] text-[#c9a84c] font-medium' : 'border-transparent text-[#1a1a1a]/60 hover:text-[#1a1a1a]'}`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+        <div className="relative w-full md:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#1a1a1a]/40" />
+          <input
+            type="text"
+            placeholder="Search code..."
+            className="pl-9 pr-4 py-2 border border-[#1a1a1a]/20 rounded-md focus:outline-none focus:border-[#c9a84c] w-full text-sm bg-[#faf7f2]"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
         </div>
       </div>
 
-      {/* Create form */}
-      {showForm && (
-        <div className="bg-white border border-[#e5e7eb] rounded-xl p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-[#1a1a1a] mb-4">New Coupon</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
-            {/* Code */}
-            <div>
-              <label className="block text-xs font-medium text-[#1a1a1a] mb-1">Coupon Code *</label>
-              <input
-                value={form.code}
-                onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
-                placeholder="e.g. WINK20"
-                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#1b3a34]/20"
-              />
-            </div>
-            {/* Type */}
-            <div>
-              <label className="block text-xs font-medium text-[#1a1a1a] mb-1">Discount Type *</label>
-              <select
-                value={form.type}
-                onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1b3a34]/20"
-              >
-                <option value="percent">Percentage (%)</option>
-                <option value="flat">Flat Amount (₹)</option>
-              </select>
-            </div>
-            {/* Value */}
-            <div>
-              <label className="block text-xs font-medium text-[#1a1a1a] mb-1">
-                Value {form.type === 'percent' ? '(%)' : '(₹)'} *
-              </label>
-              <div className="relative">
-                {form.type === 'flat'
-                  ? <IndianRupee size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
-                  : <Percent size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
-                }
-                <input
-                  type="number" min="0"
-                  value={form.value}
-                  onChange={e => setForm(f => ({ ...f, value: e.target.value }))}
-                  placeholder={form.type === 'percent' ? '20' : '200'}
-                  className="w-full pl-8 border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]/20"
-                />
-              </div>
-            </div>
-            {/* Min Order */}
-            <div>
-              <label className="block text-xs font-medium text-[#1a1a1a] mb-1">Min Order (₹)</label>
-              <input
-                type="number" min="0"
-                value={form.min_order}
-                onChange={e => setForm(f => ({ ...f, min_order: e.target.value }))}
-                placeholder="No minimum"
-                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]/20"
-              />
-            </div>
-            {/* Max Uses */}
-            <div>
-              <label className="block text-xs font-medium text-[#1a1a1a] mb-1">Max Uses</label>
-              <input
-                type="number" min="1"
-                value={form.max_uses}
-                onChange={e => setForm(f => ({ ...f, max_uses: e.target.value }))}
-                placeholder="Unlimited"
-                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]/20"
-              />
-            </div>
-            {/* Expiry */}
-            <div>
-              <label className="block text-xs font-medium text-[#1a1a1a] mb-1">Expiry Date</label>
-              <input
-                type="date"
-                value={form.expires_at}
-                onChange={e => setForm(f => ({ ...f, expires_at: e.target.value }))}
-                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]/20"
-              />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowForm(false)}
-              className="px-4 py-2 border border-[#e5e7eb] rounded-lg text-xs font-medium hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={create}
-              disabled={saving}
-              className="px-5 py-2 bg-[#1b3a34] text-white rounded-lg text-xs font-semibold hover:bg-[#16312b] disabled:opacity-50 transition-colors"
-            >
-              {saving ? 'Creating…' : 'Create Coupon'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Table */}
-      <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-[#1a1a1a]/10 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af] border-b border-[#e5e7eb] bg-[#f9f9f9]">
-                <th className="text-left px-4 py-3">Code</th>
-                <th className="text-left px-4 py-3">Discount</th>
-                <th className="text-left px-4 py-3">Min Order</th>
-                <th className="text-center px-4 py-3">Uses</th>
-                <th className="text-left px-4 py-3">Expires</th>
-                <th className="text-center px-4 py-3">Status</th>
-                <th className="text-right px-4 py-3">Actions</th>
+          <table className="w-full text-sm text-left">
+            <thead className="bg-[#faf7f2] border-b border-[#1a1a1a]/10 text-[#1a1a1a]/70 font-medium">
+              <tr>
+                <th className="px-4 py-3">Code</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Type & Value</th>
+                <th className="px-4 py-3">Min Order</th>
+                <th className="px-4 py-3">Uses / Max</th>
+                <th className="px-4 py-3">Valid Period</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#f3f4f6]">
+            <tbody className="divide-y divide-[#1a1a1a]/5">
               {loading ? (
-                [...Array(5)].map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    {[...Array(7)].map((_, j) => (
-                      <td key={j} className="px-4 py-3.5"><div className="h-3.5 bg-gray-100 rounded" /></td>
-                    ))}
-                  </tr>
-                ))
-              ) : coupons.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-16">
-                    <Tag size={28} className="mx-auto text-gray-200 mb-3" />
-                    <p className="text-sm text-[#6b7280]">No coupons yet</p>
-                  </td>
-                </tr>
-              ) : coupons.map(c => {
-                const expired    = isExpired(c.expires_at)
-                const exhausted  = c.max_uses !== null && c.used_count >= c.max_uses
-                const isToggling = toggling.has(c.id)
-
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-[#1a1a1a]/50">Loading discounts...</td></tr>
+              ) : discounts.length === 0 ? (
+                <tr><td colSpan={7} className="px-4 py-12 text-center text-[#1a1a1a]/50">No discounts found.</td></tr>
+              ) : discounts.map(d => {
+                const isExpanded = expandedRow === d.id
                 return (
-                  <tr key={c.id} className="hover:bg-[#f9fafb] transition-colors">
-                    {/* Code */}
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-[#1b3a34] text-xs bg-[#1b3a34]/5 px-2 py-1 rounded-lg">
-                          {c.code}
-                        </span>
-                        <button onClick={() => copyCode(c.code)} className="text-[#9ca3af] hover:text-[#1b3a34]">
-                          <Copy size={11} />
-                        </button>
-                      </div>
-                    </td>
-                    {/* Discount */}
-                    <td className="px-4 py-3.5 text-xs font-semibold text-[#1a1a1a]">{couponLabel(c)}</td>
-                    {/* Min Order */}
-                    <td className="px-4 py-3.5 text-xs text-[#6b7280]">
-                      {(c.min_order_amount || c.min_order)
-                        ? `₹${(c.min_order_amount ?? c.min_order)!.toLocaleString('en-IN')}`
-                        : '—'}
-                    </td>
-                    {/* Uses */}
-                    <td className="px-4 py-3.5 text-center text-xs">
-                      <span className={exhausted ? 'text-red-500 font-semibold' : 'text-[#6b7280]'}>
-                        {c.used_count}{c.max_uses !== null ? ` / ${c.max_uses}` : ''}
-                      </span>
-                    </td>
-                    {/* Expires */}
-                    <td className="px-4 py-3.5 text-xs">
-                      {c.expires_at ? (
-                        <span className={`flex items-center gap-1 ${expired ? 'text-red-500' : 'text-[#6b7280]'}`}>
-                          <Clock size={10} />
-                          {expired ? 'Expired ' : ''}{formatDate(c.expires_at)}
-                        </span>
-                      ) : (
-                        <span className="text-[#9ca3af]">No expiry</span>
-                      )}
-                    </td>
-                    {/* Status */}
-                    <td className="px-4 py-3.5 text-center">
-                      <button
-                        onClick={() => toggle(c)}
-                        disabled={isToggling}
-                        className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all disabled:opacity-50 ${
-                          c.is_active
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                            : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
-                        }`}
-                      >
-                        {c.is_active
-                          ? <><ToggleRight size={10} /> Active</>
-                          : <><ToggleLeft size={10} /> Inactive</>
-                        }
-                      </button>
-                    </td>
-                    {/* Actions */}
-                    <td className="px-4 py-3.5 text-right">
-                      <button
-                        onClick={() => remove(c.id)}
-                        className="w-7 h-7 inline-flex items-center justify-center rounded-lg text-[#9ca3af] hover:text-red-600 hover:bg-red-50 transition-colors"
-                        title="Delete"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </td>
-                  </tr>
+                  <React.Fragment key={d.id}>
+                    <tr onClick={() => handleRowClick(d.id)} className={`hover:bg-[#faf7f2]/50 transition-colors cursor-pointer ${isExpanded ? 'bg-[#faf7f2]/30' : ''}`}>
+                      <td className="px-4 py-3 font-mono font-bold text-[#c9a84c]">{d.code}</td>
+                      <td className="px-4 py-3">
+                        {d.status === 'active' && <span className="inline-flex items-center space-x-1 text-green-600 bg-green-50 px-2 py-0.5 rounded text-xs font-medium border border-green-100"><CheckCircle className="h-3 w-3" /><span>Active</span></span>}
+                        {d.status === 'scheduled' && <span className="inline-flex items-center space-x-1 text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-xs font-medium border border-blue-100"><Clock className="h-3 w-3" /><span>Scheduled</span></span>}
+                        {d.status === 'expired' && <span className="inline-flex items-center space-x-1 text-[#1a1a1a]/60 bg-[#1a1a1a]/5 px-2 py-0.5 rounded text-xs font-medium border border-[#1a1a1a]/10"><XCircle className="h-3 w-3" /><span>Expired</span></span>}
+                        {d.status === 'inactive' && <span className="inline-flex items-center space-x-1 text-red-600 bg-red-50 px-2 py-0.5 rounded text-xs font-medium border border-red-100"><XCircle className="h-3 w-3" /><span>Inactive</span></span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        {d.type === 'percentage' && `${d.value}% Off`}
+                        {d.type === 'flat' && `${formatIndianCurrency(d.value)} Off`}
+                        {d.type === 'free_shipping' && `Free Shipping`}
+                      </td>
+                      <td className="px-4 py-3 text-[#1a1a1a]/70">{d.min_order_amount ? formatIndianCurrency(d.min_order_amount) : 'None'}</td>
+                      <td className="px-4 py-3">
+                        <span className="font-medium">{d.total_uses}</span> <span className="text-[#1a1a1a]/50">/ {d.max_uses || '∞'}</span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-[#1a1a1a]/60">
+                        {d.starts_at && <div>From: {new Date(d.starts_at).toLocaleDateString()}</div>}
+                        {d.expires_at && <div>To: {new Date(d.expires_at).toLocaleDateString()}</div>}
+                        {!d.starts_at && !d.expires_at && 'Forever'}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end items-center space-x-2">
+                          <button onClick={(e) => handleToggleActive(d.id, d.is_active, e)} className="p-1.5 text-[#1a1a1a]/50 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title={d.is_active ? 'Deactivate' : 'Activate'}>
+                            <Settings2 className="h-4 w-4" />
+                          </button>
+                          <button onClick={(e) => handleDuplicate(d, e)} className="p-1.5 text-[#1a1a1a]/50 hover:text-[#c9a84c] hover:bg-[#c9a84c]/10 rounded transition-colors" title="Duplicate">
+                            <Copy className="h-4 w-4" />
+                          </button>
+                          <button disabled={d.used_count > 0} onClick={(e) => handleDelete(d.id, e)} className="p-1.5 text-[#1a1a1a]/50 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[#1a1a1a]/50" title={d.used_count > 0 ? "Cannot delete used coupon" : "Delete"}>
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* EXPANDED DETAIL ROW */}
+                    {isExpanded && (
+                      <tr className="bg-[#faf7f2]/50 border-b border-[#1a1a1a]/5">
+                        <td colSpan={7} className="px-6 py-4">
+                          {detailLoading ? (
+                            <div className="text-sm text-[#1a1a1a]/50 p-4">Loading details...</div>
+                          ) : detailData ? (
+                            <div className="space-y-4">
+                              <div className="flex space-x-6">
+                                <div className="bg-white p-4 rounded-lg border border-[#1a1a1a]/10 flex-1">
+                                  <p className="text-xs text-[#1a1a1a]/60">Total Uses</p>
+                                  <p className="text-xl font-bold mt-1">{detailData.stats.total_uses}</p>
+                                </div>
+                                <div className="bg-white p-4 rounded-lg border border-[#1a1a1a]/10 flex-1">
+                                  <p className="text-xs text-[#1a1a1a]/60">Total Discount Given</p>
+                                  <p className="text-xl font-bold mt-1 text-[#c9a84c]">{formatIndianCurrency(detailData.stats.total_discount_given)}</p>
+                                </div>
+                                <div className="bg-white p-4 rounded-lg border border-[#1a1a1a]/10 flex-1">
+                                  <p className="text-xs text-[#1a1a1a]/60">Avg Cart Size (with coupon)</p>
+                                  <p className="text-xl font-bold mt-1">{formatIndianCurrency(detailData.stats.avg_cart_size)}</p>
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <h4 className="font-semibold text-sm mb-2 text-[#1a1a1a]">Recent Uses (up to 10)</h4>
+                                {detailData.uses?.length > 0 ? (
+                                  <table className="w-full text-xs text-left bg-white border border-[#1a1a1a]/10 rounded-md overflow-hidden">
+                                    <thead className="bg-[#faf7f2] border-b border-[#1a1a1a]/10">
+                                      <tr>
+                                        <th className="px-3 py-2">Date</th>
+                                        <th className="px-3 py-2">Customer</th>
+                                        <th className="px-3 py-2">Order #</th>
+                                        <th className="px-3 py-2 text-right">Cart Total</th>
+                                        <th className="px-3 py-2 text-right">Discount Applied</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[#1a1a1a]/5">
+                                      {detailData.uses.map((u: any) => (
+                                        <tr key={u.id}>
+                                          <td className="px-3 py-2 text-[#1a1a1a]/70">{new Date(u.used_at).toLocaleString('en-IN', { dateStyle:'short', timeStyle:'short'})}</td>
+                                          <td className="px-3 py-2 font-medium">{u.customer_name} <span className="text-xs font-normal text-[#1a1a1a]/50 ml-1">({u.customer_email})</span></td>
+                                          <td className="px-3 py-2 text-blue-600 hover:underline"><a href={`/admin/orders/${u.order_id}`}>{u.order_number}</a></td>
+                                          <td className="px-3 py-2 text-right">{formatIndianCurrency(u.cart_total)}</td>
+                                          <td className="px-3 py-2 text-right text-green-600 font-medium">{formatIndianCurrency(u.discount_applied)}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                ) : (
+                                  <p className="text-sm text-[#1a1a1a]/50 italic">No uses recorded yet.</p>
+                                )}
+                              </div>
+                            </div>
+                          ) : null}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 )
               })}
             </tbody>
           </table>
         </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-[#e5e7eb] bg-[#f9f9f9]">
-            <p className="text-xs text-[#6b7280]">Page {page + 1} of {totalPages}</p>
-            <div className="flex items-center gap-1.5">
-              <button onClick={() => updateUrl({ page: String(Math.max(0, page - 1)) })} disabled={page === 0}
-                className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] disabled:opacity-40">
-                <ChevronLeft size={14} />
-              </button>
-              <button onClick={() => updateUrl({ page: String(Math.min(totalPages - 1, page + 1)) })} disabled={page >= totalPages - 1}
-                className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#e5e7eb] disabled:opacity-40">
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* CREATE MODAL */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto pt-10 pb-10">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden my-auto">
+            <div className="p-4 border-b border-[#1a1a1a]/10 flex justify-between items-center bg-[#faf7f2] sticky top-0 z-10">
+              <h3 className="font-bold text-[#1a1a1a] text-lg">Create Discount</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-[#1a1a1a]/50 hover:text-[#1a1a1a]"><X className="h-5 w-5" /></button>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              {formError && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm flex items-center space-x-2 border border-red-100">
+                  <AlertTriangle className="h-4 w-4" /><span>{formError}</span>
+                </div>
+              )}
+
+              {/* Live Preview */}
+              <div className="bg-[#faf7f2] p-4 rounded-lg border border-[#c9a84c]/30 text-center">
+                <span className="text-sm text-[#1a1a1a]/70">Customer applies </span>
+                <strong className="font-mono text-[#c9a84c]">{form.code || '[CODE]'}</strong>
+                <span className="text-sm text-[#1a1a1a]/70"> on ₹1,500 order → </span>
+                <span className="text-sm">
+                  {form.type === 'free_shipping' ? (
+                    <strong className="text-green-600">Free Shipping</strong>
+                  ) : (
+                    <>saves <strong className="text-green-600">₹{previewDiscount}</strong> | pays <strong>₹{pays}</strong></>
+                  )}
+                </span>
+              </div>
+
+              {/* Code */}
+              <div>
+                <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Discount Code</label>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    required
+                    maxLength={20}
+                    value={form.code}
+                    onChange={e => setForm({ ...form, code: e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '') })}
+                    className="flex-1 px-3 py-2 border border-[#1a1a1a]/20 rounded-md focus:border-[#c9a84c] focus:outline-none font-mono uppercase"
+                    placeholder="E.g. SUMMER20"
+                  />
+                  <button type="button" onClick={generateCode} className="px-4 py-2 border border-[#1a1a1a]/20 rounded-md hover:bg-[#faf7f2] text-sm font-medium transition-colors">
+                    Generate Random
+                  </button>
+                </div>
+              </div>
+
+              {/* Type */}
+              <div>
+                <label className="block text-sm font-medium text-[#1a1a1a] mb-2">Discount Type</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { id: 'percentage', label: 'Percentage', icon: Percent },
+                    { id: 'flat', label: 'Flat Amount', icon: DollarSign },
+                    { id: 'free_shipping', label: 'Free Shipping', icon: Truck },
+                  ].map(t => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setForm({ ...form, type: t.id, value: t.id === 'free_shipping' ? '' : form.value })}
+                      className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all ${form.type === t.id ? 'border-[#c9a84c] bg-[#c9a84c]/5 text-[#c9a84c]' : 'border-[#1a1a1a]/10 hover:border-[#1a1a1a]/20 text-[#1a1a1a]/60'}`}
+                    >
+                      <t.icon className="h-5 w-5 mb-1" />
+                      <span className="text-xs font-medium">{t.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {form.type !== 'free_shipping' && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Discount Value</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#1a1a1a]/40">{form.type === 'flat' ? '₹' : '%'}</span>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        max={form.type === 'percentage' ? 100 : undefined}
+                        value={form.value}
+                        onChange={e => setForm({ ...form, value: e.target.value })}
+                        className="w-full pl-8 pr-3 py-2 border border-[#1a1a1a]/20 rounded-md focus:border-[#c9a84c] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+                <div className={form.type === 'free_shipping' ? 'col-span-2' : ''}>
+                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Min Order Amount (₹)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.min_order_amount}
+                    onChange={e => setForm({ ...form, min_order_amount: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#1a1a1a]/20 rounded-md focus:border-[#c9a84c] focus:outline-none"
+                    placeholder="0 = No minimum"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-[#1a1a1a]/10 pt-4">
+                <h4 className="text-sm font-medium text-[#1a1a1a] mb-3">Usage Limits</h4>
+                <div className="grid grid-cols-2 gap-4 items-center">
+                  <div>
+                    <label className="block text-sm font-medium text-[#1a1a1a]/70 mb-1">Max total uses</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={form.max_uses}
+                      onChange={e => setForm({ ...form, max_uses: e.target.value })}
+                      className="w-full px-3 py-2 border border-[#1a1a1a]/20 rounded-md focus:border-[#c9a84c] focus:outline-none"
+                      placeholder="Leave blank for unlimited"
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 pt-5">
+                    <input
+                      type="checkbox"
+                      id="single_use"
+                      checked={form.single_use_per_customer}
+                      onChange={e => setForm({ ...form, single_use_per_customer: e.target.checked })}
+                      className="rounded border-[#1a1a1a]/20 text-[#c9a84c] focus:ring-[#c9a84c]"
+                    />
+                    <label htmlFor="single_use" className="text-sm text-[#1a1a1a]/80">Limit to one use per customer</label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-[#1a1a1a]/10 pt-4">
+                <h4 className="text-sm font-medium text-[#1a1a1a] mb-3">Active Dates (Optional)</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#1a1a1a]/70 mb-1">Start Date</label>
+                    <input
+                      type="datetime-local"
+                      value={form.starts_at}
+                      onChange={e => setForm({ ...form, starts_at: e.target.value })}
+                      className="w-full px-3 py-2 border border-[#1a1a1a]/20 rounded-md focus:border-[#c9a84c] focus:outline-none text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-[#1a1a1a]/70 mb-1">End Date</label>
+                    <input
+                      type="datetime-local"
+                      value={form.expires_at}
+                      onChange={e => setForm({ ...form, expires_at: e.target.value })}
+                      className="w-full px-3 py-2 border border-[#1a1a1a]/20 rounded-md focus:border-[#c9a84c] focus:outline-none text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-[#1a1a1a]/10 pt-4">
+                <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Internal Description</label>
+                <input
+                  type="text"
+                  value={form.description}
+                  onChange={e => setForm({ ...form, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#1a1a1a]/20 rounded-md focus:border-[#c9a84c] focus:outline-none"
+                  placeholder="e.g. Summer Sale 2026 Influencer Code"
+                />
+              </div>
+
+              <div className="flex items-center space-x-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="is_active"
+                  checked={form.is_active}
+                  onChange={e => setForm({ ...form, is_active: e.target.checked })}
+                  className="rounded border-[#1a1a1a]/20 text-[#c9a84c] focus:ring-[#c9a84c]"
+                />
+                <label htmlFor="is_active" className="text-sm font-medium text-[#1a1a1a]">Active immediately</label>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t border-[#1a1a1a]/10 sticky bottom-0 bg-white">
+                <button type="button" onClick={() => setIsModalOpen(false)} disabled={formSubmitting} className="px-4 py-2 text-sm font-medium text-[#1a1a1a]/70 hover:text-[#1a1a1a] transition-colors disabled:opacity-50">Cancel</button>
+                <button type="submit" disabled={formSubmitting} className="px-4 py-2 text-sm font-medium bg-[#1a1a1a] text-white rounded-md hover:bg-[#1a1a1a]/90 transition-colors disabled:opacity-50">
+                  {formSubmitting ? 'Saving...' : 'Save Discount'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

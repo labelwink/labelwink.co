@@ -38,8 +38,13 @@ export function Navbar() {
   const { getTotals, setIsOpen } = useCartStore();
   const { totalQuantity } = getTotals();
   const supabase = createClient();
+  const [settings, setSettings] = useState<any>(null);
 
   useEffect(() => {
+    fetch('/api/storefront/settings')
+      .then(res => res.json())
+      .then(data => setSettings(data))
+      .catch(console.error);
     setMounted(true);
     async function checkUser() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -76,7 +81,7 @@ export function Navbar() {
               <SheetTitle className="sr-only">Menu</SheetTitle>
               <div className="flex flex-col h-full">
                 <div className="p-6 border-b border-[#2d5a52] text-[#faf7f2] font-serif tracking-widest text-lg">
-                  Label Wink
+                  {settings?.store_name || 'Store'}
                 </div>
                 <nav className="flex-1 py-2 overflow-y-auto">
                   <Link
@@ -190,15 +195,19 @@ export function Navbar() {
 
         {/* CENTER: Logo — absolutely centered */}
         <Link href="/" className="absolute left-1/2 -translate-x-1/2">
-          <Image
-            src="/logo.png"
-            alt="Label Wink"
-            width={0}
-            height={40}
-            style={{ width: 'auto', height: '34px' }}
-            className="object-contain"
-            priority
-          />
+          {settings?.logo_url ? (
+            <img src={settings.logo_url} alt={settings?.store_name || 'Store'} className="h-8 md:h-10 object-contain" />
+          ) : (
+            <Image
+              src="/logo.png"
+              alt={settings?.store_name || 'Store'}
+              width={0}
+              height={40}
+              style={{ width: 'auto', height: '34px' }}
+              className="object-contain"
+              priority
+            />
+          )}
         </Link>
 
         {/* RIGHT: Icons — always visible */}

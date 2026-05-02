@@ -1,108 +1,97 @@
-'use client'
+import { notFound } from 'next/navigation';
+import { createAdminClient } from '@/lib/supabase/server';
+import { formatInvoiceDate } from '@/lib/invoice-helpers';
+import PrintButton from '@/components/admin/PrintButton';
 
-import { useState, useEffect } from 'react'
-import { Printer } from 'lucide-react'
+export default async function LabelPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = createAdminClient();
 
-export default function OrderLabelPage({ params }: { params: Promise<{ id: string }> }) {
-  const [order, setOrder] = useState<any>(null)
-  const [settings, setSettings] = useState<any>({})
-  const [loading, setLoading] = useState(true)
+  const [
+    { data: order },
+    { data: invoice },
+    { data: settings }
+  ] = await Promise.all([
+    supabase.from('orders').select('*, order_items(*)').eq('id', id).single(),
+    supabase.from('invoices').select('*').eq('order_id', id).single(),
+    supabase.from('shop_settings').select('*').eq('id', 1).single()
+  ]);
 
-  useEffect(() => {
-    params.then(async p => {
-      const [orderRes, settingsRes] = await Promise.all([
-        fetch(`/api/admin/orders/${p.id}`),
-        fetch('/api/admin/settings'),
-      ])
-      const orderData = await orderRes.json()
-      const settingsData = settingsRes.ok ? await settingsRes.json() : {}
-      setOrder(orderData)
-      setSettings(settingsData)
-      setLoading(false)
-    })
-  }, [params])
+  if (!order || !invoice || !settings) {
+    notFound();
+  }
 
-  if (loading) return <div className="p-8 text-gray-500">Loading label…</div>
-  if (!order) return <div className="p-8 text-red-500">Order not found</div>
-
-  const addr = order.shipping_address || {}
-  const storeName = settings.store_name || 'Label Wink'
-  const storeAddress = settings.store_address || ''
-  const storePhone = settings.store_phone || ''
-  const items = Array.isArray(order.items) ? order.items : []
+  const order_items = order.order_items || [];
 
   return (
-    <div className="min-h-screen bg-white p-8 font-sans print:p-4">
-      {/* Print button — hidden when printing */}
-      <div className="print:hidden mb-6 flex gap-3">
-        <button onClick={() => window.print()}
-          className="flex items-center gap-2 bg-[#1b3a34] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#16312b] transition-colors">
-          <Printer size={16} /> Print Label
-        </button>
-        <button onClick={() => window.close()}
-          className="border border-gray-200 px-4 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors">
-          Close
-        </button>
-      </div>
-
-      {/* Label content */}
-      <div className="max-w-md mx-auto border-2 border-black p-6 space-y-5">
-        {/* Store header */}
-        <div className="text-center border-b-2 border-black pb-4">
-          <p className="text-xl font-bold uppercase tracking-widest">{storeName}</p>
-          {storeAddress && <p className="text-xs mt-1 text-gray-600">{storeAddress}</p>}
-          {storePhone && <p className="text-xs text-gray-600">{storePhone}</p>}
+    <>
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          @page { margin: 5mm; size: 100mm 150mm; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+      `}</style>
+      <div className="max-w-xs mx-auto border-2 border-black font-sans text-sm p-0 bg-white text-black">
+        
+        <div className="no-print p-4">
+          <PrintButton label="🏷️ Print Label" />
         </div>
 
-        {/* TO */}
-        <div>
-          <p className="text-[10px] uppercase tracking-widest font-bold text-gray-500 mb-1">Ship To:</p>
-          <p className="font-bold text-lg">{order.customer_name || addr.fullName || addr.full_name || '—'}</p>
-          {addr.address && <p className="text-sm">{addr.address}</p>}
-          <p className="text-sm">{[addr.city, addr.state, addr.pincode].filter(Boolean).join(', ')}</p>
-          <p className="text-sm font-medium mt-1">📞 {order.customer_phone || addr.phone || '—'}</p>
+        <div className="border-b-2 border-black p-3">
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-500">FROM:</p>
+          <p className="font-bold">{settings.store_name}</p>
+          <p className="text-xs">{settings.store_address}</p>
+          <p className="text-xs">{settings.store_city}, {settings.store_state} {settings.store_pincode}</p>
+          <p className="text-xs">Ph: {settings.store_phone}</p>
         </div>
 
-        {/* Order info */}
-        <div className="border-t border-gray-200 pt-3 space-y-1">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500 font-medium">Order ID:</span>
-            <span className="font-mono font-bold">{order.id?.slice(0, 8).toUpperCase()}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500 font-medium">Date:</span>
-            <span>{new Date(order.created_at).toLocaleDateString('en-IN')}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500 font-medium">Payment:</span>
-            <span className="font-semibold capitalize">{order.payment_method} — {order.payment_status}</span>
-          </div>
+        <div className="border-b-2 border-black p-3 bg-gray-50">
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-500">TO:</p>
+          <p className="text-xl font-bold leading-tight">{order.customer_name}</p>
+          <p className="text-base font-semibold mt-1">Ph: {order.customer_phone}</p>
+          {order.shipping_address?.alt_phone && (
+            <p className="text-sm">Alt: {order.shipping_address.alt_phone}</p>
+          )}
+          <p className="mt-2">{order.shipping_address?.line1}</p>
+          {order.shipping_address?.line2 && <p>{order.shipping_address.line2}</p>}
+          <p>{order.shipping_address?.city}, {order.shipping_address?.state}</p>
+          <p className="text-2xl font-black mt-1">PIN: {order.shipping_address?.pincode}</p>
         </div>
 
-        {/* Items summary */}
-        {items.length > 0 && (
-          <div className="border-t border-gray-200 pt-3">
-            <p className="text-[10px] uppercase tracking-widest font-bold text-gray-500 mb-2">Items:</p>
-            {items.map((item: any, i: number) => (
-              <div key={i} className="flex justify-between text-sm">
-                <span>{item.name || item.product_name}</span>
-                <span className="font-medium">x{item.qty || item.quantity || 1}</span>
-              </div>
-            ))}
+        <div className="border-b border-black p-3">
+          <div className="flex justify-between text-xs">
+            <span>Order: <strong className="font-mono">#{order.id.slice(0,8).toUpperCase()}</strong></span>
+            <span>{formatInvoiceDate(order.created_at)}</span>
+          </div>
+          <p className="text-xs mt-1">Invoice: <span className="font-mono">{invoice.invoice_number}</span></p>
+          {order.tracking_number && (
+            <p className="text-xs mt-1">AWB: <strong className="font-mono">{order.tracking_number}</strong></p>
+          )}
+          {order.shipping_carrier && (
+            <p className="text-xs">Carrier: {order.shipping_carrier}</p>
+          )}
+        </div>
+
+        <div className="border-b border-black p-3">
+          <p className="text-xs font-bold uppercase mb-1">Items:</p>
+          {order_items.map((item: any) => (
+            <p key={item.id} className="text-xs">
+              {item.product_name} ({item.size}
+              {item.color ? `, ${item.color}` : ''}) × {item.quantity}
+            </p>
+          ))}
+        </div>
+
+        {settings.label_warning_text && (
+          <div className="p-3 text-center">
+            <p className="text-xs font-bold border border-gray-400 rounded p-2">
+              ⚠️ {settings.label_warning_text}
+            </p>
           </div>
         )}
 
-        {/* Total */}
-        <div className="border-t-2 border-black pt-3 flex justify-between font-bold">
-          <span>Total:</span>
-          <span>₹{Number(order.total || order.total_amount || 0).toLocaleString('en-IN')}</span>
-        </div>
-
-        {/* Order ID as barcode text */}
-        <div className="text-center border-t border-gray-200 pt-3">
-          <p className="font-mono text-sm tracking-[0.4em] text-gray-700">{order.id?.toUpperCase()}</p>
-        </div>
       </div>
-    </div>
-  )
+    </>
+  );
 }

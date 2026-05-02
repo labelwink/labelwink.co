@@ -1,107 +1,103 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
-async function getAuthenticatedUser() {
-  const supabase = await createClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return { supabase, user: null };
-  return { supabase, user };
-}
+export const runtime = 'nodejs'
 
-// GET /api/storefront/wishlist — fetch user wishlist
 export async function GET() {
+  const supabase = await createClient()
   try {
-    const { supabase, user } = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { data, error } = await supabase
+    const { data: wishlists, error, count } = await supabase
       .from('wishlists')
-      .select('id, product_id, variant_id, added_at, products(id, name, slug, price, mrp, images)')
+      .select(`
+        *,
+        products (
+          id, name, slug, price, compare_at_price, images,
+          product_variants (size, stock_qty)
+        )
+      `, { count: 'exact' })
       .eq('user_id', user.id)
-      .order('added_at', { ascending: false });
+      .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('[GET /api/storefront/wishlist]', { userId: user.id, error });
-      return NextResponse.json({ error: error.message ?? 'Fetch failed' }, { status: 500 });
-    }
+    if (error) throw new Error(error.message)
 
-    return NextResponse.json({ items: data ?? [] });
-  } catch (err: any) {
-    console.error('[GET /api/storefront/wishlist] unexpected:', err);
-    return NextResponse.json({ error: err?.message ?? 'Unknown error' }, { status: 500 });
+    const items = wishlists.map(w => {
+      const p = Array.isArray(w.products) ? w.products[0] : w.products;
+      return {
+        ...w,
+        product_id: p.id,
+        name: p.name,
+        slug: p.slug,
+        price: p.price,
+        compare_at_price: p.compare_at_price,
+        images: p.images,
+        variants: p.product_variants
+      }
+    })
+
+    return NextResponse.json({ items, count: count || items.length })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Unknown error'
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
 
-// POST /api/storefront/wishlist — add to wishlist
 export async function POST(req: NextRequest) {
+  const supabase = await createClient()
   try {
-    const { supabase, user } = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const body = await req.json();
-    const { product_id, variant_id } = body;
-    if (!product_id) {
-      return NextResponse.json({ error: 'product_id required' }, { status: 400 });
-    }
+    const body = await req.json()
+    const { product_id } = body
+    if (!product_id) return NextResponse.json({ error: 'Missing product_id' }, { status: 400 })
 
-    const insertPayload: Record<string, string> = {
-      user_id: user.id,
-      product_id,
-    };
-    if (variant_id) insertPayload.variant_id = variant_id;
+    const { data: product, error: pErr } = await supabase
+      .from('products')
+      .select('id, is_active')
+      .eq('id', product_id)
+      .single()
+
+    if (pErr || !product || !product.is_active) {
+      return NextResponse.json({ error: 'Product not found or inactive' }, { status: 404 })
+    }
 
     const { error } = await supabase
       .from('wishlists')
-      .insert(insertPayload as any);
+      .insert({ user_id: user.id, product_id })
+    
+    // ignore duplicate conflict by checking error code
+    if (error && error.code !== '23505') throw new Error(error.message)
 
-    // 23505 = unique_violation — already wishlisted, treat as success
-    if (error && error.code === '23505') {
-      return NextResponse.json({ wishlisted: true });
-    }
-    if (error) {
-      console.error('[POST /api/storefront/wishlist]', { userId: user.id, product_id, error });
-      return NextResponse.json({ error: error.message ?? 'Insert failed' }, { status: 500 });
-    }
-
-    return NextResponse.json({ wishlisted: true });
-  } catch (err: any) {
-    console.error('[POST /api/storefront/wishlist] unexpected:', err);
-    return NextResponse.json({ error: err?.message ?? 'Unknown error' }, { status: 500 });
+    return NextResponse.json({ added: true, product_id })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Unknown error'
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
 
-// DELETE /api/storefront/wishlist — remove from wishlist
 export async function DELETE(req: NextRequest) {
+  const supabase = await createClient()
   try {
-    const { supabase, user } = await getAuthenticatedUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const body = await req.json();
-    const { product_id } = body;
-    if (!product_id) {
-      return NextResponse.json({ error: 'product_id required' }, { status: 400 });
-    }
+    const product_id = req.nextUrl.searchParams.get('product_id')
+    if (!product_id) return NextResponse.json({ error: 'Missing product_id' }, { status: 400 })
 
     const { error } = await supabase
       .from('wishlists')
       .delete()
       .eq('user_id', user.id)
-      .eq('product_id', product_id);
+      .eq('product_id', product_id)
 
-    if (error) {
-      console.error('[DELETE /api/storefront/wishlist]', { userId: user.id, product_id, error });
-      return NextResponse.json({ error: error.message ?? 'Delete failed' }, { status: 500 });
-    }
+    if (error) throw new Error(error.message)
 
-    return NextResponse.json({ removed: true });
-  } catch (err: any) {
-    console.error('[DELETE /api/storefront/wishlist] unexpected:', err);
-    return NextResponse.json({ error: err?.message ?? 'Unknown error' }, { status: 500 });
+    return NextResponse.json({ removed: true, product_id })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Unknown error'
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

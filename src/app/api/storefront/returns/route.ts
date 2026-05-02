@@ -1,89 +1,153 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/requireAdmin';
+import { sendTelegramMessage } from '@/lib/telegram';
 
-export const runtime = 'nodejs'
+export async function POST(req: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-// GET — fetch current user's return requests
-export async function GET() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
-  const { data, error } = await supabase
-    .from('return_requests')
-    .select(`
-      id, reason, status, admin_note, refund_amount, created_at,
-      orders ( id, total, created_at )
-    `)
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
+  try {
+    const body = await req.json();
+    const { order_id, reason, description, photos = [] } = body;
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data || [])
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('id, user_id, status, updated_at, customer_name, invoices(invoice_number)')
+      .eq('id', order_id)
+      .single();
+
+    if (orderError || !order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    if (order.user_id !== user.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    if (order.status !== 'delivered') {
+      return NextResponse.json({ error: 'Order must be delivered to request a return' }, { status: 400 });
+    }
+
+    const { data: settings } = await supabase.from('shop_settings').select('return_window_days').eq('id', 1).single();
+    const returnDays = settings?.return_window_days || 7;
+
+    const deliveredAt = new Date(order.updated_at).getTime();
+    const now = Date.now();
+    if (now - deliveredAt > returnDays * 86400000) {
+      return NextResponse.json({ error: 'Return window has expired' }, { status: 400 });
+    }
+
+    const { data: existingReturn } = await supabase
+      .from('returns')
+      .select('id')
+      .eq('order_id', order_id)
+      .maybeSingle();
+
+    if (existingReturn) {
+      return NextResponse.json({ error: 'A return request already exists for this order' }, { status: 400 });
+    }
+
+    const adminSupabase = createAdminClient();
+
+    const { data: returnData, error: returnError } = await adminSupabase
+      .from('returns')
+      .insert({
+        order_id,
+        user_id: user.id,
+        reason,
+        description,
+        photos,
+        status: 'requested'
+      })
+      .select()
+      .single();
+
+    if (returnError) {
+      return NextResponse.json({ error: 'Failed to create return request' }, { status: 500 });
+    }
+
+    await adminSupabase.from('orders').update({ status: 'return_requested' }).eq('id', order_id);
+
+    const invoiceNumber = order.invoices?.[0]?.invoice_number || 'PENDING';
+
+    await adminSupabase.from('admin_notifications').insert({
+      type: 'return_requested',
+      title: 'Return Requested',
+      body: `${order.customer_name} requested return for ${invoiceNumber}`,
+      entity_id: order_id
+    });
+
+    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co';
+    const message = `🔄 <b>Return Requested</b>\n📄 Invoice: ${invoiceNumber}\n👤 ${order.customer_name}\n📦 Reason: ${reason}\n👉 <a href="${SITE_URL}/admin/orders/${order_id}">Review Return</a>`;
+    await sendTelegramMessage(message).catch(console.error);
+
+    return NextResponse.json({ success: true, return_id: returnData.id });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
 
-// POST — submit a new return request
-export async function POST(req: NextRequest) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function GET(req: NextRequest) {
+  const guard = await requireAdmin();
+  if (guard) return guard;
 
-  const body = await req.json()
-  const { order_id, reason, description } = body
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('returns')
+    .select('*, orders(id, total, status, customer_name, customer_email), profiles:user_id(first_name, last_name, email)')
+    .order('created_at', { ascending: false });
 
-  if (!order_id || !reason) {
-    return NextResponse.json({ error: 'order_id and reason are required' }, { status: 400 })
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Verify the order belongs to the user and is delivered
-  const { data: order } = await supabase
-    .from('orders')
-    .select('id, status, user_id')
-    .eq('id', order_id)
-    .eq('user_id', user.id)
-    .single()
+  return NextResponse.json(data);
+}
 
-  if (!order) {
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 })
-  }
-  if (order.status !== 'delivered') {
-    return NextResponse.json({ error: 'Only delivered orders can be returned' }, { status: 422 })
-  }
+export async function PATCH(req: NextRequest) {
+  const guard = await requireAdmin();
+  if (guard) return guard;
 
-  // Check if return already exists for this order
-  const { data: existing } = await supabase
-    .from('return_requests')
-    .select('id')
-    .eq('order_id', order_id)
-    .maybeSingle()
+  const supabase = createAdminClient();
 
-  if (existing) {
-    return NextResponse.json({ error: 'A return request already exists for this order' }, { status: 409 })
-  }
-
-  const { data: returnReq, error } = await supabase
-    .from('return_requests')
-    .insert({
-      order_id,
-      user_id: user.id,
-      reason,
-      description: description || null,
-      status: 'pending',
-    } as any)
-    .select()
-    .single()
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  // Admin notification (non-fatal)
   try {
-    await supabase.from('admin_notifications').insert({
-      type: 'return_request',
-      title: 'New Return Request',
-      body: `A customer has requested a return for order #${order_id.slice(0, 8).toUpperCase()}`,
-      data: { order_id, return_id: returnReq.id },
-    } as any)
-  } catch { /* ignore */ }
+    const body = await req.json();
+    const { id, status, admin_note, refund_amount, refund_status } = body;
 
-  return NextResponse.json({ success: true, return_request: returnReq }, { status: 201 })
+    const updates: any = { updated_at: new Date().toISOString() };
+    if (status !== undefined) updates.status = status;
+    if (admin_note !== undefined) updates.admin_note = admin_note;
+    if (refund_amount !== undefined) updates.refund_amount = refund_amount;
+    if (refund_status !== undefined) updates.refund_status = refund_status;
+
+    const { data, error } = await supabase
+      .from('returns')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (status !== undefined) {
+      await supabase.from('admin_notifications').insert({
+        type: 'return_status_update',
+        title: 'Return Status Updated',
+        body: `Return for order ${data.order_id} updated to ${status}`,
+        entity_id: data.order_id
+      });
+    }
+
+    return NextResponse.json(data);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }

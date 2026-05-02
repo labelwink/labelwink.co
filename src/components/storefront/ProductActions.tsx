@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useCartStore } from '@/store/useCartStore'
-import { ShoppingBag, Share2 } from 'lucide-react'
+import { Share2 } from 'lucide-react'
+import { SizeGuideModal } from '@/components/storefront/SizeGuideModal'
 
 interface Variant {
   id: string
@@ -20,9 +21,10 @@ interface ProductActionsProps {
   productSlug: string
   variants: Variant[]
   publicId?: string
+  sizeGuide?: any
 }
 
-export function ProductActions({ productId, productName, productSlug, variants, publicId }: ProductActionsProps) {
+export function ProductActions({ productId, productName, productSlug, variants, publicId, sizeGuide }: ProductActionsProps) {
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const { addItem } = useCartStore()
 
@@ -62,7 +64,7 @@ export function ProductActions({ productId, productName, productSlug, variants, 
       <div className="space-y-3">
         <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
           <span>Select Size</span>
-          <a href="/size-guide" className="text-teal underline underline-offset-4">Size Guide</a>
+          <SizeGuideModal sizeGuide={sizeGuide} productName={productName} />
         </div>
         <div className="flex flex-wrap gap-3">
           {variants.map((v) => {
@@ -93,19 +95,26 @@ export function ProductActions({ productId, productName, productSlug, variants, 
           })}
         </div>
 
-        {/* Stock info */}
-        <p className="text-sm font-medium text-[#16a34a]">
-          {selectedSize
-            ? selectedVariant
-              ? selectedVariant.stock_qty === 0
-                ? 'Out of stock in this size'
-                : `${selectedVariant.stock_qty} units available`
-              : ''
-            : totalStock > 0
-              ? `${totalStock} units available across all sizes`
-              : 'Currently out of stock'
-          }
-        </p>
+        {/* Stock indicator */}
+        {selectedVariant && (() => {
+          const qty = selectedVariant.stock_qty
+          if (qty === 0) return (
+            <p className="text-sm font-medium text-gray-400">Out of stock in this size</p>
+          )
+          if (qty <= 5) return (
+            <p className="text-sm font-medium text-red-600 flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+              </span>
+              Only {qty} left!
+            </p>
+          )
+          if (qty <= 9) return (
+            <p className="text-sm font-medium text-amber-600">Only {qty} left — order soon!</p>
+          )
+          return null
+        })()}
       </div>
 
       {/* CTA row — sticky on mobile */}
@@ -134,6 +143,17 @@ export function ProductActions({ productId, productName, productSlug, variants, 
           <Share2 className="w-5 h-5" />
         </button>
       </div>
+
+      {isOutOfStock && selectedVariant && (
+        <div className="mt-4">
+          <StockAlertButton 
+            productId={productId} 
+            variantId={selectedVariant.id} 
+            size={selectedVariant.size} 
+            currentStock={selectedVariant.stock_qty} 
+          />
+        </div>
+      )}
     </div>
   )
 }

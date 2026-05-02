@@ -1,13 +1,13 @@
 import { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { Star, Truck, ShieldCheck, RefreshCcw } from 'lucide-react';
 import { ProductImage } from '@/components/storefront/ProductImage';
 import { PincodeChecker } from '@/components/storefront/PincodeChecker';
 import { ProductImageGallery } from '@/components/storefront/ProductImageGallery';
 import { ProductActions } from '@/components/storefront/ProductActions';
 import { WishlistButton } from '@/components/storefront/WishlistButton';
+import { ProductInfoTabs } from '@/components/storefront/ProductInfoTabs';
 import WriteReviewForm from '@/components/storefront/WriteReviewForm';
 import Script from 'next/script';
 import Link from 'next/link';
@@ -66,14 +66,26 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   if (error || !product) notFound();
 
   // Re-check wishlist with actual product ID
+  let hasPurchased = false;
   if (user) {
-    const { data: wl } = await supabase
-      .from('wishlists')
-      .select('id')
-      .eq('product_id', product.id)
-      .eq('user_id', user.id)
-      .maybeSingle();
-    isWishlisted = !!wl;
+    const [wlResult, purchaseResult] = await Promise.all([
+      supabase
+        .from('wishlists')
+        .select('id')
+        .eq('product_id', product.id)
+        .eq('user_id', user.id)
+        .maybeSingle(),
+      // Gate: user must have a DELIVERED order containing this product
+      supabase
+        .from('order_items')
+        .select('id, orders!inner(user_id, status)')
+        .eq('product_id', product.id)
+        .eq('orders.user_id', user.id)
+        .eq('orders.status', 'delivered')
+        .limit(1),
+    ]);
+    isWishlisted = !!wlResult.data;
+    hasPurchased = (purchaseResult.data?.length ?? 0) > 0;
   }
 
   // Fetch reviews separately to avoid inner join issues
@@ -240,6 +252,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               productSlug={product.slug}
               variants={product.product_variants ?? []}
               publicId={product.product_images?.[0]?.cloudinary_public_id}
+              sizeGuide={product.size_guide ?? null}
             />
           </div>
 
@@ -259,6 +272,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               productSlug={product.slug}
               variants={product.product_variants ?? []}
               publicId={product.product_images?.[0]?.cloudinary_public_id}
+              sizeGuide={product.size_guide ?? null}
             />
           </div>
 
@@ -269,18 +283,20 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <div className="space-y-2"><RefreshCcw className="w-5 h-5 mx-auto text-teal" /><p className="text-[9px] font-bold uppercase tracking-tighter text-muted-foreground">Easy Returns</p></div>
             <div className="space-y-2"><ShieldCheck className="w-5 h-5 mx-auto text-teal" /><p className="text-[9px] font-bold uppercase tracking-tighter text-muted-foreground">Secure Pay</p></div>
           </div>
-
-          <Accordion className="w-full border-t border-sage/10">
-            <AccordionItem value="details" className="border-sage/10">
-              <AccordionTrigger className="text-[10px] font-bold uppercase tracking-[0.2em] py-6 hover:no-underline">Product Details</AccordionTrigger>
-              <AccordionContent className="text-charcoal/70 text-xs leading-relaxed space-y-4 pb-6">
-                <p><strong className="text-charcoal font-bold uppercase tracking-widest text-[9px]">Fabric:</strong> {product.fabric || 'Premium Handcrafted Fabric'}</p>
-                <p><strong className="text-charcoal font-bold uppercase tracking-widest text-[9px]">Care:</strong> {product.care_instructions || 'Hand wash cold or dry clean'}</p>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
         </div>
       </div>
+
+      {/* Product Info Tabs */}
+      <ProductInfoTabs
+        description={product.description}
+        additionalInfo={product.additional_info}
+        fabricMaterial={product.fabric_material}
+        sleeveType={product.sleeve_type}
+        fitType={product.fit_type}
+        occasionTags={product.occasion_tags}
+        careInstructions={product.care_instructions}
+        sizeGuide={product.size_guide}
+      />
 
         {/* Reviews Section */}
       <section className="mt-12 border-t border-sage/10 pt-10">
@@ -366,12 +382,56 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <p className="text-sm text-charcoal/50 italic mb-6">No reviews yet. Be the first to review this product!</p>
         )}
 
-        {/* Write review form */}
-        <WriteReviewForm productId={product.id} isLoggedIn={!!user} />
+        {/* Write review form — only for users who received this product */}
+        <WriteReviewForm productId={product.id} isLoggedIn={!!user} hasPurchased={hasPurchased} />
       </section>
+
+      {/* Related Products */}
+      {relatedProducts && relatedProducts.length > 0 && (
+        <section className="mt-16 border-t border-sage/10 pt-10">
+          <h2 className="text-xl font-heading font-semibold text-charcoal mb-6">You may also like</h2>
+          <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
+            {relatedProducts.map((rp: any) => {
+              const rpImg = rp.product_images?.find((i: any) => i.is_cover || i.is_primary) || rp.product_images?.[0]
+              const rpVariant = rp.product_variants?.[0]
+              const rpPrice = rpVariant?.price || 0
+              const rpMrp = rpVariant?.mrp || null
+              const rpDiscount = rpMrp && rpMrp > rpPrice ? Math.round(((rpMrp - rpPrice) / rpMrp) * 100) : 0
+              const rpImg1 = rpImg?.url || (rpImg?.cloudinary_public_id
+                ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto,w_300/${rpImg.cloudinary_public_id}`
+                : null)
+              return (
+                <Link
+                  key={rp.id}
+                  href={`/products/${rp.slug}`}
+                  className="flex-shrink-0 w-[180px] group"
+                >
+                  <div className="aspect-[3/4] bg-sage/10 rounded-sm overflow-hidden relative mb-2.5">
+                    {rpImg1 ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={rpImg1} alt={rp.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-sage/30 text-xs">No image</div>
+                    )}
+                    {rpDiscount > 0 && (
+                      <span className="absolute top-2 left-2 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5">{rpDiscount}% OFF</span>
+                    )}
+                  </div>
+                  <p className="text-xs font-medium text-charcoal line-clamp-2 group-hover:text-[#c9a84c] transition-colors">{rp.name}</p>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="text-sm font-bold text-[#1a1a1a]">₹{rpPrice.toLocaleString('en-IN')}</span>
+                    {rpMrp && rpMrp > rpPrice && <span className="text-xs text-gray-400 line-through">₹{rpMrp.toLocaleString('en-IN')}</span>}
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
+
 
 
 export async function generateStaticParams() {

@@ -1,327 +1,498 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import {
-  Download, RefreshCw, AlertTriangle,
-  Package, Search, TrendingDown,
-} from 'lucide-react'
-import { useToast } from '@/components/admin/Toast'
-
-// ── Types ──────────────────────────────────────────────────────────────────────
-interface Variant {
-  id: string
-  size: string
-  stock_qty: number
-  sku: string | null
-  low_stock_threshold: number
-}
-
-interface ProductRow {
-  id: string
-  name: string
-  category: string | null
-  product_variants: Variant[]
-  product_images: { url: string; is_cover: boolean; sort_order: number }[]
-}
-
-type FilterType = 'all' | 'low' | 'out'
-
-const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size']
-const LOW_STOCK_DEFAULT = 5
-
-function getStatus(variants: Variant[]): { label: string; cls: string } {
-  const total = variants.reduce((s, v) => s + (v.stock_qty ?? 0), 0)
-  if (total === 0) return { label: 'Out', cls: 'bg-red-100 text-red-700' }
-  if (variants.some(v => v.stock_qty > 0 && v.stock_qty <= (v.low_stock_threshold ?? LOW_STOCK_DEFAULT)))
-    return { label: 'Low', cls: 'bg-amber-100 text-amber-700' }
-  return { label: 'OK', cls: 'bg-emerald-100 text-emerald-700' }
-}
-
-function getCellBg(qty: number, threshold: number) {
-  if (qty === 0) return 'bg-red-50'
-  if (qty <= threshold) return 'bg-amber-50'
-  return ''
-}
-
-function getCover(imgs: ProductRow['product_images']) {
-  if (!imgs?.length) return ''
-  return (imgs.find(i => i.is_cover) ?? imgs.sort((a, b) => a.sort_order - b.sort_order)[0])?.url ?? ''
-}
+import { useState, useEffect, useRef } from 'react'
+import { Package, Download, Upload, AlertTriangle, CheckCircle, XCircle, Search, Edit3, History, ChevronDown, ChevronRight, X } from 'lucide-react'
+import { formatIndianCurrency } from '@/lib/invoice-helpers'
+import Image from 'next/image'
 
 export default function InventoryPage() {
-  const { showToast, ToastComponent } = useToast()
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [status, setStatus] = useState<'all' | 'low' | 'out'>('all')
+  const [page, setPage] = useState(1)
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
 
-  const [products, setProducts] = useState<ProductRow[]>([])
-  const [loading,  setLoading]  = useState(true)
-  const [filter,   setFilter]   = useState<FilterType>('all')
-  const [search,   setSearch]   = useState('')
-  const [saving,   setSaving]   = useState<Set<string>>(new Set())
+  // Edit states
+  const [editingField, setEditingField] = useState<{ id: string, field: string } | null>(null)
+  const [editValue, setEditValue] = useState('')
+  const [savingField, setSavingField] = useState<string | null>(null)
 
-  const fetchInventory = useCallback(async () => {
+  // Modal state
+  const [modalVariant, setModalVariant] = useState<any>(null)
+  const [adjQty, setAdjQty] = useState('')
+  const [adjReason, setAdjReason] = useState('Sales')
+  const [adjCustom, setAdjCustom] = useState('')
+  const [modalSaving, setModalSaving] = useState(false)
+
+  // History state
+  const [expandedRow, setExpandedRow] = useState<string | null>(null)
+  const [historyData, setHistoryData] = useState<Record<string, any[]>>({})
+  const [historyLoading, setHistoryLoading] = useState<Record<string, boolean>>({})
+
+  // Import state
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<{ success: number, failed: any[] } | null>(null)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search)
+      setPage(1)
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const fetchInventory = async () => {
     setLoading(true)
     try {
-      // Fetch all products (max 500) with variants + images
-      const res  = await fetch('/api/admin/products?page=0')
-      const data = await res.json()
-      setProducts(data.products ?? [])
-    } catch {
-      setProducts([])
-    } finally {
-      setLoading(false)
+      const res = await fetch(`/api/admin/inventory?search=${encodeURIComponent(debouncedSearch)}&status=${status}&page=${page}`)
+      const json = await res.json()
+      setData(json)
+    } catch (err) {
+      console.error(err)
     }
-  }, [])
-
-  useEffect(() => { fetchInventory() }, [fetchInventory])
-
-  // Derive the sizes actually used across all products
-  const usedSizes = ALL_SIZES.filter(sz =>
-    products.some(p => p.product_variants?.some(v => v.size === sz))
-  )
-
-  // Filter + search
-  const displayed = products.filter(p => {
-    const vs = p.product_variants ?? []
-    const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase())
-    if (!matchSearch) return false
-    if (filter === 'out') return vs.every(v => v.stock_qty === 0) || vs.length === 0
-    if (filter === 'low') return vs.some(v => v.stock_qty > 0 && v.stock_qty <= (v.low_stock_threshold ?? LOW_STOCK_DEFAULT))
-    return true
-  })
-
-  const lowStockCount = products.filter(p =>
-    p.product_variants?.some(v => v.stock_qty > 0 && v.stock_qty <= (v.low_stock_threshold ?? LOW_STOCK_DEFAULT))
-  ).length
-
-  const outOfStockCount = products.filter(p =>
-    (p.product_variants?.every(v => v.stock_qty === 0)) || p.product_variants?.length === 0
-  ).length
-
-  const updateStock = async (productId: string, size: string, qty: number) => {
-    const key = `${productId}-${size}`
-    setSaving(prev => new Set(prev).add(key))
-    try {
-      const res = await fetch(
-        `/api/admin/products/${productId}/variants/${encodeURIComponent(size)}`,
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ stock_qty: qty }),
-        }
-      )
-      if (!res.ok) throw new Error()
-      setProducts(prev => prev.map(p =>
-        p.id !== productId ? p : {
-          ...p,
-          product_variants: p.product_variants.map(v =>
-            v.size === size ? { ...v, stock_qty: qty } : v
-          ),
-        }
-      ))
-      showToast('Stock updated', 'success')
-    } catch {
-      showToast('Update failed', 'error')
-    } finally {
-      setSaving(prev => { const n = new Set(prev); n.delete(key); return n })
-    }
+    setLoading(false)
   }
 
-  const exportCSV = () => {
-    const h    = ['Product', 'Category', ...usedSizes, 'Total', 'Status']
-    const rows = products.map(p => {
-      const varMap = Object.fromEntries((p.product_variants ?? []).map(v => [v.size, v.stock_qty]))
-      const total  = usedSizes.reduce((s, sz) => s + (varMap[sz] ?? 0), 0)
-      return [
-        p.name,
-        p.category ?? '',
-        ...usedSizes.map(sz => varMap[sz] !== undefined ? String(varMap[sz]) : '—'),
-        String(total),
-        getStatus(p.product_variants ?? []).label,
-      ]
-    })
-    const csv  = [h, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n')
+  useEffect(() => { fetchInventory() }, [debouncedSearch, status, page])
+
+  const handleExport = () => {
+    window.location.href = `/api/admin/reports/stock?format=csv&status=${status}`
+  }
+
+  const downloadTemplate = () => {
+    const csv = 'sku,stock_qty,reason\nTEST-SKU-01,10,Restock\nTEST-SKU-02,0,Damaged'
     const blob = new Blob([csv], { type: 'text/csv' })
-    const a    = document.createElement('a')
-    a.href = URL.createObjectURL(blob); a.download = `inventory-${Date.now()}.csv`; a.click()
-    URL.revokeObjectURL(a.href)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'inventory-import-template.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setImporting(true)
+    setImportResult(null)
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const res = await fetch('/api/admin/inventory/import', { method: 'POST', body: formData })
+      const json = await res.json()
+      setImportResult({ success: json.success_count || 0, failed: json.failed || [] })
+      fetchInventory()
+    } catch (err) {
+      console.error('Import failed', err)
+      alert('Import failed')
+    }
+    setImporting(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handleInlineSave = async (variantId: string, field: string) => {
+    const prevVar = data?.variants.find((v: any) => v.variant_id === variantId)
+    if (!prevVar) return
+
+    let payload: any = {}
+    if (field === 'stock_qty' || field === 'low_stock_threshold') {
+      const num = parseInt(editValue, 10)
+      if (isNaN(num) || num < 0) return setEditingField(null)
+      if (num === prevVar[field]) return setEditingField(null)
+      payload[field] = num
+    } else {
+      if (editValue === prevVar[field]) return setEditingField(null)
+      payload[field] = editValue
+    }
+
+    setSavingField(`${variantId}-${field}`)
+    try {
+      await fetch(`/api/admin/inventory/${variantId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      setData((prev: any) => ({
+        ...prev,
+        variants: prev.variants.map((v: any) => v.variant_id === variantId ? { ...v, ...payload } : v)
+      }))
+    } catch (err) {
+      console.error(err)
+    }
+    setEditingField(null)
+    setSavingField(null)
+  }
+
+  const handleModalSave = async () => {
+    if (!modalVariant) return
+    const num = parseInt(adjQty, 10)
+    if (isNaN(num) || num < 0) return alert('Invalid quantity')
+
+    setModalSaving(true)
+    const reason = adjReason === 'Other' ? adjCustom : adjReason
+    try {
+      await fetch(`/api/admin/inventory/${modalVariant.variant_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stock_qty: num, reason })
+      })
+      setModalVariant(null)
+      fetchInventory()
+      if (expandedRow === modalVariant.variant_id) {
+        fetchHistory(modalVariant.variant_id)
+      }
+    } catch (err) {
+      console.error(err)
+    }
+    setModalSaving(false)
+  }
+
+  const fetchHistory = async (variantId: string) => {
+    setHistoryLoading(p => ({ ...p, [variantId]: true }))
+    try {
+      const res = await fetch(`/api/admin/inventory/${variantId}`)
+      const json = await res.json()
+      setHistoryData(p => ({ ...p, [variantId]: json }))
+    } catch (err) {
+      console.error(err)
+    }
+    setHistoryLoading(p => ({ ...p, [variantId]: false }))
+  }
+
+  const toggleRow = (variantId: string) => {
+    if (expandedRow === variantId) {
+      setExpandedRow(null)
+    } else {
+      setExpandedRow(variantId)
+      if (!historyData[variantId]) {
+        fetchHistory(variantId)
+      }
+    }
   }
 
   return (
-    <div className="space-y-5">
-      {ToastComponent}
+    <div className="space-y-8 relative">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-[#1a1a1a]">Inventory</h1>
+        <p className="text-muted-foreground mt-1 text-[#1a1a1a]/70">
+          Manage stock, locations, and view adjustment history.
+        </p>
+      </div>
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-[#1a1a1a]">Inventory</h1>
-          <p className="text-xs text-[#6b7280] mt-0.5">{products.length} products</p>
+      {data?.summary && (
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="bg-white p-4 rounded-xl border border-[#1a1a1a]/10 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs text-[#1a1a1a]/60">Total SKUs</p>
+              <p className="text-xl font-bold mt-1">{data.summary.total_skus}</p>
+            </div>
+            <Package className="h-8 w-8 text-[#1a1a1a]/20" />
+          </div>
+          <div className="bg-red-50 p-4 rounded-xl border border-red-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs text-red-600/80">Out of Stock</p>
+              <p className="text-xl font-bold text-red-600 mt-1">{data.summary.out_of_stock}</p>
+            </div>
+            <XCircle className="h-8 w-8 text-red-200" />
+          </div>
+          <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs text-amber-600/80">Low Stock</p>
+              <p className="text-xl font-bold text-amber-600 mt-1">{data.summary.low_stock}</p>
+            </div>
+            <AlertTriangle className="h-8 w-8 text-amber-200" />
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-[#1a1a1a]/10 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs text-[#1a1a1a]/60">Total Value</p>
+              <p className="text-xl font-bold text-[#c9a84c] mt-1">{formatIndianCurrency(data.summary.total_stock_value)}</p>
+            </div>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button onClick={fetchInventory} disabled={loading}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-[#e5e7eb] rounded-lg text-xs text-[#6b7280] hover:bg-gray-50 disabled:opacity-50 transition-colors">
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
-          </button>
-          <button onClick={exportCSV} disabled={products.length === 0}
-            className="flex items-center gap-1.5 px-3 py-1.5 border border-[#e5e7eb] rounded-lg text-xs text-[#6b7280] hover:bg-gray-50 disabled:opacity-50 transition-colors">
-            <Download size={13} /> Export
+      )}
+
+      <div className="bg-white p-4 rounded-xl border border-[#1a1a1a]/10 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full md:w-auto">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#1a1a1a]/40" />
+            <input
+              type="text"
+              placeholder="Search product or SKU..."
+              className="pl-9 pr-4 py-2 border border-[#1a1a1a]/20 rounded-md focus:outline-none focus:border-[#c9a84c] w-full sm:w-64 text-sm"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <select 
+            value={status} 
+            onChange={e => setStatus(e.target.value as any)}
+            className="border border-[#1a1a1a]/20 rounded-md px-3 py-2 bg-transparent focus:outline-none focus:border-[#c9a84c] text-sm"
+          >
+            <option value="all">All SKUs</option>
+            <option value="low">Low Stock</option>
+            <option value="out">Out of Stock</option>
+          </select>
+        </div>
+        <div className="flex space-x-2">
+          <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
+          <div className="relative group">
+            <button onClick={() => fileInputRef.current?.click()} disabled={importing} className="flex items-center space-x-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-md hover:bg-[#1a1a1a]/90 transition-colors text-sm disabled:opacity-50">
+              <Upload className="h-4 w-4" />
+              <span>{importing ? 'Importing...' : 'Import CSV'}</span>
+            </button>
+            <div className="absolute top-full right-0 mt-2 bg-white border border-[#1a1a1a]/10 shadow-lg rounded-md p-2 hidden group-hover:block w-48 z-10">
+              <button onClick={downloadTemplate} className="text-xs text-blue-600 hover:underline w-full text-left">Download CSV Template</button>
+            </div>
+          </div>
+          <button onClick={handleExport} className="flex items-center space-x-2 bg-white border border-[#1a1a1a]/20 px-4 py-2 rounded-md hover:bg-[#faf7f2] transition-colors text-sm">
+            <Download className="h-4 w-4" />
+            <span>Export</span>
           </button>
         </div>
       </div>
 
-      {/* Alert strip */}
-      {(lowStockCount > 0 || outOfStockCount > 0) && (
-        <div className="flex gap-3 flex-wrap">
-          {outOfStockCount > 0 && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs font-semibold">
-              <AlertTriangle size={12} /> {outOfStockCount} product{outOfStockCount !== 1 ? 's' : ''} out of stock
-            </div>
-          )}
-          {lowStockCount > 0 && (
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 px-3 py-2 rounded-lg text-xs font-semibold">
-              <TrendingDown size={12} /> {lowStockCount} product{lowStockCount !== 1 ? 's' : ''} low on stock
+      {importResult && (
+        <div className={`p-4 rounded-lg border text-sm ${importResult.failed.length > 0 ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-green-50 border-green-200 text-green-800'}`}>
+          <div className="font-semibold flex justify-between">
+            <span>Import Complete: {importResult.success} updated, {importResult.failed.length} failed.</span>
+            <button onClick={() => setImportResult(null)}><X className="h-4 w-4" /></button>
+          </div>
+          {importResult.failed.length > 0 && (
+            <div className="mt-2 max-h-32 overflow-y-auto">
+              <ul className="list-disc pl-5 space-y-1 text-xs">
+                {importResult.failed.map((f, i) => (
+                  <li key={i}>SKU {f.sku}: {f.error}</li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
       )}
 
-      {/* Filters + search */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-          {([
-            { value: 'all', label: `All (${products.length})` },
-            { value: 'low', label: `Low (${lowStockCount})` },
-            { value: 'out', label: `Out (${outOfStockCount})` },
-          ] as { value: FilterType; label: string }[]).map(f => (
-            <button key={f.value} onClick={() => setFilter(f.value)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                filter === f.value ? 'bg-white shadow text-[#1a1a1a]' : 'text-[#6b7280] hover:text-[#1a1a1a]'
-              }`}>
-              {f.label}
-            </button>
-          ))}
-        </div>
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af]" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Filter by product name…"
-            className="w-full pl-8 pr-3 py-2 border border-[#e5e7eb] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#1b3a34]/20"
-          />
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-[#1a1a1a]/10 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af] border-b border-[#e5e7eb] bg-[#f9f9f9]">
-                <th className="text-left px-4 py-3 min-w-[180px]">Product</th>
-                {usedSizes.map(sz => (
-                  <th key={sz} className="px-2 py-3 text-center min-w-[68px]">{sz}</th>
-                ))}
-                <th className="px-3 py-3 text-center">Total</th>
-                <th className="px-3 py-3 text-center">Status</th>
+          <table className="w-full text-sm text-left">
+            <thead className="bg-[#faf7f2] border-b border-[#1a1a1a]/10 text-[#1a1a1a]/70 font-medium">
+              <tr>
+                <th className="px-4 py-3 w-8"></th>
+                <th className="px-4 py-3">Product</th>
+                <th className="px-4 py-3">Variant</th>
+                <th className="px-4 py-3">SKU</th>
+                <th className="px-4 py-3 text-center">Status</th>
+                <th className="px-4 py-3 text-right">Stock</th>
+                <th className="px-4 py-3 text-right">Threshold</th>
+                <th className="px-4 py-3">Location</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#f3f4f6]">
+            <tbody className="divide-y divide-[#1a1a1a]/5">
               {loading ? (
-                [...Array(6)].map((_, i) => (
-                  <tr key={i} className="animate-pulse">
-                    {[...Array(usedSizes.length + 3)].map((_, j) => (
-                      <td key={j} className="px-3 py-3.5">
-                        <div className="h-3.5 bg-gray-100 rounded" />
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              ) : displayed.length === 0 ? (
-                <tr>
-                  <td colSpan={usedSizes.length + 3} className="text-center py-16">
-                    <Package size={28} className="mx-auto text-gray-200 mb-3" />
-                    <p className="text-sm text-[#6b7280]">
-                      {search ? `No products matching "${search}"` : 'No products found'}
-                    </p>
-                  </td>
-                </tr>
-              ) : displayed.map(p => {
-                const varMap = Object.fromEntries((p.product_variants ?? []).map(v => [v.size, v]))
-                const total  = usedSizes.reduce((s, sz) => s + (varMap[sz]?.stock_qty ?? 0), 0)
-                const status = getStatus(p.product_variants ?? [])
-                const cover  = getCover(p.product_images)
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-[#1a1a1a]/50">Loading inventory...</td></tr>
+              ) : data?.variants?.length === 0 ? (
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-[#1a1a1a]/50">No variants found.</td></tr>
+              ) : data?.variants?.map((v: any) => {
+                const isExpanded = expandedRow === v.variant_id
+                
+                const renderInlineEdit = (field: string, type: 'text'|'number' = 'text', align: string = 'left') => {
+                  const isEditing = editingField?.id === v.variant_id && editingField.field === field
+                  const isSaving = savingField === `${v.variant_id}-${field}`
+                  
+                  if (isSaving) return <span className={`text-[#c9a84c] text-xs block text-${align}`}>Saving...</span>
+                  if (isEditing) {
+                    return (
+                      <input
+                        autoFocus
+                        type={type}
+                        className={`w-full px-1 py-0.5 border border-[#c9a84c] rounded focus:outline-none text-${align}`}
+                        value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        onBlur={() => handleInlineSave(v.variant_id, field)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleInlineSave(v.variant_id, field) }}
+                      />
+                    )
+                  }
+                  
+                  let displayVal = v[field]
+                  if (field === 'stock_qty') {
+                    displayVal = <span className={v.stock_qty === 0 ? 'text-red-600 font-bold' : v.stock_qty <= v.low_stock_threshold ? 'text-amber-600 font-bold' : ''}>{v.stock_qty}</span>
+                  }
+
+                  return (
+                    <div
+                      className={`cursor-pointer hover:bg-[#c9a84c]/10 hover:text-[#c9a84c] px-1 py-0.5 rounded transition-colors inline-block text-${align} w-full min-h-[24px]`}
+                      onClick={() => { setEditingField({ id: v.variant_id, field }); setEditValue(String(v[field] || '')) }}
+                      title="Click to edit"
+                    >
+                      {displayVal || <span className="text-transparent">_</span>}
+                    </div>
+                  )
+                }
 
                 return (
-                  <tr key={p.id} className="hover:bg-[#f9fafb] transition-colors">
-                    {/* Product name */}
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
-                          {cover
-                            ? <img src={cover} alt="" className="w-full h-full object-cover" />
-                            : <Package size={12} className="text-gray-300" />
-                          }
+                  <React.Fragment key={v.variant_id}>
+                    <tr className={`hover:bg-[#faf7f2]/50 transition-colors ${isExpanded ? 'bg-[#faf7f2]/30' : ''}`}>
+                      <td className="px-4 py-3">
+                        <button onClick={() => toggleRow(v.variant_id)} className="text-[#1a1a1a]/40 hover:text-[#1a1a1a]">
+                          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-10 w-10 relative rounded overflow-hidden bg-[#faf7f2] shrink-0 border border-[#1a1a1a]/10">
+                            {v.image_url ? (
+                              <Image src={v.image_url} alt="" fill className="object-cover" />
+                            ) : (
+                              <Package className="h-5 w-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[#1a1a1a]/20" />
+                            )}
+                          </div>
+                          <div className="font-medium truncate max-w-[200px]">{v.product_name}</div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium text-[#1a1a1a] truncate max-w-[160px]">{p.name}</p>
-                          <p className="text-[10px] text-[#9ca3af]">{p.category || '—'}</p>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Size cells */}
-                    {usedSizes.map(sz => {
-                      const variant  = varMap[sz]
-                      const key      = `${p.id}-${sz}`
-                      const isSaving = saving.has(key)
-
-                      if (!variant) return (
-                        <td key={sz} className="px-2 py-3.5 text-center text-[10px] text-[#d1d5db]">—</td>
-                      )
-
-                      const threshold = variant.low_stock_threshold ?? LOW_STOCK_DEFAULT
-                      return (
-                        <td key={sz} className={`px-1 py-2 text-center ${getCellBg(variant.stock_qty, threshold)}`}>
-                          <input
-                            type="number" min="0"
-                            defaultValue={variant.stock_qty}
-                            disabled={isSaving}
-                            onBlur={e => {
-                              const val = Number(e.target.value)
-                              if (val !== variant.stock_qty) updateStock(p.id, sz, val)
-                            }}
-                            className={`w-14 text-center text-xs border border-transparent rounded-lg py-1 bg-transparent focus:outline-none focus:ring-2 focus:ring-[#1b3a34]/30 focus:bg-white focus:border-[#1b3a34]/20 transition-all ${
-                              isSaving ? 'opacity-40' : ''
-                            } ${
-                              variant.stock_qty === 0 ? 'font-bold text-red-600' :
-                              variant.stock_qty <= threshold ? 'font-semibold text-amber-600' :
-                              'text-[#1a1a1a]'
-                            }`}
-                          />
+                      </td>
+                      <td className="px-4 py-3 text-[#1a1a1a]/70">{v.size} {v.color ? `/ ${v.color}` : ''}</td>
+                      <td className="px-4 py-3 font-mono text-xs w-32">{renderInlineEdit('sku')}</td>
+                      <td className="px-4 py-3 text-center">
+                        {v.status === 'out' ? (
+                          <span className="inline-flex items-center space-x-1 text-red-600 bg-red-50 px-2 py-0.5 rounded text-[11px] font-medium border border-red-100"><XCircle className="h-3 w-3" /><span>Out</span></span>
+                        ) : v.status === 'low' ? (
+                          <span className="inline-flex items-center space-x-1 text-amber-600 bg-amber-50 px-2 py-0.5 rounded text-[11px] font-medium border border-amber-100"><AlertTriangle className="h-3 w-3" /><span>Low</span></span>
+                        ) : (
+                          <span className="inline-flex items-center space-x-1 text-green-600 bg-green-50 px-2 py-0.5 rounded text-[11px] font-medium border border-green-100"><CheckCircle className="h-3 w-3" /><span>Healthy</span></span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right w-20">{renderInlineEdit('stock_qty', 'number', 'right')}</td>
+                      <td className="px-4 py-3 text-right w-20 text-[#1a1a1a]/60">{renderInlineEdit('low_stock_threshold', 'number', 'right')}</td>
+                      <td className="px-4 py-3 w-32">{renderInlineEdit('warehouse_location')}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button onClick={() => { setModalVariant(v); setAdjQty(String(v.stock_qty)) }} className="p-1.5 text-[#1a1a1a]/50 hover:text-[#c9a84c] hover:bg-[#c9a84c]/10 rounded transition-colors" title="Adjust Stock">
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                    
+                    {/* Expanded History Row */}
+                    {isExpanded && (
+                      <tr className="bg-[#faf7f2]/50 border-b border-[#1a1a1a]/5">
+                        <td colSpan={9} className="px-12 py-4">
+                          <div className="flex items-center space-x-2 text-[#1a1a1a] mb-3">
+                            <History className="h-4 w-4 text-[#c9a84c]" />
+                            <h4 className="font-semibold text-sm">Recent Adjustments</h4>
+                          </div>
+                          {historyLoading[v.variant_id] ? (
+                            <div className="text-xs text-[#1a1a1a]/50">Loading history...</div>
+                          ) : historyData[v.variant_id]?.length > 0 ? (
+                            <table className="w-full text-xs text-left bg-white border border-[#1a1a1a]/10 rounded-md overflow-hidden">
+                              <thead className="bg-[#faf7f2] border-b border-[#1a1a1a]/10">
+                                <tr>
+                                  <th className="px-3 py-2">Date</th>
+                                  <th className="px-3 py-2 text-right">Previous</th>
+                                  <th className="px-3 py-2 text-right">New</th>
+                                  <th className="px-3 py-2 text-right">Change</th>
+                                  <th className="px-3 py-2">Reason</th>
+                                  <th className="px-3 py-2">By</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-[#1a1a1a]/5">
+                                {historyData[v.variant_id].map((h: any) => (
+                                  <tr key={h.id}>
+                                    <td className="px-3 py-2 text-[#1a1a1a]/70">{new Date(h.created_at).toLocaleString('en-IN', { dateStyle:'short', timeStyle:'short'})}</td>
+                                    <td className="px-3 py-2 text-right">{h.previous_qty}</td>
+                                    <td className="px-3 py-2 text-right font-medium">{h.new_qty}</td>
+                                    <td className="px-3 py-2 text-right font-mono">
+                                      <span className={h.adjustment > 0 ? 'text-green-600' : h.adjustment < 0 ? 'text-red-600' : ''}>
+                                        {h.adjustment > 0 ? '+' : ''}{h.adjustment}
+                                      </span>
+                                    </td>
+                                    <td className="px-3 py-2">{h.reason}</td>
+                                    <td className="px-3 py-2 text-[#1a1a1a]/60">{h.adjusted_by}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          ) : (
+                            <div className="text-xs text-[#1a1a1a]/50 italic">No adjustment history recorded for this variant.</div>
+                          )}
                         </td>
-                      )
-                    })}
-
-                    {/* Total */}
-                    <td className="px-3 py-3.5 text-center text-xs font-bold text-[#1a1a1a]">{total}</td>
-
-                    {/* Status badge */}
-                    <td className="px-3 py-3.5 text-center">
-                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${status.cls}`}>
-                        {status.label}
-                      </span>
-                    </td>
-                  </tr>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 )
               })}
             </tbody>
           </table>
         </div>
-        <div className="px-5 py-3 border-t border-[#e5e7eb] bg-[#f9f9f9]">
-          <p className="text-[10px] text-[#9ca3af]">
-            Click on any stock number and change it, then click away to save instantly.
-          </p>
-        </div>
+        
+        {/* Pagination controls */}
+        {data?.total > 20 && (
+          <div className="flex justify-between items-center p-4 border-t border-[#1a1a1a]/10 bg-[#faf7f2]">
+            <div className="text-sm text-[#1a1a1a]/60">
+              Showing {(page - 1) * 20 + 1} to {Math.min(page * 20, data.total)} of {data.total} SKUs
+            </div>
+            <div className="flex space-x-2">
+              <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-3 py-1 border border-[#1a1a1a]/20 rounded text-sm disabled:opacity-50 hover:bg-white bg-transparent transition-colors">Prev</button>
+              <button disabled={page * 20 >= data.total} onClick={() => setPage(p => p + 1)} className="px-3 py-1 border border-[#1a1a1a]/20 rounded text-sm disabled:opacity-50 hover:bg-white bg-transparent transition-colors">Next</button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Adjustment Modal */}
+      {modalVariant && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-4 border-b border-[#1a1a1a]/10 flex justify-between items-center bg-[#faf7f2]">
+              <h3 className="font-bold text-[#1a1a1a]">Adjust Stock</h3>
+              <button onClick={() => setModalVariant(null)} className="text-[#1a1a1a]/50 hover:text-[#1a1a1a]"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="font-medium text-[#1a1a1a]">{modalVariant.product_name}</p>
+                <p className="text-sm text-[#1a1a1a]/60">Variant: {modalVariant.size} {modalVariant.color ? `/ ${modalVariant.color}` : ''} | SKU: {modalVariant.sku}</p>
+              </div>
+              
+              <div className="flex space-x-4">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-[#1a1a1a]/70 mb-1">Current Stock</label>
+                  <div className="w-full px-3 py-2 bg-[#faf7f2] border border-[#1a1a1a]/10 rounded-md text-[#1a1a1a]/60">{modalVariant.stock_qty}</div>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-[#1a1a1a]/70 mb-1">New Quantity</label>
+                  <input type="number" value={adjQty} onChange={e => setAdjQty(e.target.value)} className="w-full px-3 py-2 border border-[#1a1a1a]/20 rounded-md focus:border-[#c9a84c] focus:outline-none" min="0" autoFocus />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-xs font-medium text-[#1a1a1a]/70 mb-1">Reason for Adjustment</label>
+                <select value={adjReason} onChange={e => setAdjReason(e.target.value)} className="w-full px-3 py-2 border border-[#1a1a1a]/20 rounded-md focus:border-[#c9a84c] focus:outline-none bg-white">
+                  <option value="Sales">Sales (External Platform)</option>
+                  <option value="Damaged">Damaged / Defective</option>
+                  <option value="Restock">Restock / New Delivery</option>
+                  <option value="Audit Correction">Audit Correction</option>
+                  <option value="Return">Customer Return</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              {adjReason === 'Other' && (
+                <div>
+                  <label className="block text-xs font-medium text-[#1a1a1a]/70 mb-1">Specify Reason</label>
+                  <input type="text" value={adjCustom} onChange={e => setAdjCustom(e.target.value)} className="w-full px-3 py-2 border border-[#1a1a1a]/20 rounded-md focus:border-[#c9a84c] focus:outline-none" placeholder="Enter reason..." />
+                </div>
+              )}
+            </div>
+            <div className="p-4 border-t border-[#1a1a1a]/10 flex justify-end space-x-3 bg-[#faf7f2]">
+              <button onClick={() => setModalVariant(null)} disabled={modalSaving} className="px-4 py-2 text-sm font-medium text-[#1a1a1a]/70 hover:text-[#1a1a1a] transition-colors disabled:opacity-50">Cancel</button>
+              <button onClick={handleModalSave} disabled={modalSaving} className="px-4 py-2 text-sm font-medium bg-[#1a1a1a] text-white rounded-md hover:bg-[#1a1a1a]/90 transition-colors disabled:opacity-50">
+                {modalSaving ? 'Saving...' : 'Save Adjustment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

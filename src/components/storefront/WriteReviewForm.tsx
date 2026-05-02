@@ -7,9 +7,10 @@ import Link from 'next/link';
 interface WriteReviewFormProps {
   productId: string;
   isLoggedIn: boolean;
+  hasPurchased?: boolean; // true only if user has a DELIVERED order with this product
 }
 
-export default function WriteReviewForm({ productId, isLoggedIn }: WriteReviewFormProps) {
+export default function WriteReviewForm({ productId, isLoggedIn, hasPurchased = false }: WriteReviewFormProps) {
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [title, setTitle] = useState('');
@@ -21,6 +22,18 @@ export default function WriteReviewForm({ productId, isLoggedIn }: WriteReviewFo
     return (
       <div className="mt-8 p-5 bg-sage/5 border border-sage/20 rounded-xl text-sm text-charcoal/70">
         <Link href="/account/login" className="text-teal font-semibold hover:underline">Login</Link> to write a review.
+      </div>
+    );
+  }
+
+  if (!hasPurchased) {
+    return (
+      <div className="mt-8 p-5 bg-[#faf7f2] border border-[#c9a84c]/20 rounded-xl text-sm text-charcoal/60 flex items-start gap-3">
+        <span className="text-xl">🛍️</span>
+        <div>
+          <p className="font-medium text-charcoal/80 mb-0.5">Purchase required to review</p>
+          <p>Only customers who have received this product can submit a review.</p>
+        </div>
       </div>
     );
   }

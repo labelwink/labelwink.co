@@ -21,21 +21,14 @@ export function Footer({
   const supabase = createClient();
 
   useEffect(() => {
-    async function fetchSettings() {
-      const { data } = await supabase.from('site_settings').select('*');
-      if (data) {
-        const settingsMap = data.reduce((acc: any, s: any) => ({
-          ...acc,
-          [s.key]: s.value
-        }), {});
-        setSettings(settingsMap);
-      }
-    }
-    fetchSettings();
+    fetch('/api/storefront/settings')
+      .then(res => res.json())
+      .then(data => setSettings(data))
+      .catch(console.error);
   }, []);
 
-  const whatsapp = settings.whatsapp_number?.number;
-  const email = settings.store_email?.email || 'hello@labelwink.in';
+  const whatsapp = settings.social_links?.whatsapp || settings.store_phone;
+  const email = settings.store_email || '';
 
   const toggleSection = (section: string) => {
     setOpenSection(prev => prev === section ? null : section);
@@ -48,14 +41,19 @@ export function Footer({
           {/* Brand & Newsletter — always visible */}
           <div className="lg:col-span-1 space-y-4 mb-8 md:mb-0">
             <div>
-              <p className="text-[#faf7f2] font-serif tracking-widest text-lg mb-1">Label Wink</p>
+              <p className="text-[#faf7f2] font-serif tracking-widest text-lg mb-1">{settings?.store_name || 'Store'}</p>
               <p className="text-[#c9a84c]/70 text-xs" style={{ letterSpacing: '0.15em' }}>
-                {tagline}
+                {settings?.store_tagline || tagline}
               </p>
             </div>
             <p className="text-xs text-[#faf7f2]/60 leading-relaxed max-w-[200px]">
               Curated ethnic &amp; fusion wear for the modern Indian woman. Every piece is handcrafted with love and meticulous detail in the heart of India.
             </p>
+            {settings?.free_shipping_threshold && (
+              <p className="text-xs text-[#c9a84c] mt-2 font-bold">
+                Free shipping on orders above ₹{settings.free_shipping_threshold}
+              </p>
+            )}
             <div className="space-y-2 pt-4 border-t border-[#2d5a52]">
               <h3 className="text-xs font-bold tracking-widest text-[#c9a84c]">Join The Wink Club</h3>
               <p className="text-[10px] text-[#faf7f2]/60 tracking-wider">Unlock exclusive deals and new arrivals!</p>
@@ -132,19 +130,32 @@ export function Footer({
               {whatsapp && (
                 <div className="space-y-1">
                   <p className="text-[10px] tracking-widest text-[#c9a84c] font-bold">WhatsApp Support</p>
-                  <a href={`https://wa.me/91${whatsapp}`} className="flex items-center gap-2 text-xs text-[#faf7f2]/70 hover:text-[#c9a84c] transition-colors">
-                    <MessageCircle className="w-4 h-4 text-green-500" /> +91 {whatsapp}
+                  <a href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`} className="flex items-center gap-2 text-xs text-[#faf7f2]/70 hover:text-[#c9a84c] transition-colors">
+                    <MessageCircle className="w-4 h-4 text-green-500" /> {whatsapp}
                   </a>
+                </div>
+              )}
+              {settings.store_address && (
+                <div className="space-y-1">
+                  <p className="text-[10px] tracking-widest text-[#c9a84c] font-bold">Visit Us</p>
+                  <p className="text-xs text-[#faf7f2]/70 leading-relaxed">
+                    {settings.store_address}<br/>
+                    {settings.store_city}, {settings.store_state} {settings.store_pincode}
+                  </p>
                 </div>
               )}
               
               <div className="flex gap-4 pt-2">
-                <a href="https://instagram.com/labelwink" target="_blank" className="w-8 h-8 rounded-full border border-[#faf7f2]/20 flex items-center justify-center text-[#faf7f2]/60 hover:border-[#c9a84c] hover:text-[#c9a84c] transition-colors">
-                  <Instagram className="h-4 w-4" />
-                </a>
-                <a href="https://facebook.com/labelwink" target="_blank" className="w-8 h-8 rounded-full border border-[#faf7f2]/20 flex items-center justify-center text-[#faf7f2]/60 hover:border-[#c9a84c] hover:text-[#c9a84c] transition-colors">
-                  <Facebook className="h-4 w-4" />
-                </a>
+                {settings.social_links?.instagram && (
+                  <a href={settings.social_links.instagram} target="_blank" className="w-8 h-8 rounded-full border border-[#faf7f2]/20 flex items-center justify-center text-[#faf7f2]/60 hover:border-[#c9a84c] hover:text-[#c9a84c] transition-colors">
+                    <Instagram className="h-4 w-4" />
+                  </a>
+                )}
+                {settings.social_links?.facebook && (
+                  <a href={settings.social_links.facebook} target="_blank" className="w-8 h-8 rounded-full border border-[#faf7f2]/20 flex items-center justify-center text-[#faf7f2]/60 hover:border-[#c9a84c] hover:text-[#c9a84c] transition-colors">
+                    <Facebook className="h-4 w-4" />
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -154,7 +165,7 @@ export function Footer({
         <div className="bg-[#132e28] -mx-4 px-4 mt-6 border-t border-[#2d5a52]/50">
           <div className="container mx-auto py-3 flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="text-[9px] font-bold tracking-[0.3em] text-[#faf7f2]/40 text-center md:text-left flex items-center gap-4">
-              &copy; {new Date().getFullYear()} Label Wink. All rights reserved.
+              &copy; {new Date().getFullYear()} {settings?.store_name || 'Store'}. All rights reserved.
               <Link href="/admin" className="hover:text-[#c9a84c] transition-colors underline">Admin</Link>
             </div>
             {/* Payment Badges */}

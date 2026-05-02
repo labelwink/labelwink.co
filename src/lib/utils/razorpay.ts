@@ -5,15 +5,16 @@
 
 import crypto from 'crypto'
 
-const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET!
+if (!RAZORPAY_KEY_ID) throw new Error('Missing RAZORPAY_KEY_ID')
 
 function getRazorpayAuth(): string {
   return Buffer.from(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`).toString('base64')
 }
 
 export interface RazorpayOrderParams {
-  amount: number     // in paise (rupees × 100)
+  amount: number     // in RUPEES (e.g. 499.00 for ₹499) — converted to paise internally
   currency?: string
   receipt?: string
   notes?: Record<string, string>
@@ -35,6 +36,7 @@ export interface RazorpayOrder {
  * Create a Razorpay order (server-side only)
  */
 export async function createRazorpayOrder(params: RazorpayOrderParams): Promise<RazorpayOrder> {
+  if (params.amount > 100_000) throw new Error('Amount looks like paise, pass rupees instead')
   const res = await fetch('https://api.razorpay.com/v1/orders', {
     method: 'POST',
     headers: {

@@ -1,123 +1,86 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/requireAdmin'
 
-export const runtime = 'nodejs'
-
-interface ExportOrderItem {
-  product_name: string | null
-  quantity: number
-  price_at_purchase: number
-  variant_size: string | null
-}
-
-interface ExportOrder {
-  id: string
-  status: string
-  total: number
-  subtotal: number
-  discount_amount: number
-  shipping_amount: number
-  customer_name: string | null
-  customer_email: string | null
-  customer_phone: string | null
-  payment_status: string | null
-  payment_method: string | null
-  razorpay_payment_id: string | null
-  coupon_code: string | null
-  tracking_number: string | null
-  shipping_carrier: string | null
-  created_at: string
-  order_items: ExportOrderItem[] | null
-}
-
-/**
- * GET /api/admin/orders/export
- * Returns a CSV of all orders matching optional ?status=&search= filters.
- * No pagination — exports all matching rows (max 10 000).
- */
 export async function GET(req: NextRequest) {
   const guard = await requireAdmin()
   if (guard) return guard
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = createAdminSupabaseClient() as any
-  const { searchParams } = new URL(req.url)
-  const status = searchParams.get('status') || ''
-  const search = searchParams.get('search') || ''
 
-  let query = supabase
-    .from('orders')
-    .select(
-      `id, status, total, subtotal, discount_amount, shipping_amount,
-       customer_name, customer_email, customer_phone,
-       payment_status, payment_method, razorpay_payment_id,
-       coupon_code, tracking_number, shipping_carrier,
-       created_at,
-       order_items ( product_name, quantity, price_at_purchase, variant_size )`
-    )
-    .order('created_at', { ascending: false })
-    .limit(10_000)
+  const supabase = createAdminClient()
+  const url = new URL(req.url)
+  const status = url.searchParams.get('status')
+  const from = url.searchParams.get('from')
+  const to = url.searchParams.get('to')
+  const idsParam = url.searchParams.get('ids')
+
+  let query = supabase.from('orders').select(`
+    *,
+    invoices(invoice_number, cgst, sgst, igst),
+    profiles(first_name, last_name, phone),
+    order_items(product_name, quantity)
+  `)
 
   if (status) query = query.eq('status', status)
-  if (search) {
-    query = query.or(
-      `customer_name.ilike.%${search}%,customer_email.ilike.%${search}%,tracking_number.ilike.%${search}%`
-    )
+  if (from) query = query.gte('created_at', from)
+  if (to) query = query.lte('created_at', to)
+  if (idsParam) {
+    const ids = idsParam.split(',').filter(Boolean)
+    if (ids.length > 0) query = query.in('id', ids)
   }
 
-  const { data, error } = await query as { data: ExportOrder[] | null; error: { message: string } | null }
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-
-  // ── Build CSV ─────────────────────────────────────────────────────────────
-  const esc = (v: unknown): string => {
-    const s = v === null || v === undefined ? '' : String(v)
-    return s.includes(',') || s.includes('"') || s.includes('\n')
-      ? `"${s.replace(/"/g, '""')}"`
-      : s
+  const { data, error } = await query
+  
+  if (error || !data) {
+    return new NextResponse('Failed to fetch orders', { status: 500 })
   }
 
-  const HEADERS = [
-    'Order ID', 'Date', 'Status', 'Payment Status',
-    'Customer Name', 'Customer Email', 'Customer Phone',
-    'Items', 'Subtotal', 'Discount', 'Shipping', 'Total',
-    'Coupon Code', 'Payment Method', 'Razorpay ID',
-    'Carrier', 'Tracking #',
-  ]
+  let csvContent = 'Invoice Number,Order ID,Date,Customer Name,Phone,City,State,Pincode,Items,Subtotal,Discount,Shipping,GST,Total,Payment ID,Status,AWB,Carrier\n'
 
-  const rows = (data ?? []).map((o: ExportOrder) => {
-    const items = o.order_items ?? []
-    const itemSummary = items.map(i =>
-      `${i.product_name || '—'} (${i.variant_size || '—'}) x${i.quantity}`
-    ).join(' | ')
+  for (const order of data) {
+    const invoiceNum = order.invoices?.[0]?.invoice_number || ''
+    const date = new Date(order.created_at).toISOString().split('T')[0]
+    const customer = order.customer_name || `${order.profiles?.first_name || ''} ${order.profiles?.last_name || ''}`.trim()
+    const phone = order.customer_phone || order.profiles?.phone || ''
+    const addr = order.shipping_address || {}
+    const items = order.order_items?.map((i: any) => `${i.product_name} x${i.quantity}`).join(' | ') || ''
+    
+    const escapeCsv = (str: any) => {
+      if (str === null || str === undefined) return '""';
+      const s = String(str).replace(/"/g, '""');
+      return `"${s}"`;
+    }
 
-    return [
-      o.id,
-      new Date(o.created_at).toLocaleDateString('en-IN'),
-      o.status,
-      o.payment_status,
-      o.customer_name,
-      o.customer_email,
-      o.customer_phone,
-      itemSummary,
-      o.subtotal,
-      o.discount_amount,
-      o.shipping_amount,
-      o.total,
-      o.coupon_code,
-      o.payment_method,
-      o.razorpay_payment_id,
-      o.shipping_carrier,
-      o.tracking_number,
-    ].map(esc).join(',')
-  })
+    const cgst = order.invoices?.[0]?.cgst || 0
+    const sgst = order.invoices?.[0]?.sgst || 0
+    const igst = order.invoices?.[0]?.igst || 0
+    const gstTotal = cgst + sgst + igst
 
-  const csv = [HEADERS.join(','), ...rows].join('\n')
-  const filename = `labelwink-orders-${new Date().toISOString().slice(0, 10)}.csv`
+    const row = [
+      invoiceNum,
+      order.id,
+      date,
+      customer,
+      phone,
+      addr.city || '',
+      addr.state || '',
+      addr.pincode || '',
+      items,
+      order.subtotal || 0,
+      order.discount_amount || 0,
+      order.shipping_amount || 0,
+      gstTotal,
+      order.total || 0,
+      order.razorpay_payment_id || '',
+      order.status || '',
+      order.tracking_number || '',
+      order.shipping_carrier || ''
+    ].map(escapeCsv).join(',')
 
-  return new NextResponse(csv, {
-    headers: {
-      'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-    },
-  })
+    csvContent += row + '\n'
+  }
+
+  const res = new NextResponse(csvContent)
+  res.headers.set('Content-Type', 'text/csv')
+  res.headers.set('Content-Disposition', `attachment; filename="orders-${new Date().toISOString().slice(0,10)}.csv"`)
+  return res
 }

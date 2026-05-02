@@ -28,6 +28,16 @@ export interface Product {
   meta_title: string | null
   meta_description: string | null
   og_image_url: string | null
+  // ── Phase 4: Search & PDP ──────────────────────────────────
+  sleeve_type: 'sleeveless' | 'half_sleeve' | 'full_sleeve' | '3/4_sleeve' | null
+  fit_type: 'regular' | 'slim' | 'oversized' | 'relaxed' | null
+  fabric_material: string | null
+  care_instructions: string | null
+  occasion_tags: string[] | null
+  size_guide: SizeGuide | null
+  additional_info: Record<string, string> | null
+  search_vector?: string | null
+  // ──────────────────────────────────────────────────────────
   created_at: string
   updated_at: string | null
   // Relations (joined)
@@ -71,6 +81,14 @@ export interface SizeChartRow {
 export interface SizeChartData {
   rows: SizeChartRow[]
   unit?: 'cm' | 'inches'
+}
+
+/** Phase 4 — structured size guide stored in products.size_guide */
+export interface SizeGuide {
+  headers: string[]             // e.g. ['Size','Chest','Waist','Hips','Length']
+  rows: string[][]              // e.g. [['XS','32','26','34','52'], ...]
+  unit: 'cm' | 'inches'
+  guide_image_url?: string
 }
 
 export interface Category {
@@ -309,12 +327,42 @@ export interface Review {
   title: string | null
   body: string | null
   status: 'pending' | 'approved' | 'rejected'
+  // Phase 4 additions
+  photos: string[] | null       // Cloudinary URLs
   is_verified_purchase: boolean
   admin_reply: string | null
+  admin_replied_at: string | null
+  helpful_count: number
   created_at: string
   // Relations
   products?: Partial<Product>
   profiles?: Partial<CustomerProfile>
+}
+
+// ── Analytics Types (Phase 4) ─────────────────────────────────────────────────
+
+export interface ProductView {
+  id: string
+  product_id: string
+  session_id: string | null
+  user_id: string | null
+  viewed_at: string
+}
+
+export interface SearchLog {
+  id: string
+  query: string
+  results_count: number
+  user_id: string | null
+  searched_at: string
+}
+
+export interface DiscountCodeUse {
+  id: string
+  discount_code_id: string | null
+  user_id: string | null
+  order_id: string | null
+  used_at: string
 }
 
 // ── Admin Types ───────────────────────────────────────────────────────────────

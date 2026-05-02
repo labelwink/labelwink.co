@@ -3,33 +3,48 @@ import { createClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 
-// GET ?product_id=xxx — fetch approved reviews + stats
+// GET ?product_id=xxx&page=1&per_page=5&rating= — fetch approved reviews + stats
 export async function GET(req: NextRequest) {
   const supabase = await createClient()
-  const product_id = new URL(req.url).searchParams.get('product_id')
+  const sp = new URL(req.url).searchParams
+  const product_id = sp.get('product_id')
+  const page = Math.max(parseInt(sp.get('page') ?? '1', 10), 1)
+  const per_page = Math.min(parseInt(sp.get('per_page') ?? '5', 10), 20)
+  const rating_filter = sp.get('rating')
+
   if (!product_id) return NextResponse.json({ error: 'product_id required' }, { status: 400 })
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('reviews')
-    .select('id, rating, title, body, is_verified_purchase, admin_reply, created_at, profiles(full_name)')
+    .select('id, rating, title, body, photos, is_verified_purchase, admin_reply, admin_replied_at, helpful_count, created_at, profiles(id, full_name, avatar_url)')
     .eq('product_id', product_id)
     .eq('status', 'approved')
-    .order('created_at', { ascending: false })
+
+  if (rating_filter) query = query.eq('rating', parseInt(rating_filter, 10))
+
+  const [{ data, error }, { data: allRatings }] = await Promise.all([
+    query
+      .order('helpful_count', { ascending: false })
+      .order('created_at', { ascending: false })
+      .range((page - 1) * per_page, page * per_page - 1),
+    supabase.from('reviews').select('rating').eq('product_id', product_id).eq('status', 'approved'),
+  ])
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const reviews = data || []
-  const avgRating = reviews.length
-    ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
-    : 0
+  const ratings = (allRatings ?? []).map(r => r.rating)
+  const total = ratings.length
+  const avg_rating = total ? Math.round((ratings.reduce((s, r) => s + r, 0) / total) * 10) / 10 : 0
+  const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } as Record<number, number>
+  ratings.forEach(r => { if (r >= 1 && r <= 5) distribution[r]++ })
 
-  const formatted = reviews.map(r => ({
-    ...r,
-    reviewer_name: (r.profiles as { full_name?: string } | null)?.full_name || 'Verified Buyer',
-  }))
-
-  return NextResponse.json({ reviews: formatted, avgRating, reviewCount: reviews.length })
+  return NextResponse.json({
+    reviews: data ?? [],
+    total, avg_rating, distribution,
+    page, per_page, total_pages: Math.ceil(total / per_page),
+  })
 }
+
 
 // POST — submit a new review (must be logged in + must have ordered the product)
 export async function POST(req: NextRequest) {

@@ -1,44 +1,47 @@
-/*
- * CREATE TABLE IF NOT EXISTS settings (
- *   key text PRIMARY KEY,
- *   value jsonb,
- *   updated_at timestamptz DEFAULT now()
- * );
- */
-
-import { NextRequest, NextResponse } from 'next/server'
-import { createAdminSupabaseClient } from '@/lib/supabase/admin'
-
-export const runtime = 'nodejs'
+import { NextResponse } from 'next/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 export async function GET() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = createAdminSupabaseClient() as any
-  const { data, error } = await supabase.from('settings').select('key, value')
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  const map: Record<string, unknown> = {}
-  for (const row of data || []) map[row.key] = row.value
-  return NextResponse.json(map)
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.from('shop_settings').select('*').eq('id', 1).single();
+  
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json(data);
 }
 
-export async function POST(req: NextRequest) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = createAdminSupabaseClient() as any
-  const { key, value } = await req.json()
-  if (!key) return NextResponse.json({ error: 'key is required' }, { status: 400 })
+export async function PATCH(req: Request) {
+  const supabase = createAdminClient();
+  const body = await req.json();
 
-  // Allowlist known setting keys
-  const ALLOWED_KEYS = [
-    'store_info', 'trust_badges', 'social_links',
-    'shipping_config', 'razorpay_config',
-  ]
-  if (!ALLOWED_KEYS.includes(key)) {
-    return NextResponse.json({ error: 'Unknown setting key' }, { status: 400 })
+  const allowedFields = [
+    'store_name', 'store_tagline', 'store_email', 'store_phone', 'store_address',
+    'store_city', 'store_state', 'store_pincode', 'gst_number', 'hsn_code',
+    'logo_url', 'favicon_url', 'free_shipping_threshold', 'standard_shipping_charge',
+    'express_shipping_charge', 'loyalty_enabled', 'loyalty_points_per_rupee',
+    'loyalty_redemption_ratio', 'return_window_days', 'invoice_footer_note',
+    'invoice_terms', 'label_warning_text', 'shiprocket_mode'
+  ];
+
+  const updates: Record<string, any> = {};
+  for (const field of allowedFields) {
+    if (field in body) {
+      updates[field] = body[field];
+    }
   }
 
-  const { error } = await supabase
-    .from('settings')
-    .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' })
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ success: true })
+  updates.updated_at = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('shop_settings')
+    .update(updates)
+    .eq('id', 1)
+    .select('*')
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  return NextResponse.json(data);
 }

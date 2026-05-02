@@ -1,17 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft, Printer, Package, MapPin, CreditCard,
   Truck, Clock, CheckCircle2, XCircle, FileText,
-  ExternalLink, ChevronRight,
+  ExternalLink, ChevronRight, ChevronDown, ChevronUp, Edit3
 } from 'lucide-react'
 import { useToast } from '@/components/admin/Toast'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils/format'
 import { ORDER_STATUS_COLORS, ORDER_STATUSES } from '@/lib/utils/constants'
 import type { OrderStatus } from '@/lib/utils/constants'
+import WorkflowButton from '@/components/admin/WorkflowButton'
+import { createClient } from '@/lib/supabase/client'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface OrderItem {
@@ -32,12 +34,18 @@ interface StatusHistory {
 }
 
 interface Invoice {
+  id: string
   invoice_number: string
   issued_at: string
   cgst: number
   sgst: number
   igst: number
   total: number
+  shipping: number
+  discount: number
+  subtotal: number
+  customer_name?: string
+  shipping_address?: any
 }
 
 interface ShippingAddress {
@@ -80,7 +88,6 @@ interface Order {
   invoice: Invoice | null
 }
 
-
 const STATUS_ICONS: Record<string, React.ElementType> = {
   delivered:  CheckCircle2,
   cancelled:  XCircle,
@@ -122,6 +129,7 @@ function Card({ title, icon: Icon, children, className = '' }: {
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { showToast, ToastComponent } = useToast()
+  const supabase = createClient()
 
   const [id,       setId]       = useState('')
   const [order,    setOrder]    = useState<Order | null>(null)
@@ -129,32 +137,85 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [savingStatus,   setSavingStatus]   = useState(false)
   const [savingTracking, setSavingTracking] = useState(false)
   const [savingNote,     setSavingNote]     = useState(false)
-  const [srLoading,      setSrLoading]      = useState(false)
+  const [dispatching,    setDispatching]    = useState(false)
   const [note,           setNote]           = useState('')
+  
   const [tracking, setTracking] = useState({
     shipping_carrier: '',
     tracking_number: '',
     tracking_url: '',
   })
 
+  // Returns and Invoices Extras
+  const [returnReq, setReturnReq] = useState<any>(null)
+  const [invoiceEdits, setInvoiceEdits] = useState<any[]>([])
+  const [showInvoiceEdit, setShowInvoiceEdit] = useState(false)
+  const [invoiceDiscount, setInvoiceDiscount] = useState<string>('')
+  const [invoiceCustomerName, setInvoiceCustomerName] = useState<string>('')
+  const [savingInvoice, setSavingInvoice] = useState(false)
+  
+  // Return Edit
+  const [returnNote, setReturnNote] = useState('')
+  const [refundAmount, setRefundAmount] = useState('')
+  const [savingReturn, setSavingReturn] = useState(false)
+
+  // Debounce Note
+  const saveNoteTimeout = useRef<NodeJS.Timeout | null>(null)
+  const [noteSavedSignal, setNoteSavedSignal] = useState(false)
+
   useEffect(() => {
     params.then(p => {
       setId(p.id)
-      fetch(`/api/admin/orders/${p.id}`)
-        .then(r => r.json())
-        .then((data: Order) => {
-          setOrder(data)
-          setNote(data.admin_note ?? '')
-          setTracking({
-            shipping_carrier: data.shipping_carrier ?? '',
-            tracking_number:  data.tracking_number  ?? '',
-            tracking_url:     data.tracking_url     ?? '',
-          })
-        })
-        .catch(() => setOrder(null))
-        .finally(() => setLoading(false))
+      fetchData(p.id)
     })
   }, [params])
+
+  const fetchData = async (orderId: string) => {
+    try {
+      const r = await fetch(`/api/admin/orders/${orderId}`)
+      if (!r.ok) throw new Error('Not found')
+      const data: Order = await r.json()
+      setOrder(data)
+      setNote(data.admin_note ?? '')
+      setTracking({
+        shipping_carrier: data.shipping_carrier ?? '',
+        tracking_number:  data.tracking_number  ?? '',
+        tracking_url:     data.tracking_url     ?? '',
+      })
+      if (data.invoice) {
+        setInvoiceDiscount(data.invoice.discount?.toString() || '0')
+        setInvoiceCustomerName(data.invoice.customer_name || data.customer_name || '')
+      }
+
+      // Fetch Returns
+      const { data: ret } = await supabase.from('returns').select('*').eq('order_id', orderId).maybeSingle()
+      setReturnReq(ret)
+      if (ret) {
+        setReturnNote(ret.admin_note || '')
+        setRefundAmount(ret.refund_amount?.toString() || data.total.toString())
+      }
+
+      // Fetch Invoice Edits
+      if (data.invoice?.invoice_number) {
+        const { data: edits } = await supabase.from('invoice_edits').select('*').order('created_at', { ascending: false })
+        // Need to join via id or something? 
+        // We can just fetch invoice_edits and filter by invoice_number client-side if needed, but wait:
+        // 'invoice_id' is the foreign key. I need data.invoice.id which I don't have if the api doesn't return invoice.id.
+        // Actually, the api for [id] returns 'invoice_number, issued_at, cgst, sgst, igst, total'. It might not return id.
+        // If it doesn't, we can fetch the invoice ID manually:
+        const { data: inv } = await supabase.from('invoices').select('id').eq('invoice_number', data.invoice.invoice_number).single()
+        if (inv) {
+          const { data: editRows } = await supabase.from('invoice_edits').select('*').eq('invoice_id', inv.id).order('created_at', { ascending: false })
+          setInvoiceEdits(editRows || [])
+        }
+      }
+
+    } catch (e) {
+      setOrder(null)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const patch = async (body: Record<string, unknown>) => {
     const res = await fetch(`/api/admin/orders/${id}`, {
@@ -170,9 +231,16 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     if (s === order?.status) return
     setSavingStatus(true)
     try {
-      const updated = await patch({ status: s })
-      setOrder(prev => prev ? { ...prev, ...updated } : updated)
+      const res = await fetch(`/api/admin/orders/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: s }),
+      })
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed')
+      const updated = await res.json()
+      setOrder(prev => prev ? { ...prev, status: updated.new_status || updated.status } : null)
       showToast(`Status → ${s}`, 'success')
+      await fetchData(id)
     } catch (e) {
       showToast(String(e), 'error')
     } finally {
@@ -193,33 +261,96 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     }
   }
 
-  const saveNote = async () => {
-    setSavingNote(true)
-    try {
-      await patch({ admin_note: note })
-      showToast('Note saved', 'success')
-    } catch {
-      showToast('Failed to save note', 'error')
-    } finally {
-      setSavingNote(false)
-    }
+  const handleNoteBlur = () => {
+    if (saveNoteTimeout.current) clearTimeout(saveNoteTimeout.current)
+    saveNoteTimeout.current = setTimeout(async () => {
+      setSavingNote(true)
+      try {
+        await patch({ admin_note: note })
+        setNoteSavedSignal(true)
+        setTimeout(() => setNoteSavedSignal(false), 2000)
+      } catch {
+        showToast('Failed to auto-save note', 'error')
+      } finally {
+        setSavingNote(false)
+      }
+    }, 1000)
   }
 
-  const pushToShiprocket = async () => {
-    setSrLoading(true)
+  const handleDispatch = async () => {
+    setDispatching(true)
     try {
       const res  = await fetch(`/api/admin/orders/${id}/shiprocket`, { method: 'POST' })
       const data = await res.json()
       if (data.success) {
-        setOrder(prev => prev ? { ...prev, shiprocket_order_id: data.shiprocket_order_id } : prev)
-        showToast('Pushed to Shiprocket ✓', 'success')
+        showToast(`Dispatched! AWB: ${data.awb}`, 'success')
+        await fetchData(id)
       } else {
         showToast(data.error ?? 'Shiprocket push failed', 'error')
       }
     } catch {
       showToast('Network error', 'error')
     } finally {
-      setSrLoading(false)
+      setDispatching(false)
+    }
+  }
+
+  const refreshTracking = async () => {
+    try {
+      const res = await fetch(`/api/admin/orders/${id}/shiprocket`)
+      const data = await res.json()
+      if (data.tracking_data || data.success || !data.error) {
+        showToast('Tracking status checked', 'success')
+      } else {
+        showToast(data.error || 'No tracking info', 'error')
+      }
+    } catch {
+      showToast('Error refreshing tracking', 'error')
+    }
+  }
+
+  const handleInvoiceEdit = async () => {
+    setSavingInvoice(true)
+    try {
+      const res = await fetch(`/api/admin/orders/${id}/invoice`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discount: Number(invoiceDiscount),
+          customer_name: invoiceCustomerName
+        })
+      })
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed')
+      showToast('Invoice updated successfully', 'success')
+      await fetchData(id)
+      setShowInvoiceEdit(false)
+    } catch (e: any) {
+      showToast(e.message, 'error')
+    } finally {
+      setSavingInvoice(false)
+    }
+  }
+
+  const handleReturnAction = async (status: string) => {
+    if (!returnReq) return
+    setSavingReturn(true)
+    try {
+      const payload: any = { id: returnReq.id, status }
+      if (status === 'approved') payload.refund_amount = Number(refundAmount)
+      if (status === 'rejected') payload.admin_note = returnNote
+
+      const res = await fetch(`/api/storefront/returns`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      if (!res.ok) throw new Error((await res.json()).error ?? 'Failed')
+      showToast(`Return ${status}`, 'success')
+      await fetchData(id)
+    } catch (e: any) {
+      showToast(e.message, 'error')
+    } finally {
+      setSavingReturn(false)
     }
   }
 
@@ -250,6 +381,73 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const badgeCls  = ORDER_STATUS_COLORS[statusKey] ?? 'bg-gray-100 text-gray-600'
   const addrStr   = [addr.line1 ?? addr.address, addr.city, addr.state, addr.pincode]
     .filter(Boolean).join(', ')
+
+  // Timeline render
+  const renderTimeline = () => {
+    if (order.status === 'cancelled') {
+      return (
+        <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-4 text-center font-bold mb-6 no-print">
+          CANCELLED
+        </div>
+      );
+    }
+    if (order.status === 'return_requested' || order.status === 'refunded') {
+      return (
+        <div className="bg-orange-50 border border-orange-200 text-orange-700 rounded-xl p-4 text-center font-bold mb-6 no-print">
+          {order.status === 'return_requested' ? 'RETURN REQUESTED' : 'REFUNDED'}
+        </div>
+      );
+    }
+
+    const STEPS = [
+      { key: 'pending', label: 'Placed' },
+      { key: 'confirmed', label: 'Confirmed' },
+      { key: 'packed', label: 'Packed' },
+      { key: 'order_ready', label: 'Ready' },
+      { key: 'dispatched', label: 'Dispatched' },
+      { key: 'delivered', label: 'Delivered' }
+    ];
+
+    const currentIndex = Math.max(0, STEPS.findIndex(s => s.key === order.status));
+
+    return (
+      <div className="bg-white border border-[#e5e7eb] rounded-xl p-6 mb-5 overflow-x-auto no-print">
+        <div className="flex items-center justify-between min-w-[600px] relative">
+          <div className="absolute left-6 right-6 top-5 h-1 bg-gray-200 z-0" />
+          <div 
+            className="absolute left-6 top-5 h-1 bg-[#c9a84c] z-0 transition-all duration-500"
+            style={{ width: `calc(${currentIndex / (STEPS.length - 1) * 100}% - 3rem)` }}
+          />
+
+          {STEPS.map((step, i) => {
+            const isCompleted = i < currentIndex || (i === currentIndex && order.status === 'delivered');
+            const isCurrent = i === currentIndex && order.status !== 'delivered';
+            const historyItem = order.status_history?.find(h => h.status === step.key);
+
+            return (
+              <div key={step.key} className="relative z-10 flex flex-col items-center gap-2">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${
+                  isCompleted ? 'bg-[#c9a84c] text-[#1a1a1a]' : 
+                  isCurrent ? 'bg-[#c9a84c] text-[#1a1a1a] ring-4 ring-[#c9a84c]/30 animate-pulse' : 
+                  'bg-white border-2 border-gray-300 text-gray-300'
+                }`}>
+                  {isCompleted ? <CheckCircle2 size={20} /> : (i + 1)}
+                </div>
+                <div className="text-center">
+                  <p className={`text-xs font-bold ${isCurrent || isCompleted ? 'text-[#1a1a1a]' : 'text-gray-400'}`}>
+                    {step.label}
+                  </p>
+                  <p className="text-[10px] text-gray-500">
+                    {historyItem ? formatDateTime(historyItem.created_at).split(',')[0] : ''}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5 max-w-[1200px]">
@@ -291,6 +489,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </button>
         </div>
       </div>
+
+      {renderTimeline()}
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
@@ -354,10 +554,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             )}
           </Card>
 
-          {/* Invoice Info */}
+          {/* Invoice Info & Quick Edit */}
           {order.invoice && (
             <Card title="Invoice" icon={FileText}>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 mb-4">
                 <Field label="Invoice No"  value={order.invoice.invoice_number} />
                 <Field label="Issued"      value={formatDate(order.invoice.issued_at)} />
                 {order.invoice.cgst > 0 && <Field label="CGST (6%)" value={formatCurrency(order.invoice.cgst)} />}
@@ -365,6 +565,55 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 {order.invoice.igst > 0 && <Field label="IGST (12%)" value={formatCurrency(order.invoice.igst)} />}
                 <Field label="Total" value={formatCurrency(order.invoice.total)} />
               </div>
+
+              {['confirmed', 'packed', 'order_ready', 'dispatched', 'shipped', 'delivered'].includes(order.status) && (
+                <div className="border border-gray-200 rounded-lg overflow-hidden no-print">
+                  <button 
+                    onClick={() => setShowInvoiceEdit(!showInvoiceEdit)}
+                    className="w-full flex items-center justify-between bg-gray-50 px-4 py-3 text-xs font-bold text-gray-700 hover:bg-gray-100"
+                  >
+                    <span className="flex items-center gap-2"><Edit3 size={14} /> Edit Invoice Details</span>
+                    {showInvoiceEdit ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
+                  {showInvoiceEdit && (
+                    <div className="p-4 bg-white border-t border-gray-200 space-y-4">
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600">Customer Name Correction</label>
+                        <input
+                          value={invoiceCustomerName}
+                          onChange={e => setInvoiceCustomerName(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600">Discount Override (₹)</label>
+                        <input
+                          type="number"
+                          value={invoiceDiscount}
+                          onChange={e => setInvoiceDiscount(e.target.value)}
+                          className="w-full border border-gray-300 rounded px-3 py-2 text-sm mt-1"
+                        />
+                      </div>
+                      <div className="text-[10px] text-gray-500 italic">Note: Changes logged for audit trail. Shipping address is fetched automatically from order JSON.</div>
+                      <WorkflowButton color="gold" size="sm" onClick={handleInvoiceEdit} loading={savingInvoice}>
+                        Save Invoice Changes
+                      </WorkflowButton>
+
+                      {invoiceEdits.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+                          <p className="text-xs font-bold text-gray-600">Edit History</p>
+                          {invoiceEdits.map((e, i) => (
+                            <div key={i} className="text-[10px] text-gray-500 bg-gray-50 p-2 rounded">
+                              <span className="font-semibold text-gray-700">{formatDateTime(e.created_at)}</span> by {e.changed_by}<br/>
+                              Changed fields: {Object.keys(e.changes?.after || {}).join(', ')}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </Card>
           )}
 
@@ -417,73 +666,150 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 )}
               </div>
             </div>
-
-            {/* Shiprocket */}
-            <div className="mt-5 border border-[#e5e7eb] rounded-lg p-4">
-              <h3 className="text-xs font-semibold text-[#1a1a1a] mb-3">Shiprocket</h3>
-              {order.shiprocket_order_id ? (
-                <div className="space-y-2">
-                  <Field label="SR Order ID" value={<span className="font-mono">{order.shiprocket_order_id}</span>} />
-                  {order.shiprocket_awb && <Field label="AWB" value={<span className="font-mono">{order.shiprocket_awb}</span>} />}
-                </div>
-              ) : (
-                <button
-                  onClick={pushToShiprocket}
-                  disabled={srLoading}
-                  className="bg-[#1b3a34] text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-[#16312b] disabled:opacity-60 transition-colors"
-                >
-                  {srLoading ? 'Pushing…' : 'Push to Shiprocket'}
-                </button>
-              )}
-            </div>
           </Card>
 
-          {/* Admin Note */}
-          <Card title="Admin Notes" icon={FileText} className="no-print">
-            <textarea
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              rows={3}
-              className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]/20 resize-none"
-              placeholder="Internal notes (not visible to customer)…"
-            />
-            <button
-              onClick={saveNote}
-              disabled={savingNote}
-              className="mt-2 bg-[#1b3a34] text-white px-4 py-2 rounded-lg text-xs font-semibold hover:bg-[#16312b] disabled:opacity-60 transition-colors"
-            >
-              {savingNote ? 'Saving…' : 'Save Note'}
-            </button>
-          </Card>
         </div>
 
         {/* Right Column */}
         <div className="space-y-5 no-print">
 
-          {/* Status Management */}
-          <Card title="Order Status" icon={Clock}>
-            <div className="space-y-1.5">
-              {ORDER_STATUSES.map(s => {
-                const isActive = order.status === s
-                const SIcon = STATUS_ICONS[s] ?? Clock
-                return (
-                  <button
-                    key={s}
-                    onClick={() => updateStatus(s)}
-                    disabled={savingStatus}
-                    className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm transition-all ${
-                      isActive
-                        ? 'bg-[#1b3a34] text-white font-semibold'
-                        : 'border border-[#e5e7eb] text-[#374151] hover:bg-gray-50 hover:border-[#1b3a34]/30'
-                    } disabled:opacity-60`}
-                  >
-                    <SIcon size={13} className={isActive ? 'text-white' : 'text-[#9ca3af]'} />
-                    {s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')}
-                  </button>
-                )
-              })}
+          {/* Workflow Actions */}
+          <Card title="Workflow Actions" icon={Package}>
+            <div className="space-y-4">
+              {order.status === 'pending' && (
+                <div>
+                  <WorkflowButton color="green" size="lg" className="w-full" onClick={() => updateStatus('confirmed')}>
+                    ✅ Accept Order
+                  </WorkflowButton>
+                  <div className="mt-2" />
+                  <WorkflowButton color="red" variant="outline" size="sm" className="w-full" onClick={() => updateStatus('cancelled')}>
+                    ✕ Cancel Order
+                  </WorkflowButton>
+                  <p className="text-xs text-gray-500 text-center mt-3">Accepting will deduct stock from inventory</p>
+                </div>
+              )}
+
+              {order.status === 'confirmed' && (
+                <div>
+                  <WorkflowButton color="blue" size="lg" className="w-full" onClick={() => updateStatus('packed')}>
+                    📦 Mark as Packed
+                  </WorkflowButton>
+                  <p className="text-xs text-gray-500 text-center mt-3">Mark when all items are packed and ready for labelling</p>
+                </div>
+              )}
+
+              {order.status === 'packed' && (
+                <div className="flex flex-col gap-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <WorkflowButton variant="outline" size="sm" onClick={() => window.open(`/admin/orders/${id}/invoice`, '_blank')}>
+                      🖨️ Print GST Invoice
+                    </WorkflowButton>
+                    <WorkflowButton variant="outline" size="sm" onClick={() => window.open(`/admin/orders/${id}/label`, '_blank')}>
+                      🏷️ Print Dispatch Label
+                    </WorkflowButton>
+                  </div>
+                  <WorkflowButton color="green" size="lg" className="w-full" onClick={() => updateStatus('order_ready')}>
+                    ✅ Mark Order Ready
+                  </WorkflowButton>
+                  <p className="text-xs text-gray-500 text-center mt-1">Print invoice and label before marking ready</p>
+                </div>
+              )}
+
+              {order.status === 'order_ready' && (
+                <div>
+                  <WorkflowButton color="gold" size="xl" className="w-full" loading={dispatching} onClick={handleDispatch}>
+                    🚀 Dispatch via Shiprocket
+                  </WorkflowButton>
+                  <p className="text-xs text-gray-500 text-center mt-3">Creates shipment request. Customer will be notified automatically.</p>
+                  {process.env.NEXT_PUBLIC_SHIPROCKET_MODE === 'test' && (
+                    <div className="mt-3 bg-yellow-50 text-yellow-800 text-xs text-center p-2 rounded border border-yellow-200">
+                      Test Mode — No real shipment
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {(order.status === 'dispatched' || order.status === 'shipped') && (
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 text-center">
+                    <p className="text-xs font-bold text-gray-500 uppercase">AWB / Tracking Number</p>
+                    <p className="font-mono text-xl font-bold mt-1 tracking-wider">{order.tracking_number || 'N/A'}</p>
+                    <p className="text-sm mt-1">{order.shipping_carrier || 'Shiprocket'}</p>
+                    {order.tracking_url && (
+                      <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="text-[#1b3a34] font-bold text-xs hover:underline mt-2 inline-block">
+                        Track Package →
+                      </a>
+                    )}
+                  </div>
+                  <WorkflowButton variant="outline" className="w-full" onClick={refreshTracking}>
+                    🔄 Refresh Tracking Status
+                  </WorkflowButton>
+                  <WorkflowButton variant="outline" className="w-full" onClick={() => updateStatus('delivered')}>
+                    ✅ Mark as Delivered (Manual)
+                  </WorkflowButton>
+                </div>
+              )}
+
+              {order.status === 'delivered' && (
+                <div className="text-center">
+                  <div className="bg-emerald-100 text-emerald-800 text-sm font-bold p-3 rounded-lg border border-emerald-200 mb-3">
+                    DELIVERED
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Delivered on: {history.find(h => h.status === 'delivered') ? formatDateTime(history.find(h => h.status === 'delivered')!.created_at) : 'Unknown'}
+                  </p>
+                </div>
+              )}
             </div>
           </Card>
+
+          {/* Return Request Details */}
+          {returnReq && (
+            <Card title="Return Request" icon={FileText} className="no-print border-orange-200">
+              <div className="space-y-4">
+                <Field label="Reason" value={returnReq.reason} />
+                <Field label="Description" value={returnReq.description || 'None'} />
+                {returnReq.photos && returnReq.photos.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-[#9ca3af] mb-1">Photos</p>
+                    <div className="flex gap-2">
+                      {returnReq.photos.map((p: string, i: number) => (
+                        <a key={i} href={p} target="_blank" rel="noreferrer">
+                          <img src={p} alt="Return photo" className="w-12 h-12 object-cover rounded border border-gray-200" />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {returnReq.status === 'requested' && (
+                  <>
+                    <hr className="border-gray-200" />
+                    <div>
+                      <label className="text-[10px] font-semibold uppercase tracking-wide text-[#9ca3af] block mb-1">Admin Note</label>
+                      <input value={returnNote} onChange={e => setReturnNote(e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm mb-2" />
+                      <label className="text-[10px] font-semibold uppercase tracking-wide text-[#9ca3af] block mb-1">Refund Amount (₹)</label>
+                      <input type="number" value={refundAmount} onChange={e => setRefundAmount(e.target.value)} className="w-full border border-gray-300 rounded px-2 py-1 text-sm mb-3" />
+                      <div className="flex gap-2">
+                        <WorkflowButton color="green" size="sm" className="flex-1" loading={savingReturn} onClick={() => handleReturnAction('approved')}>
+                          Approve Return
+                        </WorkflowButton>
+                        <WorkflowButton color="red" size="sm" variant="outline" className="flex-1" loading={savingReturn} onClick={() => handleReturnAction('rejected')}>
+                          Reject Return
+                        </WorkflowButton>
+                      </div>
+                    </div>
+                  </>
+                )}
+                {returnReq.status !== 'requested' && (
+                  <div className="bg-gray-50 p-3 rounded text-xs">
+                    <p><strong>Status:</strong> {returnReq.status.toUpperCase()}</p>
+                    {returnReq.admin_note && <p><strong>Note:</strong> {returnReq.admin_note}</p>}
+                    {returnReq.refund_amount > 0 && <p><strong>Refunded:</strong> {formatCurrency(returnReq.refund_amount)}</p>}
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
 
           {/* Payment Details */}
           <Card title="Payment" icon={CreditCard}>
@@ -506,36 +832,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           </Card>
 
-          {/* Status Timeline */}
-          {history.length > 0 && (
-            <Card title="Status Timeline" icon={Clock}>
-              <div className="relative space-y-3">
-                {history.map((h, i) => {
-                  const HIcon = STATUS_ICONS[h.status] ?? Clock
-                  return (
-                    <div key={i} className="flex gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          i === 0 ? 'bg-[#1b3a34] text-white' : 'bg-gray-100 text-[#9ca3af]'
-                        }`}>
-                          <HIcon size={13} />
-                        </div>
-                        {i < history.length - 1 && <div className="w-px flex-1 bg-[#e5e7eb] my-1" />}
-                      </div>
-                      <div className="flex-1 pb-2">
-                        <p className="text-xs font-semibold text-[#1a1a1a] capitalize">
-                          {h.status.replace(/_/g, ' ')}
-                        </p>
-                        {h.note && <p className="text-xs text-[#6b7280] mt-0.5">{h.note}</p>}
-                        <p className="text-[10px] text-[#9ca3af] mt-0.5">{formatDateTime(h.created_at)}</p>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </Card>
-          )}
-
           {/* Order Meta */}
           <Card title="Order Details" icon={FileText}>
             <div className="space-y-3">
@@ -544,8 +840,36 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               <Field label="Items"      value={items.length} />
             </div>
           </Card>
+
         </div>
       </div>
+
+      {/* Admin Note Section at bottom */}
+      <div className="mt-8 no-print">
+        <Card title="Internal Note (not visible to customer)" icon={FileText}>
+          <div className="relative">
+            <textarea
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              onBlur={handleNoteBlur}
+              rows={4}
+              className="w-full border border-[#e5e7eb] rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]/20 resize-none bg-yellow-50"
+              placeholder="Jot down internal notes here... Autosaves when you click away."
+            />
+            {noteSavedSignal && (
+              <span className="absolute bottom-3 right-3 text-emerald-600 font-bold text-xs flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm">
+                <CheckCircle2 size={14} /> Saved
+              </span>
+            )}
+            {savingNote && (
+              <span className="absolute bottom-3 right-3 text-gray-400 font-bold text-xs flex items-center gap-1">
+                Saving...
+              </span>
+            )}
+          </div>
+        </Card>
+      </div>
+
     </div>
   )
 }
