@@ -18,13 +18,28 @@ const TABS = [
 
 const EMOJI_GRID = ["✨","🔒","🚚","↩️","🌿","💯","⭐","🌟","❤️","👗","🧵","🎁","💎","🏆","👑","✅","🔥","⚡","🎉","🇮🇳"];
 
+type Banner = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  cta_text?: string;
+  cta_url?: string;
+  image_url: string;
+  mobile_image_url?: string;
+  position: string;
+  sort_order: number;
+  is_active: boolean;
+  starts_at?: string;
+  ends_at?: string;
+};
+
 export default function CMSPage() {
   const [activeTab, setActiveTab] = useState('banners');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // States for each section
-  const [banners, setBanners] = useState<any[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [sections, setSections] = useState<any[]>([]);
   const [collections, setCollections] = useState<any[]>([]);
   const [flashSales, setFlashSales] = useState<any[]>([]);
@@ -50,26 +65,32 @@ export default function CMSPage() {
     try {
       if (activeTab === 'banners') {
         const res = await fetch('/api/admin/cms/banners');
-        setBanners(await res.json());
+        const data = await res.json();
+        setBanners(Array.isArray(data) ? data : data?.banners ?? data?.data ?? []);
       } else if (activeTab === 'sections' || activeTab === 'announcement') {
         const res = await fetch('/api/admin/cms/sections');
-        setSections(await res.json());
+        const data = await res.json();
+        setSections(Array.isArray(data) ? data : data?.sections ?? data?.data ?? []);
         if (activeTab === 'announcement') {
           const sRes = await fetch('/api/admin/settings');
           setSettings(await sRes.json());
         }
       } else if (activeTab === 'collections') {
         const res = await fetch('/api/admin/cms/collections');
-        setCollections(await res.json());
+        const data = await res.json();
+        setCollections(Array.isArray(data) ? data : data?.collections ?? data?.data ?? []);
       } else if (activeTab === 'flash_sale') {
         const res = await fetch('/api/admin/cms/flash-sale');
-        setFlashSales(await res.json());
+        const data = await res.json();
+        setFlashSales(Array.isArray(data) ? data : data?.flashSales ?? data?.data ?? []);
       } else if (activeTab === 'occasions') {
         const res = await fetch('/api/admin/cms/occasions');
-        setOccasions(await res.json());
+        const data = await res.json();
+        setOccasions(Array.isArray(data) ? data : data?.occasions ?? data?.data ?? []);
       } else if (activeTab === 'trust_badges') {
         const res = await fetch('/api/admin/cms/trust-badges');
-        setTrustBadges(await res.json());
+        const data = await res.json();
+        setTrustBadges(Array.isArray(data) ? data : data?.trustBadges ?? data?.data ?? []);
       } else if (activeTab === 'about') {
         const res = await fetch('/api/admin/cms/about');
         setAboutPage(await res.json());
@@ -195,7 +216,7 @@ export default function CMSPage() {
       <div className="space-y-4">
         <button onClick={() => setEditingBanner({ is_active: true, position: 'hero' })} className="flex items-center gap-2 bg-[#c9a84c] text-[#1a1a1a] px-4 py-2 rounded font-bold"><Plus className="w-4 h-4" /> Add Banner</button>
         <div className="border border-white/10 rounded-lg overflow-hidden">
-          {banners.map((b, i) => (
+          {(Array.isArray(banners) ? banners : []).map((b, i) => (
             <div 
               key={b.id} 
               draggable 
@@ -287,7 +308,7 @@ export default function CMSPage() {
 
     return (
       <div className="border border-white/10 rounded-lg overflow-hidden">
-        {sections.map((s, i) => (
+        {(Array.isArray(sections) ? sections : []).map((s, i) => (
           <div 
             key={s.id} 
             draggable 
@@ -324,7 +345,7 @@ export default function CMSPage() {
         <div>
           <h3 className="font-bold mb-4">All Collections</h3>
           <div className="border border-white/10 rounded-lg overflow-hidden max-h-[60vh] overflow-y-auto">
-            {unfeatured.map(c => (
+            {(Array.isArray(unfeatured) ? unfeatured : []).map(c => (
               <div key={c.id} className="flex items-center justify-between p-3 border-b border-white/5 hover:bg-white/5">
                 <span className="text-sm">{c.name}</span>
                 <button onClick={async () => {
@@ -338,7 +359,7 @@ export default function CMSPage() {
         <div>
           <h3 className="font-bold mb-4 text-[#c9a84c]">Featured on Homepage</h3>
           <div className="border border-white/10 rounded-lg overflow-hidden">
-            {featured.map((c, i) => (
+            {(Array.isArray(featured) ? featured : []).map((c, i) => (
               <div 
                 key={c.id}
                 draggable 
@@ -485,7 +506,7 @@ export default function CMSPage() {
           <div>
             <h3 className="font-bold text-lg mb-4 text-gray-400">Past Sales</h3>
             <div className="border border-white/10 rounded-lg overflow-hidden">
-              {past.map(f => (
+              {(Array.isArray(past) ? past : []).map(f => (
                 <div key={f.id} className="flex justify-between p-3 border-b border-white/5 text-sm text-gray-400">
                   <span>{f.title} ({f.discount_percent}%)</span>
                   <div className="flex gap-4">
@@ -563,7 +584,7 @@ export default function CMSPage() {
       <div className="space-y-4">
         <button onClick={() => setEditingOccasion({ is_active: true })} className="flex items-center gap-2 bg-[#c9a84c] text-[#1a1a1a] px-4 py-2 rounded font-bold"><Plus className="w-4 h-4" /> Add Occasion</button>
         <div className="border border-white/10 rounded-lg overflow-hidden">
-          {occasions.map((o, i) => (
+          {(Array.isArray(occasions) ? occasions : []).map((o, i) => (
             <div 
               key={o.id} 
               draggable 
@@ -651,7 +672,7 @@ export default function CMSPage() {
           <p className="text-gray-400 text-sm">Recommended: exactly 4 badges for optimal grid.</p>
         </div>
         <div className="border border-white/10 rounded-lg overflow-hidden">
-          {trustBadges.map((t, i) => (
+          {(Array.isArray(trustBadges) ? trustBadges : []).map((t, i) => (
             <div 
               key={t.id} 
               draggable 

@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/Footer'
 import { WhatsAppButton } from '@/components/storefront/WhatsAppButton'
 import { CartDrawer } from '@/components/cart/CartDrawer'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+import { AuthModalProvider } from '@/components/auth/OTPLoginModal'
 
 function getNavigation() {
   try {
@@ -59,7 +60,7 @@ export default async function StorefrontLayout({ children }: { children: React.R
   const announcementColor   = settings.announcement_bg      ?? settings.announcement_bar_color   ?? '#c9a84c'
 
   return (
-    <>
+    <AuthModalProvider>
       <AnnouncementBar
         enabled={announcementEnabled}
         text={announcementText}
@@ -70,6 +71,6 @@ export default async function StorefrontLayout({ children }: { children: React.R
       <main>{children}</main>
       <Footer columns={nav.footer_columns} social={settings.social} tagline={settings.tagline} />
       <WhatsAppButton />
-    </>
+    </AuthModalProvider>
   )
 }

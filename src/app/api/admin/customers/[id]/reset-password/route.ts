@@ -7,14 +7,14 @@ export const runtime = 'nodejs'
 
 export async function POST(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const guard = await requireAdmin()
   if (guard) return guard
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminSupabaseClient() as any
-  const { id } = params
+  const { id } = await params
 
   // Get customer email
   const { data: profile, error: pErr } = await supabase

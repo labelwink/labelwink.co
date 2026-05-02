@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/requireAdmin'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+ 
+type StockVariant = {
+  product_name: string;
+  stock_qty: number;
+  low_stock_threshold: number;
+  price: number;
+  stock_value: number;
+  status: string;
+  [key: string]: any;
+}
 
 export const runtime = 'nodejs'
 
@@ -29,17 +39,17 @@ export async function GET(req: NextRequest) {
 
     let total_skus = 0, out_of_stock = 0, low_stock = 0, healthy_stock = 0, total_stock_value = 0
 
-    const allVariants = (variantsData || []).map((v: any) => {
+    const allVariants: StockVariant[] = (variantsData || []).map((v: any) => {
       const p = Array.isArray(v.products) ? v.products[0] : v.products
       const pss = Array.isArray(p?.product_sales_summary) ? p?.product_sales_summary[0] : p?.product_sales_summary
       const price = Number(p?.price || 0)
       const qty = Number(v.stock_qty || 0)
       const thresh = Number(v.low_stock_threshold || 5)
       const units_sold = Number(pss?.units_sold || 0)
-
+ 
       total_skus++
       total_stock_value += (qty * price)
-
+ 
       let itemStatus = 'ok'
       if (qty === 0) {
         out_of_stock++
@@ -50,7 +60,7 @@ export async function GET(req: NextRequest) {
       } else {
         healthy_stock++
       }
-
+ 
       return {
         product_name: p?.name || '',
         product_id: p?.id,
@@ -69,12 +79,12 @@ export async function GET(req: NextRequest) {
     })
 
     // Sort: lowest stock first, then alphabetically
-    allVariants.sort((a, b) => {
+    allVariants.sort((a: StockVariant, b: StockVariant) => {
       if (a.stock_qty !== b.stock_qty) return a.stock_qty - b.stock_qty
       return a.product_name.localeCompare(b.product_name)
     })
-
-    const filtered = allVariants.filter(v => status === 'all' || v.status === status)
+ 
+    const filtered = allVariants.filter((v: StockVariant) => status === 'all' || v.status === status)
 
     const summary = {
       total_skus, out_of_stock, low_stock, healthy_stock, total_stock_value
@@ -85,7 +95,7 @@ export async function GET(req: NextRequest) {
         'Product', 'Size', 'Color', 'SKU', 'Stock Qty', 'Threshold',
         'Location', 'Units Sold', 'Unit Price (₹)', 'Stock Value (₹)'
       ]
-      const rows = filtered.map(v => [
+      const rows = filtered.map((v: StockVariant) => [
         `"${v.product_name}"`,
         `"${v.size}"`,
         `"${v.color}"`,

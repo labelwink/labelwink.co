@@ -7,11 +7,20 @@ import { createClient } from '@/lib/supabase/client'
 
 interface WishlistButtonProps {
   productId: string
+  variantId?: string
+  initialWishlisted?: boolean
+  className?: string
   size?: 'sm' | 'md' | 'lg'
 }
 
-export function WishlistButton({ productId, size = 'md' }: WishlistButtonProps) {
-  const [isWishlisted, setIsWishlisted] = useState(false)
+export function WishlistButton({ 
+  productId, 
+  variantId, 
+  initialWishlisted = false, 
+  className, 
+  size = 'md' 
+}: WishlistButtonProps) {
+  const [isWishlisted, setIsWishlisted] = useState(initialWishlisted)
   const [loading, setLoading] = useState(true)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const { openModal } = useAuthModal()
@@ -105,7 +114,7 @@ export function WishlistButton({ productId, size = 'md' }: WishlistButtonProps) 
         toggle()
       }}
       disabled={loading}
-      className={`p-2 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white hover:scale-110 transition-all shadow-sm disabled:opacity-50 ${loading ? 'opacity-50 animate-pulse' : ''}`}
+      className={className || `p-2 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white hover:scale-110 transition-all shadow-sm disabled:opacity-50 ${loading ? 'opacity-50 animate-pulse' : ''}`}
       aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
     >
       <Heart

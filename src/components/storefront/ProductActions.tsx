@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useCartStore } from '@/store/useCartStore'
 import { Share2 } from 'lucide-react'
 import { SizeGuideModal } from '@/components/storefront/SizeGuideModal'
+import { StockAlertButton } from '@/components/storefront/StockAlertButton'
 
 interface Variant {
   id: string

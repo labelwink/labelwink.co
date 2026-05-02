@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/requireAdmin'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+ 
+type GSTInvoice = {
+  invoice_number: string;
+  date: string;
+  customer_name: string;
+  customer_state: string;
+  pincode: string;
+  txn_id: string;
+  taxable_value: number;
+  cgst: number;
+  sgst: number;
+  igst: number;
+  total_gst: number;
+  invoice_total: number;
+  [key: string]: any;
+}
 
 export const runtime = 'nodejs'
 
@@ -49,7 +65,7 @@ export async function GET(req: NextRequest) {
     let total_taxable = 0, total_cgst = 0, total_sgst = 0, total_igst = 0, exempt_count = 0
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const invoices = (invoicesData || []).map((row: any) => {
+    const invoices: GSTInvoice[] = (invoicesData || []).map((row: any) => {
       const order = Array.isArray(row.orders) ? row.orders[0] : row.orders
       const cgst = Number(row.cgst || 0)
       const sgst = Number(row.sgst || 0)
@@ -61,7 +77,7 @@ export async function GET(req: NextRequest) {
       total_sgst += sgst
       total_igst += igst
       if (cgst === 0 && igst === 0) exempt_count++
-
+ 
       return {
         invoice_number: row.invoice_number,
         date: row.issued_at,
@@ -93,7 +109,7 @@ export async function GET(req: NextRequest) {
         'Invoice Number', 'Date', 'Customer Name', 'State', 'Pincode',
         'Taxable Value (₹)', 'CGST (₹)', 'SGST (₹)', 'IGST (₹)', 'Total GST (₹)', 'Invoice Total (₹)', 'TXN ID'
       ]
-      const rows = invoices.map(i => [
+      const rows = invoices.map((i: GSTInvoice) => [
         `"${i.invoice_number}"`,
         `"${new Date(i.date).toLocaleDateString('en-IN')}"`,
         `"${i.customer_name}"`,

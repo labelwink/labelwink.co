@@ -4,12 +4,13 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 
 export const runtime = 'nodejs'
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireAdmin()
   if (guard) return guard
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminSupabaseClient() as any
+  const { id } = await params
 
   try {
     const { data: discount, error } = await sb.from('discount_codes')
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
           orders ( id, total, discount_amount, customer_name, customer_email, created_at, order_number )
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error) throw new Error(error.message)
@@ -68,11 +69,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireAdmin()
   if (guard) return guard
 
   const sb = createAdminSupabaseClient()
+  const { id } = await params
   
   try {
     const body = await req.json()
@@ -87,7 +89,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: 'No valid fields provided' }, { status: 400 })
     }
 
-    const { data, error } = await sb.from('discount_codes').update(updates).eq('id', params.id).select().single()
+    const { data, error } = await sb.from('discount_codes').update(updates).eq('id', id).select().single()
     if (error) throw new Error(error.message)
 
     return NextResponse.json(data)
@@ -97,21 +99,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireAdmin()
   if (guard) return guard
 
   const sb = createAdminSupabaseClient()
+  const { id } = await params
   
   try {
-    const { data: discount, error: fetchErr } = await sb.from('discount_codes').select('used_count').eq('id', params.id).single()
+    const { data: discount, error: fetchErr } = await sb.from('discount_codes').select('used_count').eq('id', id).single()
     if (fetchErr || !discount) throw new Error('Discount not found')
 
     if (discount.used_count > 0) {
       return NextResponse.json({ error: 'Cannot delete used coupon — deactivate instead' }, { status: 400 })
     }
 
-    const { error } = await sb.from('discount_codes').delete().eq('id', params.id)
+    const { error } = await sb.from('discount_codes').delete().eq('id', id)
     if (error) throw new Error(error.message)
 
     return NextResponse.json({ success: true })

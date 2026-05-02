@@ -8,7 +8,7 @@ export const metadata = {
 }
 
 interface SharedWishlistPageProps {
-  params: { userId: string }
+  params: Promise<{ userId: string }>
 }
 
 export default async function SharedWishlistPage({ params }: SharedWishlistPageProps) {

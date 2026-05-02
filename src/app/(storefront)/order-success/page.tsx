@@ -2,8 +2,8 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
-export default async function OrderSuccessPage({ searchParams }: { searchParams: { order_id?: string, invoice?: string } }) {
-  const { order_id, invoice } = searchParams;
+export default async function OrderSuccessPage({ searchParams }: { searchParams: Promise<{ order_id?: string, invoice?: string }> }) {
+  const { order_id, invoice } = await searchParams;
   
   if (!order_id) {
     redirect('/');

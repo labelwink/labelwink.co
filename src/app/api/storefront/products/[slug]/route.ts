@@ -20,9 +20,9 @@ const PRODUCT_SELECT = `
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
-  const { slug } = params
+  const { slug } = await params
   const sessionId = req.headers.get('x-session-id') ?? null
 
   const supabase = await createClient()

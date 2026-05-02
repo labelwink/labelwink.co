@@ -346,11 +346,12 @@ export default function ProductsPage() {
 
                       {/* Thumbnail */}
                       <td className="px-2 py-3">
-                        <div className="w-10 h-12 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0">
-                          {cover
-                            ? <img src={cover} alt="" className="w-full h-full object-cover" />
-                            : <Package size={14} className="text-gray-300" />
-                          }
+                        <div className="w-10 h-12 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0 relative">
+                          <img 
+                            src={cover || '/placeholder-product.png'} 
+                            alt={p.name || ''} 
+                            className="w-full h-full object-cover" 
+                          />
                         </div>
                       </td>
 

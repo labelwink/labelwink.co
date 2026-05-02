@@ -9,14 +9,14 @@ const ALLOWED_UPDATE_FIELDS = ['full_name', 'phone', 'admin_note'] as const
 // ── GET: Full customer profile ────────────────────────────────────────────────
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const guard = await requireAdmin()
   if (guard) return guard
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminSupabaseClient() as any
-  const { id } = params
+  const { id } = await params
 
   const [
     { data: profile, error: pErr },
@@ -65,14 +65,14 @@ export async function GET(
 // ── PATCH: Update allowed profile fields ──────────────────────────────────────
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const guard = await requireAdmin()
   if (guard) return guard
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminSupabaseClient() as any
-  const { id } = params
+  const { id } = await params
   const body = await req.json()
 
   // Whitelist only allowed fields

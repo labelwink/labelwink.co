@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
   Search, Download, ChevronLeft, ChevronRight,
-  ShoppingBag, RefreshCw, Printer, Check, CheckCircle2, MoreHorizontal
+  ShoppingBag, RefreshCw, Printer, Check, CheckCircle2, MoreHorizontal, Package, XCircle
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { ORDER_STATUS_COLORS, ORDER_STATUSES } from '@/lib/utils/constants'
@@ -196,8 +196,6 @@ export default function OrdersPage() {
       label: s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '),
       value: s,
     })),
-    { label: 'Returns', value: 'return_requested' },
-    { label: 'Refunded', value: 'refunded' }
   ]
 
   return (
@@ -367,12 +365,10 @@ export default function OrdersPage() {
                   if (statusKey === 'pending') badgeCls = 'bg-amber-100 text-amber-700'
                   if (statusKey === 'confirmed') badgeCls = 'bg-sky-100 text-sky-700'
                   if (statusKey === 'packed') badgeCls = 'bg-indigo-100 text-indigo-700'
-                  if (statusKey === 'order_ready') badgeCls = 'bg-purple-100 text-purple-700'
-                  if (statusKey === 'dispatched') badgeCls = 'bg-violet-100 text-violet-700'
-                  if (statusKey === 'shipped') badgeCls = 'bg-blue-100 text-blue-700'
+                  if (statusKey === 'shipped') badgeCls = 'bg-violet-100 text-violet-700'
                   if (statusKey === 'delivered') badgeCls = 'bg-green-100 text-green-700'
                   if (statusKey === 'cancelled') badgeCls = 'bg-red-100 text-red-700'
-                  if (o.status === 'return_requested') badgeCls = 'bg-orange-100 text-orange-700'
+                  if (statusKey === 'return_requested') badgeCls = 'bg-orange-100 text-orange-700'
 
                   const isSelected = selectedIds.has(o.id)
                   const invoiceNum = o.invoices?.[0]?.invoice_number

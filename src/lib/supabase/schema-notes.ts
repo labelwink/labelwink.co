@@ -4,11 +4,11 @@
  * This file is the single source of truth for all DB schema changes.
  * ALL SQL must be run in the Supabase SQL Editor.
  * ═══════════════════════════════════════════════════════════════════
-
+ 
  * ─────────────────────────────────────────────────────────────────
  * PRE-EXISTING SCHEMA (from earlier batches)
  * ─────────────────────────────────────────────────────────────────
-
+ 
  -- Profiles table
  CREATE TABLE IF NOT EXISTS profiles (
    id uuid PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
@@ -21,7 +21,7 @@
  ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
  CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
  CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
-
+ 
  -- Wishlists
  CREATE TABLE IF NOT EXISTS wishlists (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -32,29 +32,29 @@
  );
  ALTER TABLE wishlists ENABLE ROW LEVEL SECURITY;
  CREATE POLICY "Users can manage own wishlist" ON wishlists USING (auth.uid() = user_id);
-
+ 
  -- CMS content
  CREATE TABLE IF NOT EXISTS cms_content (
    page text PRIMARY KEY,
    content jsonb DEFAULT '{}',
    updated_at timestamptz DEFAULT now()
  );
-
+ 
  -- Settings
  CREATE TABLE IF NOT EXISTS settings (
    key text PRIMARY KEY,
    value jsonb,
    updated_at timestamptz DEFAULT now()
  );
-
+ 
  -- Collections extensions
  ALTER TABLE collections ADD COLUMN IF NOT EXISTS is_featured boolean DEFAULT false;
  ALTER TABLE collections ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0;
-
+ 
  * ─────────────────────────────────────────────────────────────────
  * BATCH 1A: EXTEND ORDERS TABLE
  * ─────────────────────────────────────────────────────────────────
-
+ 
  ALTER TABLE orders ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending';
  ALTER TABLE orders ADD COLUMN IF NOT EXISTS admin_note text;
  ALTER TABLE orders ADD COLUMN IF NOT EXISTS razorpay_payment_id text;
@@ -76,11 +76,11 @@
  ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_method text DEFAULT 'standard';
  ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_state text;
  ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_inter_state boolean DEFAULT false;
-
+ 
  * ─────────────────────────────────────────────────────────────────
  * BATCH 1B: ORDER MANAGEMENT TABLES
  * ─────────────────────────────────────────────────────────────────
-
+ 
  CREATE TABLE IF NOT EXISTS order_status_history (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
    order_id uuid REFERENCES orders(id) ON DELETE CASCADE,
@@ -93,7 +93,7 @@
  CREATE POLICY "admin_order_history" ON order_status_history USING (true);
  CREATE POLICY "user_own_order_history" ON order_status_history FOR SELECT
    USING (order_id IN (SELECT id FROM orders WHERE user_id = auth.uid()));
-
+ 
  CREATE TABLE IF NOT EXISTS invoices (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
    order_id uuid REFERENCES orders(id) ON DELETE CASCADE,
@@ -112,7 +112,7 @@
  CREATE POLICY "user_own_invoices" ON invoices FOR SELECT
    USING (order_id IN (SELECT id FROM orders WHERE user_id = auth.uid()));
  CREATE POLICY "admin_all_invoices" ON invoices USING (true);
-
+ 
  CREATE TABLE IF NOT EXISTS return_requests (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
    order_id uuid REFERENCES orders(id) ON DELETE CASCADE,
@@ -131,11 +131,11 @@
  ALTER TABLE return_requests ENABLE ROW LEVEL SECURITY;
  CREATE POLICY "user_own_returns" ON return_requests USING (auth.uid() = user_id);
  CREATE POLICY "admin_all_returns" ON return_requests USING (true);
-
+ 
  * ─────────────────────────────────────────────────────────────────
  * BATCH 1C: DISCOUNTS & LOYALTY
  * ─────────────────────────────────────────────────────────────────
-
+ 
  CREATE TABLE IF NOT EXISTS discount_codes (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
    code text UNIQUE NOT NULL,
@@ -154,7 +154,7 @@
  CREATE POLICY "admin_discounts" ON discount_codes USING (true);
  CREATE POLICY "public_read_active_discounts" ON discount_codes
    FOR SELECT USING (is_active = true);
-
+ 
  CREATE TABLE IF NOT EXISTS discount_code_uses (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
    discount_code_id uuid REFERENCES discount_codes(id),
@@ -165,7 +165,7 @@
  ALTER TABLE discount_code_uses ENABLE ROW LEVEL SECURITY;
  CREATE POLICY "user_own_discount_uses" ON discount_code_uses
    USING (auth.uid() = user_id);
-
+ 
  CREATE TABLE IF NOT EXISTS loyalty_points (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
@@ -176,7 +176,7 @@
  ALTER TABLE loyalty_points ENABLE ROW LEVEL SECURITY;
  CREATE POLICY "user_own_points" ON loyalty_points USING (auth.uid() = user_id);
  CREATE POLICY "admin_all_points" ON loyalty_points USING (true);
-
+ 
  CREATE TABLE IF NOT EXISTS loyalty_transactions (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -190,11 +190,11 @@
  CREATE POLICY "user_own_loyalty_tx" ON loyalty_transactions
    USING (auth.uid() = user_id);
  CREATE POLICY "admin_all_loyalty_tx" ON loyalty_transactions USING (true);
-
+ 
  * ─────────────────────────────────────────────────────────────────
  * BATCH 1D: PROFILES & ADDRESSES (extend existing profiles)
  * ─────────────────────────────────────────────────────────────────
-
+ 
  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS email text;
  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS date_of_birth date;
  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS gender text CHECK (gender IN ('male','female','other','prefer_not_to_say'));
@@ -208,10 +208,10 @@
  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS role text DEFAULT 'customer'
    CHECK (role IN ('customer','admin','store_manager','warehouse','support','finance'));
-
+ 
  -- Fix admin policy to allow admin access
  CREATE POLICY "admin_all_profiles" ON profiles USING (true);
-
+ 
  CREATE TABLE IF NOT EXISTS addresses (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -230,11 +230,11 @@
  ALTER TABLE addresses ENABLE ROW LEVEL SECURITY;
  CREATE POLICY "user_own_addresses" ON addresses USING (auth.uid() = user_id);
  CREATE POLICY "admin_all_addresses" ON addresses USING (true);
-
+ 
  * ─────────────────────────────────────────────────────────────────
  * BATCH 1E: PRODUCTS & INVENTORY EXTENSIONS
  * ─────────────────────────────────────────────────────────────────
-
+ 
  ALTER TABLE products ADD COLUMN IF NOT EXISTS compare_at_price numeric;
  ALTER TABLE products ADD COLUMN IF NOT EXISTS status text DEFAULT 'published'
    CHECK (status IN ('draft','published','archived'));
@@ -249,7 +249,7 @@
  ALTER TABLE products ADD COLUMN IF NOT EXISTS meta_description text;
  ALTER TABLE products ADD COLUMN IF NOT EXISTS og_image_url text;
  ALTER TABLE products ADD COLUMN IF NOT EXISTS weight numeric DEFAULT 0.5;
-
+ 
  ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS sku text;
  ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS color text;
  ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS low_stock_threshold integer DEFAULT 5;
@@ -257,36 +257,36 @@
  ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS reorder_qty integer DEFAULT 10;
  ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS price numeric;
  ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS image_url text;
-
+ 
  * ─────────────────────────────────────────────────────────────────
  * BATCH 1F: REVIEWS (enhance existing table)
  * ─────────────────────────────────────────────────────────────────
-
+ 
  ALTER TABLE reviews ADD COLUMN IF NOT EXISTS title text;
  ALTER TABLE reviews ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending'
    CHECK (status IN ('pending','approved','rejected'));
  ALTER TABLE reviews ADD COLUMN IF NOT EXISTS is_verified_purchase boolean DEFAULT false;
  ALTER TABLE reviews ADD COLUMN IF NOT EXISTS admin_reply text;
-
+ 
  -- Fix policies
  DROP POLICY IF EXISTS "reviews_read" ON reviews;
  DROP POLICY IF EXISTS "reviews_insert" ON reviews;
  CREATE POLICY "public_approved_reviews" ON reviews FOR SELECT USING (status = 'approved');
  CREATE POLICY "user_own_reviews" ON reviews USING (auth.uid() = user_id);
  CREATE POLICY "admin_all_reviews" ON reviews USING (true);
-
+ 
  * ─────────────────────────────────────────────────────────────────
  * BATCH 1G: WISHLIST (enhance existing table)
  * ─────────────────────────────────────────────────────────────────
-
+ 
  ALTER TABLE wishlists ADD COLUMN IF NOT EXISTS variant_id uuid REFERENCES product_variants(id);
  ALTER TABLE wishlists RENAME COLUMN created_at TO added_at;
  -- (Run rename only if column exists with old name)
-
+ 
  * ─────────────────────────────────────────────────────────────────
  * BATCH 1H: CMS & CONTENT TABLES
  * ─────────────────────────────────────────────────────────────────
-
+ 
  CREATE TABLE IF NOT EXISTS banners (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
    title text,
@@ -309,7 +309,7 @@
  CREATE POLICY "public_read_active_banners" ON banners FOR SELECT
    USING (is_active = true AND (starts_at IS NULL OR starts_at <= now())
      AND (ends_at IS NULL OR ends_at >= now()));
-
+ 
  CREATE TABLE IF NOT EXISTS pages (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
    slug text UNIQUE NOT NULL,
@@ -325,7 +325,7 @@
  ALTER TABLE pages ENABLE ROW LEVEL SECURITY;
  CREATE POLICY "admin_all_pages" ON pages USING (true);
  CREATE POLICY "public_published_pages" ON pages FOR SELECT USING (is_published = true);
-
+ 
  CREATE TABLE IF NOT EXISTS blog_posts (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
    slug text UNIQUE NOT NULL,
@@ -347,11 +347,11 @@
  ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
  CREATE POLICY "admin_all_posts" ON blog_posts USING (true);
  CREATE POLICY "public_published_posts" ON blog_posts FOR SELECT USING (is_published = true);
-
+ 
  * ─────────────────────────────────────────────────────────────────
  * BATCH 1I: ADMIN SYSTEM TABLES
  * ─────────────────────────────────────────────────────────────────
-
+ 
  CREATE TABLE IF NOT EXISTS shop_settings (
    id integer DEFAULT 1 PRIMARY KEY,
    store_name text DEFAULT 'LabelWink',
@@ -372,7 +372,7 @@
    updated_at timestamptz DEFAULT now()
  );
  INSERT INTO shop_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
-
+ 
  CREATE TABLE IF NOT EXISTS audit_logs (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
    admin_id uuid REFERENCES auth.users(id),
@@ -387,7 +387,7 @@
  );
  ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
  CREATE POLICY "admin_only_logs" ON audit_logs USING (true);
-
+ 
  -- Extend admin_notifications (already exists, add is_read if missing)
  ALTER TABLE admin_notifications ADD COLUMN IF NOT EXISTS is_read boolean DEFAULT false;
  ALTER TABLE admin_notifications ADD COLUMN IF NOT EXISTS type text;
@@ -396,7 +396,7 @@
  ALTER TABLE admin_notifications ADD COLUMN IF NOT EXISTS data jsonb;
  ALTER TABLE admin_notifications ENABLE ROW LEVEL SECURITY;
  CREATE POLICY "admin_all_notifications" ON admin_notifications USING (true);
-
+ 
  CREATE TABLE IF NOT EXISTS email_templates (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
    name text UNIQUE NOT NULL,
@@ -408,11 +408,11 @@
  );
  ALTER TABLE email_templates ENABLE ROW LEVEL SECURITY;
  CREATE POLICY "admin_all_templates" ON email_templates USING (true);
-
+ 
  * ─────────────────────────────────────────────────────────────────
  * BATCH 1J: DB TRIGGERS
  * ─────────────────────────────────────────────────────────────────
-
+ 
  -- Auto-generate invoice on order insert
  CREATE OR REPLACE FUNCTION generate_invoice()
  RETURNS TRIGGER AS $$
@@ -450,7 +450,7 @@
  DROP TRIGGER IF EXISTS on_order_created ON orders;
  CREATE TRIGGER on_order_created
    AFTER INSERT ON orders FOR EACH ROW EXECUTE FUNCTION generate_invoice();
-
+ 
  -- Auto-log status changes
  CREATE OR REPLACE FUNCTION log_order_status()
  RETURNS TRIGGER AS $$
@@ -465,7 +465,7 @@
  DROP TRIGGER IF EXISTS on_order_status_log ON orders;
  CREATE TRIGGER on_order_status_log
    AFTER UPDATE OF status ON orders FOR EACH ROW EXECUTE FUNCTION log_order_status();
-
+ 
  -- Stock management on status change
  CREATE OR REPLACE FUNCTION manage_stock_on_status()
  RETURNS TRIGGER AS $$
@@ -492,7 +492,7 @@
  DROP TRIGGER IF EXISTS on_order_status_stock ON orders;
  CREATE TRIGGER on_order_status_stock
    AFTER UPDATE OF status ON orders FOR EACH ROW EXECUTE FUNCTION manage_stock_on_status();
-
+ 
  -- Auto-create loyalty record + profile for new users
  CREATE OR REPLACE FUNCTION create_loyalty_on_signup()
  RETURNS TRIGGER AS $$
@@ -507,26 +507,26 @@
  DROP TRIGGER IF EXISTS on_user_signup ON auth.users;
  CREATE TRIGGER on_user_signup
    AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION create_loyalty_on_signup();
-
+ 
  NOTIFY pgrst, 'reload schema';
-
+ 
  * ─────────────────────────────────────────────────────────────────
  * BATCH 21B: PROFILES ROLE COLUMN (if not already added above)
  * ─────────────────────────────────────────────────────────────────
-
+ 
  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS role text DEFAULT 'customer'
    CHECK (role IN ('customer','admin','store_manager','warehouse','support','finance'));
-
+ 
  -- Set your admin user (replace with your actual email):
  -- UPDATE profiles SET role = 'admin'
  -- WHERE id = (SELECT id FROM auth.users WHERE email = 'your@email.com');
-
+ 
  NOTIFY pgrst, 'reload schema';
-
+ 
  * ─────────────────────────────────────────────────────────────────
  * BATCH: PROFILES, ADDRESSES, ORDERS, INVOICES, NOTIFICATIONS, LOYALTY, SETTINGS
  * ─────────────────────────────────────────────────────────────────
-
+ 
  -- PROFILES
  CREATE TABLE IF NOT EXISTS profiles (
    id uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
@@ -549,7 +549,7 @@
  CREATE POLICY "user_own_profile" ON profiles
    USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
  CREATE POLICY "admin_all_profiles" ON profiles FOR ALL USING (true);
-
+ 
  CREATE OR REPLACE FUNCTION handle_new_user()
  RETURNS TRIGGER AS $$
  BEGIN
@@ -567,7 +567,7 @@
  CREATE TRIGGER on_auth_user_created
    AFTER INSERT ON auth.users
    FOR EACH ROW EXECUTE FUNCTION handle_new_user();
-
+ 
  -- ADDRESSES
  CREATE TABLE IF NOT EXISTS addresses (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -590,7 +590,7 @@
  DROP POLICY IF EXISTS "user_own_addresses" ON addresses;
  CREATE POLICY "user_own_addresses" ON addresses
    USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-
+ 
  -- ORDERS (add missing columns)
  ALTER TABLE orders ADD COLUMN IF NOT EXISTS subtotal numeric DEFAULT 0;
  ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_amount numeric DEFAULT 0;
@@ -614,7 +614,7 @@
  ALTER TABLE orders ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending';
  ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status text DEFAULT 'paid';
  ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_method text DEFAULT 'standard';
-
+ 
  -- ORDER ITEMS (add missing columns)
  ALTER TABLE order_items ADD COLUMN IF NOT EXISTS product_name text;
  ALTER TABLE order_items ADD COLUMN IF NOT EXISTS product_image text;
@@ -623,7 +623,7 @@
  ALTER TABLE order_items ADD COLUMN IF NOT EXISTS sku text;
  ALTER TABLE order_items ADD COLUMN IF NOT EXISTS unit_price numeric DEFAULT 0;
  ALTER TABLE order_items ADD COLUMN IF NOT EXISTS total_price numeric DEFAULT 0;
-
+ 
  -- INVOICES
  CREATE TABLE IF NOT EXISTS invoices (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -645,7 +645,7 @@
  CREATE POLICY "user_own_invoices" ON invoices FOR SELECT
    USING (order_id IN (SELECT id FROM orders WHERE user_id = auth.uid()));
  CREATE POLICY "admin_all_invoices" ON invoices FOR ALL USING (true);
-
+ 
  CREATE OR REPLACE FUNCTION generate_invoice_on_order()
  RETURNS TRIGGER AS $$
  DECLARE
@@ -683,7 +683,7 @@
  CREATE TRIGGER on_order_created_invoice
    AFTER INSERT ON orders
    FOR EACH ROW EXECUTE FUNCTION generate_invoice_on_order();
-
+ 
  -- ORDER STATUS HISTORY
  CREATE TABLE IF NOT EXISTS order_status_history (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -699,7 +699,7 @@
  CREATE POLICY "admin_status_history" ON order_status_history FOR ALL USING (true);
  CREATE POLICY "user_own_status_history" ON order_status_history FOR SELECT
    USING (order_id IN (SELECT id FROM orders WHERE user_id = auth.uid()));
-
+ 
  CREATE OR REPLACE FUNCTION log_order_status_change()
  RETURNS TRIGGER AS $$
  BEGIN
@@ -714,7 +714,7 @@
  CREATE TRIGGER on_order_status_change
    AFTER UPDATE OF status ON orders
    FOR EACH ROW EXECUTE FUNCTION log_order_status_change();
-
+ 
  -- ADMIN NOTIFICATIONS
  CREATE TABLE IF NOT EXISTS admin_notifications (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -730,7 +730,7 @@
  ALTER TABLE admin_notifications ENABLE ROW LEVEL SECURITY;
  DROP POLICY IF EXISTS "admin_notifications_all" ON admin_notifications;
  CREATE POLICY "admin_notifications_all" ON admin_notifications USING (true);
-
+ 
  -- LOYALTY POINTS
  CREATE TABLE IF NOT EXISTS loyalty_points (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -744,12 +744,12 @@
  DROP POLICY IF EXISTS "admin_all_loyalty" ON loyalty_points;
  CREATE POLICY "user_own_loyalty" ON loyalty_points USING (auth.uid() = user_id);
  CREATE POLICY "admin_all_loyalty" ON loyalty_points FOR ALL USING (true);
-
+ 
  CREATE TABLE IF NOT EXISTS loyalty_transactions (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
    points integer NOT NULL,
-   type text NOT NULL,
+   type text NOT NULL CHECK (type IN ('earn','redeem','bonus','expire','referral','birthday')),
    reason text,
    order_id uuid REFERENCES orders(id),
    created_at timestamptz DEFAULT now()
@@ -758,7 +758,8 @@
  DROP POLICY IF EXISTS "user_own_loyalty_tx" ON loyalty_transactions;
  CREATE POLICY "user_own_loyalty_tx" ON loyalty_transactions
    USING (auth.uid() = user_id);
-
+ CREATE POLICY "admin_all_loyalty_tx" ON loyalty_transactions USING (true);
+ 
  -- SHOP SETTINGS
  CREATE TABLE IF NOT EXISTS shop_settings (
    id integer DEFAULT 1 PRIMARY KEY CHECK (id = 1),
@@ -797,13 +798,21 @@
  DROP POLICY IF EXISTS "admin_write_settings" ON shop_settings;
  CREATE POLICY "public_read_settings" ON shop_settings FOR SELECT USING (true);
  CREATE POLICY "admin_write_settings" ON shop_settings FOR ALL USING (true);
-
+ 
+ -- Add bg_color + text_color to shop_settings
+ ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS
+   announcement_bar_bg text DEFAULT '#c9a84c';
+ ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS
+   announcement_bar_text_color text DEFAULT '#1a1a1a';
+ ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS
+   announcement_bar_link text;
+ 
  NOTIFY pgrst, 'reload schema';
-
+ 
  * ─────────────────────────────────────────────────────────────────
  * BATCH: HOMEPAGE CMS (Phase 2)
  * ─────────────────────────────────────────────────────────────────
-
+ 
  -- ── BANNERS (hero + promotional) ─────────────────
  CREATE TABLE IF NOT EXISTS banners (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -826,7 +835,7 @@
  DROP POLICY IF EXISTS "admin_all_banners" ON banners;
  CREATE POLICY "public_read_banners" ON banners FOR SELECT USING (true);
  CREATE POLICY "admin_all_banners" ON banners FOR ALL USING (true);
-
+ 
  -- ── HOMEPAGE SECTIONS ─────────────────────────────
  CREATE TABLE IF NOT EXISTS homepage_sections (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -847,7 +856,7 @@
  DROP POLICY IF EXISTS "admin_all_sections" ON homepage_sections;
  CREATE POLICY "public_read_sections" ON homepage_sections FOR SELECT USING (true);
  CREATE POLICY "admin_all_sections" ON homepage_sections FOR ALL USING (true);
-
+ 
  -- Seed default sections
  INSERT INTO homepage_sections (section_key, title, subtitle, is_active, sort_order) VALUES
    ('announcement_bar', 'Free shipping on orders above ₹999', null, false, 0),
@@ -859,7 +868,7 @@
    ('testimonials', 'What Our Customers Say', null, true, 6),
    ('newsletter', 'Stay in the Loop', 'Get updates on new arrivals and exclusive offers', true, 7)
  ON CONFLICT (section_key) DO NOTHING;
-
+ 
  -- ── FLASH SALES ───────────────────────────────────
  CREATE TABLE IF NOT EXISTS flash_sales (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -877,7 +886,7 @@
  DROP POLICY IF EXISTS "admin_all_flash" ON flash_sales;
  CREATE POLICY "public_read_flash" ON flash_sales FOR SELECT USING (true);
  CREATE POLICY "admin_all_flash" ON flash_sales FOR ALL USING (true);
-
+ 
  -- ── OCCASIONS ─────────────────────────────────────
  CREATE TABLE IF NOT EXISTS occasions (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -893,7 +902,7 @@
  DROP POLICY IF EXISTS "admin_all_occasions" ON occasions;
  CREATE POLICY "public_read_occasions" ON occasions FOR SELECT USING (true);
  CREATE POLICY "admin_all_occasions" ON occasions FOR ALL USING (true);
-
+ 
  INSERT INTO occasions (name, slug, link_url, sort_order) VALUES
    ('Ethnic', 'ethnic', '/products?occasion=ethnic', 0),
    ('Casual', 'casual', '/products?occasion=casual', 1),
@@ -901,7 +910,7 @@
    ('Bridal', 'bridal', '/products?occasion=bridal', 3),
    ('Formal', 'formal', '/products?occasion=formal', 4)
  ON CONFLICT (slug) DO NOTHING;
-
+ 
  -- ── TRUST BADGES ─────────────────────────────────
  CREATE TABLE IF NOT EXISTS trust_badges (
    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -916,14 +925,14 @@
  DROP POLICY IF EXISTS "admin_all_badges" ON trust_badges;
  CREATE POLICY "public_read_badges" ON trust_badges FOR SELECT USING (true);
  CREATE POLICY "admin_all_badges" ON trust_badges FOR ALL USING (true);
-
+ 
  INSERT INTO trust_badges (icon, title, subtitle, sort_order) VALUES
    ('✨', 'Premium Quality', 'Handpicked fabrics', 0),
    ('🔒', 'Secure Payments', 'Razorpay protected', 1),
    ('🚚', 'Fast Delivery', 'Pan India shipping', 2),
    ('↩️', 'Easy Returns', '7-day return policy', 3)
  ON CONFLICT DO NOTHING;
-
+ 
  -- ── ABOUT PAGE ────────────────────────────────────
  CREATE TABLE IF NOT EXISTS about_page (
    id integer DEFAULT 1 PRIMARY KEY CHECK (id = 1),
@@ -944,7 +953,7 @@
  DROP POLICY IF EXISTS "admin_all_about" ON about_page;
  CREATE POLICY "public_read_about" ON about_page FOR SELECT USING (true);
  CREATE POLICY "admin_all_about" ON about_page FOR ALL USING (true);
-
+ 
  -- ── FEATURED COLLECTIONS (homepage display) ───────
  ALTER TABLE collections ADD COLUMN IF NOT EXISTS
    is_featured boolean DEFAULT false;
@@ -954,139 +963,131 @@
    banner_image_url text;
  ALTER TABLE collections ADD COLUMN IF NOT EXISTS
    subtitle text;
-
- -- ── ANNOUNCEMENTS ─────────────────────────────────
- -- Already covered by homepage_sections announcement_bar row
- -- Add bg_color + text_color to shop_settings
- ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS
-   announcement_bar_bg text DEFAULT '#c9a84c';
- ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS
-   announcement_bar_text_color text DEFAULT '#1a1a1a';
- ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS
-   announcement_bar_link text;
-
+ 
  NOTIFY pgrst, 'reload schema';
-
-*/
-
-export {}
-
--- Phase 2: Social Links Additions
-ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS social_links jsonb DEFAULT '{}';
-NOTIFY pgrst, 'reload schema';
-
--- Phase 3: Warehouse workflow, returns, stock deduction
--- -- RETURNS ---------------------------------------
-CREATE TABLE IF NOT EXISTS returns (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  order_id uuid REFERENCES orders(id) ON DELETE CASCADE NOT NULL,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  reason text NOT NULL,
-  description text,
-  status text DEFAULT 'requested',
-  admin_note text,
-  refund_amount numeric,
-  refund_status text DEFAULT 'pending',
-  photos jsonb DEFAULT '[]',
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-ALTER TABLE returns ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "user_own_returns" ON returns;
-DROP POLICY IF EXISTS "admin_all_returns" ON returns;
-CREATE POLICY "user_own_returns" ON returns
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "admin_all_returns" ON returns FOR ALL USING (true);
-
--- -- STOCK DEDUCTION TRIGGER -----------------------
--- Deduct stock when order confirmed, restore when cancelled
-CREATE OR REPLACE FUNCTION handle_order_stock()
-RETURNS TRIGGER AS $$
-DECLARE
-  item RECORD;
-BEGIN
-  -- Deduct stock on confirmed
-  IF NEW.status = 'confirmed' AND OLD.status = 'pending' THEN
-    FOR item IN
-      SELECT product_id, size, quantity FROM order_items WHERE order_id = NEW.id
-    LOOP
-      UPDATE product_variants
-        SET stock_qty = stock_qty - item.quantity
-        WHERE product_id = item.product_id AND size = item.size;
-    END LOOP;
-  END IF;
-
-  -- Restore stock on cancelled
-  IF NEW.status = 'cancelled' AND OLD.status != 'cancelled' THEN
-    FOR item IN
-      SELECT product_id, size, quantity FROM order_items WHERE order_id = NEW.id
-    LOOP
-      UPDATE product_variants
-        SET stock_qty = stock_qty + item.quantity
-        WHERE product_id = item.product_id AND size = item.size;
-    END LOOP;
-  END IF;
-
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS on_order_stock_change ON orders;
-CREATE TRIGGER on_order_stock_change
-  AFTER UPDATE OF status ON orders
-  FOR EACH ROW EXECUTE FUNCTION handle_order_stock();
-
--- -- STOCK ALERT THRESHOLD -------------------------
-ALTER TABLE product_variants
-  ADD COLUMN IF NOT EXISTS low_stock_threshold integer DEFAULT 5;
-ALTER TABLE product_variants
-  ADD COLUMN IF NOT EXISTS warehouse_location text;
-ALTER TABLE product_variants
-  ADD COLUMN IF NOT EXISTS sku text;
-
--- -- INVOICE EDIT LOG ------------------------------
-CREATE TABLE IF NOT EXISTS invoice_edits (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  invoice_id uuid REFERENCES invoices(id) ON DELETE CASCADE,
-  changed_by text DEFAULT 'admin',
-  changes jsonb NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-ALTER TABLE invoice_edits ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "admin_invoice_edits" ON invoice_edits FOR ALL USING (true);
-
--- -- NEWSLETTER SUBSCRIBERS ------------------------
-CREATE TABLE IF NOT EXISTS newsletter_subscribers (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  email text UNIQUE NOT NULL,
-  subscribed_at timestamptz DEFAULT now(),
-  is_active boolean DEFAULT true
-);
-ALTER TABLE newsletter_subscribers ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "admin_newsletter" ON newsletter_subscribers FOR ALL USING (true);
-
-NOTIFY pgrst, 'reload schema';
-
--- ── EMAIL TEMPLATES ───────────────────────────────────────
-CREATE TABLE IF NOT EXISTS email_templates (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  template_key text UNIQUE NOT NULL,
-  subject text NOT NULL,
-  preview_text text,
-  body_html text NOT NULL,
-  is_active boolean DEFAULT true,
-  updated_at timestamptz DEFAULT now()
-);
-ALTER TABLE email_templates ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "admin_email_templates" ON email_templates FOR ALL USING (true);
-
--- Seed with current template subjects
-INSERT INTO email_templates (template_key, subject, preview_text, body_html) VALUES
-  ('order_confirmation', 'Order Confirmed — {{invoice_number}} | {{store_name}}', 'Your order has been confirmed and is being prepared', '<!-- managed by admin -->'),
-  ('order_dispatched', 'Your order is on the way! 🚚 — {{invoice_number}}', 'Your order has been dispatched', '<!-- managed by admin -->'),
-  ('welcome', 'Welcome to {{store_name}}! 🎉', 'Thanks for joining us', '<!-- managed by admin -->'),
-  ('return_approved', 'Your return has been approved — {{invoice_number}}', 'We have approved your return request', '<!-- managed by admin -->')
-ON CONFLICT (template_key) DO NOTHING;
-
-NOTIFY pgrst, 'reload schema';
+ 
+ */
+ 
+ export {}
+ 
+ /*
+ -- Phase 2: Social Links Additions
+ ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS social_links jsonb DEFAULT '{}';
+ NOTIFY pgrst, 'reload schema';
+ 
+ -- Phase 3: Warehouse workflow, returns, stock deduction
+ -- -- RETURNS ---------------------------------------
+ CREATE TABLE IF NOT EXISTS returns (
+   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+   order_id uuid REFERENCES orders(id) ON DELETE CASCADE NOT NULL,
+   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+   reason text NOT NULL,
+   description text,
+   status text DEFAULT 'requested',
+   admin_note text,
+   refund_amount numeric,
+   refund_status text DEFAULT 'pending',
+   photos jsonb DEFAULT '[]',
+   created_at timestamptz DEFAULT now(),
+   updated_at timestamptz DEFAULT now()
+ );
+ ALTER TABLE returns ENABLE ROW LEVEL SECURITY;
+ DROP POLICY IF EXISTS "user_own_returns" ON returns;
+ DROP POLICY IF EXISTS "admin_all_returns" ON returns;
+ CREATE POLICY "user_own_returns" ON returns
+   USING (auth.uid() = user_id)
+   WITH CHECK (auth.uid() = user_id);
+ CREATE POLICY "admin_all_returns" ON returns FOR ALL USING (true);
+ 
+ -- -- STOCK DEDUCTION TRIGGER -----------------------
+ -- Deduct stock when order confirmed, restore when cancelled
+ CREATE OR REPLACE FUNCTION handle_order_stock()
+ RETURNS TRIGGER AS $$
+ DECLARE
+   item RECORD;
+ BEGIN
+   -- Deduct stock on confirmed
+   IF NEW.status = 'confirmed' AND OLD.status = 'pending' THEN
+     FOR item IN
+       SELECT product_id, size, quantity FROM order_items WHERE order_id = NEW.id
+     LOOP
+       UPDATE product_variants
+         SET stock_qty = stock_qty - item.quantity
+         WHERE product_id = item.product_id AND size = item.size;
+     END LOOP;
+   END IF;
+ 
+   -- Restore stock on cancelled
+   IF NEW.status = 'cancelled' AND OLD.status != 'cancelled' THEN
+     FOR item IN
+       SELECT product_id, size, quantity FROM order_items WHERE order_id = NEW.id
+     LOOP
+       UPDATE product_variants
+         SET stock_qty = stock_qty + item.quantity
+         WHERE product_id = item.product_id AND size = item.size;
+     END LOOP;
+   END IF;
+ 
+   RETURN NEW;
+ END;
+ $$ LANGUAGE plpgsql SECURITY DEFINER;
+ 
+ DROP TRIGGER IF EXISTS on_order_stock_change ON orders;
+ CREATE TRIGGER on_order_stock_change
+   AFTER UPDATE OF status ON orders
+   FOR EACH ROW EXECUTE FUNCTION handle_order_stock();
+ 
+ -- -- STOCK ALERT THRESHOLD -------------------------
+ ALTER TABLE product_variants
+   ADD COLUMN IF NOT EXISTS low_stock_threshold integer DEFAULT 5;
+ ALTER TABLE product_variants
+   ADD COLUMN IF NOT EXISTS warehouse_location text;
+ ALTER TABLE product_variants
+   ADD COLUMN IF NOT EXISTS sku text;
+ 
+ -- -- INVOICE EDIT LOG ------------------------------
+ CREATE TABLE IF NOT EXISTS invoice_edits (
+   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+   invoice_id uuid REFERENCES invoices(id) ON DELETE CASCADE,
+   changed_by text DEFAULT 'admin',
+   changes jsonb NOT NULL,
+   created_at timestamptz DEFAULT now()
+ );
+ ALTER TABLE invoice_edits ENABLE ROW LEVEL SECURITY;
+ CREATE POLICY "admin_invoice_edits" ON invoice_edits FOR ALL USING (true);
+ 
+ -- -- NEWSLETTER SUBSCRIBERS ------------------------
+ CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+   email text UNIQUE NOT NULL,
+   subscribed_at timestamptz DEFAULT now(),
+   is_active boolean DEFAULT true
+ );
+ ALTER TABLE newsletter_subscribers ENABLE ROW LEVEL SECURITY;
+ CREATE POLICY "admin_newsletter" ON newsletter_subscribers FOR ALL USING (true);
+ 
+ NOTIFY pgrst, 'reload schema';
+ 
+ -- ── EMAIL TEMPLATES ───────────────────────────────────────
+ CREATE TABLE IF NOT EXISTS email_templates (
+   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+   template_key text UNIQUE NOT NULL,
+   subject text NOT NULL,
+   preview_text text,
+   body_html text NOT NULL,
+   is_active boolean DEFAULT true,
+   updated_at timestamptz DEFAULT now()
+ );
+ ALTER TABLE email_templates ENABLE ROW LEVEL SECURITY;
+ CREATE POLICY "admin_email_templates" ON email_templates FOR ALL USING (true);
+ 
+ -- Seed with current template subjects
+ INSERT INTO email_templates (template_key, subject, preview_text, body_html) VALUES
+   ('order_confirmation', 'Order Confirmed — {{invoice_number}} | {{store_name}}', 'Your order has been confirmed and is being prepared', '<!-- managed by admin -->'),
+   ('order_dispatched', 'Your order is on the way! 🚚 — {{invoice_number}}', 'Your order has been dispatched', '<!-- managed by admin -->'),
+   ('welcome', 'Welcome to {{store_name}}! 🎉', 'Thanks for joining us', '<!-- managed by admin -->'),
+   ('return_approved', 'Your return has been approved — {{invoice_number}}', 'We have approved your return request', '<!-- managed by admin -->')
+ ON CONFLICT (template_key) DO NOTHING;
+ 
+ NOTIFY pgrst, 'reload schema';
+ */

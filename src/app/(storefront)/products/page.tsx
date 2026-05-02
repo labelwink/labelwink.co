@@ -42,6 +42,7 @@ function SkeletonCard() {
   )
 }
 
+
 export default function ProductsPage() {
   const router = useRouter()
   const pathname = usePathname()
@@ -71,7 +72,7 @@ export default function ProductsPage() {
   const [gridView, setGridView] = useState<'grid' | 'list'>('grid')
   const [sortOpen, setSortOpen] = useState(false)
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const PER_PAGE = 20
 
   // ── Sync URL ───────────────────────────────────────────────────────────────
@@ -122,12 +123,14 @@ export default function ProductsPage() {
 
   // q debounce
   useEffect(() => {
-    clearTimeout(debounceRef.current)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
       pushURL({ q })
       fetchProducts()
     }, 400)
-    return () => clearTimeout(debounceRef.current)
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
   }, [q]) // eslint-disable-line
 
   // other filters trigger immediate fetch + URL sync
@@ -167,6 +170,7 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen bg-[#faf7f2]">
+
       {/* ── Sticky Search Bar ──────────────────────────────────────────── */}
       <div className="sticky top-16 z-30 bg-[#faf7f2]/95 backdrop-blur-sm border-b border-[#c9a84c]/20 px-4 py-3">
         <div className="max-w-7xl mx-auto">
@@ -342,6 +346,6 @@ export default function ProductsPage() {
       <style>{`
         @keyframes slideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
       `}</style>
-    </div>
+      </div>
   )
 }

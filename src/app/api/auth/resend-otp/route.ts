@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { resendOTP } from '@/lib/msg91';
-
-const otpAttempts = globalThis.otpAttempts || new Map<string, { count: number; resetAt: number }>();
-if (!globalThis.otpAttempts) globalThis.otpAttempts = otpAttempts;
+ 
+declare global {
+  var otpAttempts: Map<string, { count: number; resetAt: number }> | undefined;
+}
+ 
+const otpAttempts: Map<string, { count: number; resetAt: number }> = globalThis.otpAttempts ?? new Map();
+globalThis.otpAttempts = otpAttempts;
 
 export async function POST(request: Request) {
   try {

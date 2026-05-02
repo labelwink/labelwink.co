@@ -5,16 +5,17 @@ import { sendTelegramMessage } from '@/lib/telegram'
 
 export const runtime = 'nodejs'
 
-export async function GET(req: NextRequest, { params }: { params: { variant_id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ variant_id: string }> }) {
   const guard = await requireAdmin()
   if (guard) return guard
 
   const sb = createAdminSupabaseClient()
+  const { variant_id } = await params
   try {
     const { data, error } = await sb
       .from('inventory_adjustments')
       .select('*')
-      .eq('variant_id', params.variant_id)
+      .eq('variant_id', variant_id)
       .order('created_at', { ascending: false })
       .limit(5)
     
@@ -25,15 +26,15 @@ export async function GET(req: NextRequest, { params }: { params: { variant_id: 
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { variant_id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ variant_id: string }> }) {
   const guard = await requireAdmin()
   if (guard) return guard
 
   const sb = createAdminSupabaseClient()
+  const { variant_id: variantId } = await params
   
   try {
     const body = await req.json()
-    const variantId = params.variant_id
 
     // 1. Get current variant
     const { data: variant, error: varErr } = await sb
@@ -94,7 +95,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { variant_id
 
       // 4. Send Telegram alert if out of stock
       if (previous_qty > 0 && updates.stock_qty === 0) {
-        const productName = Array.isArray(variant.products) ? variant.products[0]?.name : variant.products?.name
+        const productName = Array.isArray(variant.products) ? variant.products[0]?.name : (variant.products as { name: string } | null)?.name
         const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shop.hawklab.in'
         const msg = `⚠️ <b>Out of Stock Alert</b>\n📦 ${productName} (Size: ${variant.size}) is now out of stock!\n👉 <a href="${SITE_URL}/admin/inventory">Restock Now</a>`
         await sendTelegramMessage(msg)

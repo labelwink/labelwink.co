@@ -95,7 +95,7 @@ export default function CustomersPage() {
   const searchParams = useSearchParams()
   const { showToast, ToastComponent } = useToast()
   const searchRef = useRef<HTMLInputElement>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [customers, setCustomers] = useState<Customer[]>([])
   const [total, setTotal] = useState(0)
@@ -212,7 +212,7 @@ export default function CustomersPage() {
             defaultValue={search}
             type="text"
             onChange={e => {
-              clearTimeout(debounceRef.current)
+              if (debounceRef.current) clearTimeout(debounceRef.current)
               debounceRef.current = setTimeout(() => push({ search: e.target.value, page: '' }), 400)
             }}
             placeholder="Search name, email, phone…"

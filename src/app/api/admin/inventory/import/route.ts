@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
           if (logErr) console.error('Failed to log inventory adjustment:', logErr)
 
           if (previous_qty > 0 && stock_qty === 0) {
-            const productName = Array.isArray(variant.products) ? variant.products[0]?.name : variant.products?.name
+            const productName = Array.isArray(variant.products) ? variant.products[0]?.name : (variant.products as { name: string } | null)?.name
             const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shop.hawklab.in'
             const msg = `⚠️ <b>Out of Stock Alert</b>\n📦 ${productName} (Size: ${variant.size}) is now out of stock!\n👉 <a href="${SITE_URL}/admin/inventory">Restock Now</a>`
             await sendTelegramMessage(msg)

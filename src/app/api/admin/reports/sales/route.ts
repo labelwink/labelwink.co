@@ -5,6 +5,10 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 export const runtime = 'nodejs'
 
 type Period = 'month' | 'quarter' | 'year'
+ 
+type RevenueCategory = { name: string; units: number; revenue: number; [key: string]: any }
+type TopProduct = { name: string; units_sold: number; revenue: number; [key: string]: any }
+type CouponPerformance = { coupon_code: string; uses: number; total_discount: number; [key: string]: any }
 
 function getStartDate(period: Period): string {
   const now = new Date()
@@ -70,7 +74,7 @@ export async function GET(req: NextRequest) {
     const revenue_by_collection = Object.values(catMap).sort((a, b) => b.revenue - a.revenue)
 
     // --- 2. Top products ---
-    const top_products = (topProductsResult.data || []).map((p: any) => ({
+    const top_products: TopProduct[] = (topProductsResult.data || []).map((p: any) => ({
       name: Array.isArray(p.products) ? p.products[0]?.name : p.products?.name,
       units_sold: p.units_sold,
       revenue: p.revenue
@@ -112,7 +116,7 @@ export async function GET(req: NextRequest) {
       week, aov: v.total / v.count
     })).sort((a, b) => a.week.localeCompare(b.week))
 
-    const coupon_performance = Object.entries(couponMap).map(([code, v]) => ({
+    const coupon_performance: CouponPerformance[] = Object.entries(couponMap).map(([code, v]) => ({
       coupon_code: code, ...v
     })).sort((a, b) => b.uses - a.uses)
 
@@ -134,13 +138,13 @@ export async function GET(req: NextRequest) {
       let csv = `Sales Report - ${period.toUpperCase()}\n\n`
       
       csv += `REVENUE BY CATEGORY\nCategory,Units,Revenue (Rs)\n`
-      revenue_by_collection.forEach(c => csv += `"${c.name}",${c.units},${c.revenue.toFixed(2)}\n`)
+      revenue_by_collection.forEach((c: any) => csv += `"${c.name}",${c.units},${c.revenue.toFixed(2)}\n`)
       
       csv += `\nTOP PRODUCTS\nProduct,Units Sold,Revenue (Rs)\n`
-      top_products.forEach(p => csv += `"${p.name}",${p.units_sold},${p.revenue.toFixed(2)}\n`)
+      top_products.forEach((p: TopProduct) => csv += `"${p.name}",${p.units_sold},${p.revenue.toFixed(2)}\n`)
       
       csv += `\nCOUPONS\nCode,Uses,Total Discount (Rs)\n`
-      coupon_performance.forEach(c => csv += `"${c.coupon_code}",${c.uses},${c.total_discount.toFixed(2)}\n`)
+      coupon_performance.forEach((c: CouponPerformance) => csv += `"${c.coupon_code}",${c.uses},${c.total_discount.toFixed(2)}\n`)
 
       return new NextResponse(csv, {
         headers: {

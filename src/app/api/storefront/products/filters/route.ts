@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     // 1. Distinct sizes (in-stock)
     supabase.rpc('get_filter_sizes', {
       p_collection_tag: collection || null,
-    }).then((r) => r).catch(() => ({ data: null, error: null })),
+    }).then((r) => r, () => ({ data: null, error: null })),
 
     // 2. Distinct colors (in-stock)
     supabase

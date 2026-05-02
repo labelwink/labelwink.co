@@ -28,10 +28,21 @@ const STATES = [
   "Uttarakhand", "West Bengal"
 ];
 
+
+type EmailTemplate = {
+  id: string;
+  template_key: string;
+  subject: string;
+  preview_text?: string;
+  body_html: string;
+  is_active: boolean;
+  updated_at: string;
+};
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
   const [settings, setSettings] = useState<any>(null);
-  const [emailTemplates, setEmailTemplates] = useState<any[]>([]);
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [smsLogs, setSmsLogs] = useState<any[]>([]);
   const [testPhone, setTestPhone] = useState('');
   const [loading, setLoading] = useState(true);
@@ -39,25 +50,42 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (activeTab === 'sms') {
-      fetch('/api/admin/settings/sms-logs').then(r => r.json()).then(data => setSmsLogs(data || []));
+      fetch('/api/admin/settings/sms-logs')
+        .then(async r => {
+          const data = await r.json();
+          if (r.ok) setSmsLogs(Array.isArray(data) ? data : []);
+          else console.error('Failed to fetch SMS logs:', data.error);
+        })
+        .catch(err => console.error('SMS logs network error:', err));
     }
   }, [activeTab]);
 
+
   useEffect(() => {
-    Promise.all([
-      fetch('/api/admin/settings').then(r => r.json()),
-      fetch('/api/admin/email-templates').then(r => r.json())
-    ])
-      .then(([settingsData, templatesData]) => {
+    const loadData = async () => {
+      try {
+        const [settingsRes, templatesRes] = await Promise.all([
+          fetch('/api/admin/settings'),
+          fetch('/api/admin/email-templates')
+        ]);
+
+        const settingsData = await settingsRes.json();
+        const templatesData = await templatesRes.json();
+
+        if (!settingsRes.ok) throw new Error(settingsData.error || 'Failed to load settings');
+        if (!templatesRes.ok) throw new Error(templatesData.error || 'Failed to load templates');
+
         setSettings(settingsData);
-        setEmailTemplates(templatesData || []);
+        setEmailTemplates(Array.isArray(templatesData) ? templatesData : []);
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to load settings');
+      } finally {
         setLoading(false);
-      })
-      .catch(() => {
-        toast.error('Failed to load settings');
-        setLoading(false);
-      });
+      }
+    };
+    loadData();
   }, []);
+
 
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -333,7 +361,7 @@ export default function SettingsPage() {
               ℹ️ Email body design is managed in code. Only subject and active status can be edited here. Use "Send Test" to preview each template.
             </div>
 
-            {emailTemplates.map(template => (
+            {(Array.isArray(emailTemplates) ? emailTemplates : []).map(template => (
               <div key={template.template_key} className="bg-white/5 border border-white/10 rounded-xl p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-white/10 pb-3">
                   <h3 className="font-bold text-[#c9a84c] text-lg capitalize">
@@ -344,7 +372,8 @@ export default function SettingsPage() {
                     <Switch
                       checked={template.is_active}
                       onCheckedChange={(v) => {
-                        const updated = emailTemplates.map(t => t.template_key === template.template_key ? { ...t, is_active: v } : t);
+                        const currentTemplates = Array.isArray(emailTemplates) ? emailTemplates : [];
+                        const updated = currentTemplates.map(t => t.template_key === template.template_key ? { ...t, is_active: v } : t);
                         setEmailTemplates(updated);
                       }}
                     />
@@ -356,7 +385,8 @@ export default function SettingsPage() {
                   <input
                     value={template.subject}
                     onChange={(e) => {
-                      const updated = emailTemplates.map(t => t.template_key === template.template_key ? { ...t, subject: e.target.value } : t);
+                      const currentTemplates = Array.isArray(emailTemplates) ? emailTemplates : [];
+                      const updated = currentTemplates.map(t => t.template_key === template.template_key ? { ...t, subject: e.target.value } : t);
                       setEmailTemplates(updated);
                     }}
                     className="w-full bg-white/5 border border-white/10 text-[#faf7f2] rounded-lg px-4 py-2"
@@ -369,7 +399,8 @@ export default function SettingsPage() {
                   <input
                     value={template.preview_text || ''}
                     onChange={(e) => {
-                      const updated = emailTemplates.map(t => t.template_key === template.template_key ? { ...t, preview_text: e.target.value } : t);
+                      const currentTemplates = Array.isArray(emailTemplates) ? emailTemplates : [];
+                      const updated = currentTemplates.map(t => t.template_key === template.template_key ? { ...t, preview_text: e.target.value } : t);
                       setEmailTemplates(updated);
                     }}
                     className="w-full bg-white/5 border border-white/10 text-[#faf7f2] rounded-lg px-4 py-2"
@@ -552,7 +583,7 @@ export default function SettingsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                      {smsLogs.map((log: any) => (
+                      {(Array.isArray(smsLogs) ? smsLogs : []).map((log: any) => (
                         <tr key={log.id} className="hover:bg-white/5 transition-colors">
                           <td className="px-4 py-3 text-[#faf7f2]/70">{new Date(log.created_at).toLocaleString('en-IN', { dateStyle:'short', timeStyle:'short'})}</td>
                           <td className="px-4 py-3 font-mono">{log.phone ? log.phone.replace(/(\d{2})\d{4}(\d{4})/, '$1XXXX$2') : 'N/A'}</td>
@@ -566,6 +597,7 @@ export default function SettingsPage() {
                           </td>
                         </tr>
                       ))}
+
                     </tbody>
                   </table>
                 </div>

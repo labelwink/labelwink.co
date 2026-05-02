@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Fragment, ChangeEvent } from 'react'
 import { Package, Download, Upload, AlertTriangle, CheckCircle, XCircle, Search, Edit3, History, ChevronDown, ChevronRight, X } from 'lucide-react'
 import { formatIndianCurrency } from '@/lib/invoice-helpers'
 import Image from 'next/image'
@@ -72,7 +72,7 @@ export default function InventoryPage() {
     URL.revokeObjectURL(url)
   }
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -264,7 +264,7 @@ export default function InventoryPage() {
           {importResult.failed.length > 0 && (
             <div className="mt-2 max-h-32 overflow-y-auto">
               <ul className="list-disc pl-5 space-y-1 text-xs">
-                {importResult.failed.map((f, i) => (
+                {(Array.isArray(importResult.failed) ? importResult.failed : []).map((f, i) => (
                   <li key={i}>SKU {f.sku}: {f.error}</li>
                 ))}
               </ul>
@@ -292,13 +292,13 @@ export default function InventoryPage() {
             <tbody className="divide-y divide-[#1a1a1a]/5">
               {loading ? (
                 <tr><td colSpan={9} className="px-4 py-12 text-center text-[#1a1a1a]/50">Loading inventory...</td></tr>
-              ) : data?.variants?.length === 0 ? (
+              ) : (Array.isArray(data?.variants) ? data.variants : []).length === 0 ? (
                 <tr><td colSpan={9} className="px-4 py-12 text-center text-[#1a1a1a]/50">No variants found.</td></tr>
-              ) : data?.variants?.map((v: any) => {
+              ) : (Array.isArray(data?.variants) ? data.variants : []).map((v: any) => {
                 const isExpanded = expandedRow === v.variant_id
                 
                 const renderInlineEdit = (field: string, type: 'text'|'number' = 'text', align: string = 'left') => {
-                  const isEditing = editingField?.id === v.variant_id && editingField.field === field
+                  const isEditing = editingField?.id === v.variant_id && editingField?.field === field
                   const isSaving = savingField === `${v.variant_id}-${field}`
                   
                   if (isSaving) return <span className={`text-[#c9a84c] text-xs block text-${align}`}>Saving...</span>
@@ -333,7 +333,7 @@ export default function InventoryPage() {
                 }
 
                 return (
-                  <React.Fragment key={v.variant_id}>
+                  <Fragment key={v.variant_id}>
                     <tr className={`hover:bg-[#faf7f2]/50 transition-colors ${isExpanded ? 'bg-[#faf7f2]/30' : ''}`}>
                       <td className="px-4 py-3">
                         <button onClick={() => toggleRow(v.variant_id)} className="text-[#1a1a1a]/40 hover:text-[#1a1a1a]">
@@ -343,11 +343,12 @@ export default function InventoryPage() {
                       <td className="px-4 py-3">
                         <div className="flex items-center space-x-3">
                           <div className="h-10 w-10 relative rounded overflow-hidden bg-[#faf7f2] shrink-0 border border-[#1a1a1a]/10">
-                            {v.image_url ? (
-                              <Image src={v.image_url} alt="" fill className="object-cover" />
-                            ) : (
-                              <Package className="h-5 w-5 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[#1a1a1a]/20" />
-                            )}
+                            <Image 
+                              src={v.image_url || '/placeholder-product.png'} 
+                              alt={v.product_name || 'Product'} 
+                              fill 
+                              className="object-cover" 
+                            />
                           </div>
                           <div className="font-medium truncate max-w-[200px]">{v.product_name}</div>
                         </div>
@@ -396,7 +397,7 @@ export default function InventoryPage() {
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-[#1a1a1a]/5">
-                                {historyData[v.variant_id].map((h: any) => (
+                                {(Array.isArray(historyData[v.variant_id]) ? historyData[v.variant_id] : []).map((h: any) => (
                                   <tr key={h.id}>
                                     <td className="px-3 py-2 text-[#1a1a1a]/70">{new Date(h.created_at).toLocaleString('en-IN', { dateStyle:'short', timeStyle:'short'})}</td>
                                     <td className="px-3 py-2 text-right">{h.previous_qty}</td>
@@ -418,7 +419,7 @@ export default function InventoryPage() {
                         </td>
                       </tr>
                     )}
-                  </React.Fragment>
+                  </Fragment>
                 )
               })}
             </tbody>

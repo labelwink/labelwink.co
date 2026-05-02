@@ -138,6 +138,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [savingTracking, setSavingTracking] = useState(false)
   const [savingNote,     setSavingNote]     = useState(false)
   const [dispatching,    setDispatching]    = useState(false)
+  const [generatingAWB,  setGeneratingAWB]  = useState(false)
   const [note,           setNote]           = useState('')
   
   const [tracking, setTracking] = useState({
@@ -277,6 +278,28 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     }, 1000)
   }
 
+  const handleGenerateAWB = async () => {
+    setGeneratingAWB(true)
+    try {
+      const res = await fetch(`/api/admin/orders/${id}/shiprocket`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'generate_awb' }) 
+      })
+      const data = await res.json()
+      if (data.success) {
+        showToast(`AWB Generated: ${data.awb}`, 'success')
+        await updateStatus('packed')
+      } else {
+        showToast(data.error || 'Failed to generate AWB', 'error')
+      }
+    } catch {
+      showToast('Network error', 'error')
+    } finally {
+      setGeneratingAWB(false)
+    }
+  }
+
   const handleDispatch = async () => {
     setDispatching(true)
     try {
@@ -403,7 +426,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       { key: 'pending', label: 'Placed' },
       { key: 'confirmed', label: 'Confirmed' },
       { key: 'packed', label: 'Packed' },
-      { key: 'order_ready', label: 'Ready' },
       { key: 'dispatched', label: 'Dispatched' },
       { key: 'delivered', label: 'Delivered' }
     ];
@@ -566,7 +588,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 <Field label="Total" value={formatCurrency(order.invoice.total)} />
               </div>
 
-              {['confirmed', 'packed', 'order_ready', 'dispatched', 'shipped', 'delivered'].includes(order.status) && (
+              {['confirmed', 'packed', 'dispatched', 'shipped', 'delivered'].includes(order.status) && (
                 <div className="border border-gray-200 rounded-lg overflow-hidden no-print">
                   <button 
                     onClick={() => setShowInvoiceEdit(!showInvoiceEdit)}
@@ -708,23 +730,30 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                       🏷️ Print Dispatch Label
                     </WorkflowButton>
                   </div>
-                  <WorkflowButton color="green" size="lg" className="w-full" onClick={() => updateStatus('order_ready')}>
-                    ✅ Mark Order Ready
-                  </WorkflowButton>
-                  <p className="text-xs text-gray-500 text-center mt-1">Print invoice and label before marking ready</p>
-                </div>
-              )}
-
-              {order.status === 'order_ready' && (
-                <div>
-                  <WorkflowButton color="gold" size="xl" className="w-full" loading={dispatching} onClick={handleDispatch}>
-                    🚀 Dispatch via Shiprocket
-                  </WorkflowButton>
-                  <p className="text-xs text-gray-500 text-center mt-3">Creates shipment request. Customer will be notified automatically.</p>
-                  {process.env.NEXT_PUBLIC_SHIPROCKET_MODE === 'test' && (
-                    <div className="mt-3 bg-yellow-50 text-yellow-800 text-xs text-center p-2 rounded border border-yellow-200">
-                      Test Mode — No real shipment
+                  
+                  {!order.tracking_number ? (
+                    <WorkflowButton color="green" size="lg" className="w-full" loading={generatingAWB} onClick={handleGenerateAWB}>
+                      ✅ Generate AWB & Mark Ready
+                    </WorkflowButton>
+                  ) : (
+                    <div>
+                      <div className="bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase p-2 rounded border border-emerald-100 mb-3 text-center">
+                        AWB Generated: {order.tracking_number}
+                      </div>
+                      <WorkflowButton color="gold" size="xl" className="w-full" loading={dispatching} onClick={handleDispatch}>
+                        🚀 Dispatch via Shiprocket
+                      </WorkflowButton>
+                      <p className="text-xs text-gray-500 text-center mt-3">Final step: Creates shipment request and notifies customer.</p>
+                      {process.env.NEXT_PUBLIC_SHIPROCKET_MODE === 'test' && (
+                        <div className="mt-3 bg-yellow-50 text-yellow-800 text-xs text-center p-2 rounded border border-yellow-200">
+                          Test Mode — No real shipment
+                        </div>
+                      )}
                     </div>
+                  )}
+                  
+                  {!order.tracking_number && (
+                    <p className="text-xs text-gray-500 text-center mt-1">Print invoice and label before generating AWB</p>
                   )}
                 </div>
               )}
