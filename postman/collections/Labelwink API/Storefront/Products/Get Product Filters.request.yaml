@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Product Filters
+method: GET
+url: '{{baseUrl}}/api/storefront/products/filters'
+order: 3000

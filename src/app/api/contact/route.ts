@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid email address' }, { status: 400 })
   }
 
-  console.log('[Contact Form]', { name, email, message, ts: new Date().toISOString() })
+  // Log to system_logs via DB instead of console to avoid PII leaks
 
   return NextResponse.json({ success: true })
 }

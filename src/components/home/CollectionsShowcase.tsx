@@ -1,4 +1,5 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
+import Image from 'next/image';
 import { ProductImage } from '@/components/storefront/ProductImage';
 import { createClient } from '@/lib/supabase/server';
 
@@ -39,7 +40,7 @@ export async function CollectionsShowcase() {
           Shop by Category
         </p>
         <h2 className="font-serif text-3xl text-[#1a3a34]">Our Collections</h2>
-        <p className="text-gray-500 mt-2 text-sm">Curated ethnic wear for every occasion</p>
+        <p className="text-[#9aab9e] mt-2 text-sm">Curated ethnic wear for every occasion</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
@@ -60,11 +61,12 @@ export async function CollectionsShowcase() {
                 sizes="(max-width: 768px) 50vw, 33vw"
               />
             ) : col.image_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={col.image_url}
                 alt={col.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                fill
+                sizes="(max-width: 768px) 50vw, 33vw"
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
               />
             ) : (
               <div className="w-full h-full bg-[#1a3a34] flex items-center justify-center">

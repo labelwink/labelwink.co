@@ -1,0 +1,5 @@
+$kind: http-request
+name: List Media
+method: GET
+url: '{{baseUrl}}/api/admin/media'
+order: 1000

@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Seasonal Sale
+method: GET
+url: '{{baseUrl}}/api/admin/seasonal-sales/{{saleId}}'
+order: 3000

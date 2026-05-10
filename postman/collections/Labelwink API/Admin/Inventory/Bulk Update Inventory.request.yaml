@@ -1,0 +1,12 @@
+$kind: http-request
+name: Bulk Update Inventory
+method: POST
+url: '{{baseUrl}}/api/admin/inventory/bulk'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"updates": [{"variant_id": "id1", "stock_qty": 50}]}

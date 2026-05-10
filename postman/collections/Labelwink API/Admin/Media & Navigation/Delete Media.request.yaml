@@ -1,0 +1,8 @@
+$kind: http-request
+name: Delete Media
+method: DELETE
+url: '{{baseUrl}}/api/admin/media'
+order: 2000
+queryParams:
+  - key: public_id
+    value: sample_id

@@ -1,5 +1,5 @@
-const BADGES = [
-  { icon: '🚚', title: 'Free Shipping', sub: 'Orders above ₹3499' },
+﻿const BADGES = [
+  { icon: '🚚', title: 'Fast Delivery', sub: 'Orders processed quickly' },
   { icon: '↩️', title: 'Easy Returns', sub: '7-day return policy' },
   { icon: '🔒', title: 'Secure Payment', sub: 'Razorpay secured' },
   { icon: '✨', title: 'Authentic Products', sub: '100% original ethnic wear' },
@@ -13,7 +13,7 @@ export function TrustBadges() {
           <div key={b.title} className="flex flex-col items-center gap-2">
             <span className="text-3xl">{b.icon}</span>
             <p className="font-semibold text-[#1a3a34] text-sm">{b.title}</p>
-            <p className="text-gray-500 text-xs">{b.sub}</p>
+            <p className="text-[#9aab9e] text-xs">{b.sub}</p>
           </div>
         ))}
       </div>

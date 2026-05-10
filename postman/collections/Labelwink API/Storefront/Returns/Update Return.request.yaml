@@ -1,0 +1,12 @@
+$kind: http-request
+name: Update Return
+method: PATCH
+url: '{{baseUrl}}/api/storefront/returns'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"return_id": "ret_id", "status": "approved"}

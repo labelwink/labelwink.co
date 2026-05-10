@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Campaign
+method: GET
+url: '{{baseUrl}}/api/admin/campaigns/{{campaignId}}'
+order: 3000

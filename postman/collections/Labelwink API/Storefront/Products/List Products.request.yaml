@@ -1,0 +1,28 @@
+$kind: http-request
+name: List Products
+method: GET
+url: '{{baseUrl}}/api/storefront/products'
+order: 1000
+queryParams:
+  - key: page
+    value: '1'
+  - key: per_page
+    value: '20'
+  - key: sort
+    value: newest
+  - key: collection
+    value: ''
+  - key: occasion
+    value: ''
+  - key: size
+    value: ''
+  - key: color
+    value: ''
+  - key: min_price
+    value: ''
+  - key: max_price
+    value: ''
+  - key: fabric
+    value: ''
+  - key: sleeve
+    value: ''

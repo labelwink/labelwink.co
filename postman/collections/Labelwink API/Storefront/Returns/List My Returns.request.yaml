@@ -1,0 +1,5 @@
+$kind: http-request
+name: List My Returns
+method: GET
+url: '{{baseUrl}}/api/storefront/returns'
+order: 2000

@@ -1,0 +1,12 @@
+$kind: http-request
+name: Test SMS
+method: POST
+url: '{{baseUrl}}/api/admin/settings/test-sms'
+order: 6000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"phone": "9876543210"}

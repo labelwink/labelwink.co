@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, ReactNode } from 'react';
+﻿import { ButtonHTMLAttributes, ReactNode } from 'react';
 
 interface WorkflowButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   color?: 'green' | 'blue' | 'gold' | 'red' | 'outline';
@@ -34,9 +34,9 @@ export default function WorkflowButton({
   } else {
     if (color === 'green') baseClass += 'bg-emerald-600 text-white hover:bg-emerald-700 ';
     else if (color === 'blue') baseClass += 'bg-blue-600 text-white hover:bg-blue-700 ';
-    else if (color === 'gold') baseClass += 'bg-[#c9a84c] text-[#1a1a1a] hover:bg-[#b5953e] ';
+    else if (color === 'gold') baseClass += 'bg-[#c9a84c] text-[#ffffff] hover:bg-[#b5953e] ';
     else if (color === 'red') baseClass += 'bg-red-600 text-white hover:bg-red-700 ';
-    else baseClass += 'bg-[#1a1a1a] text-[#faf7f2] hover:bg-black ';
+    else baseClass += 'bg-white text-[#faf7f2] hover:bg-black ';
   }
 
   if (disabled || loading) {

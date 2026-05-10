@@ -14,7 +14,7 @@ export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminSupabaseClient() as any
@@ -27,10 +27,11 @@ export async function GET(req: NextRequest) {
   try {
     const { data: variantsData, error } = await sb.from('product_variants')
       .select(`
-        id, size, color, sku, stock_qty, low_stock_threshold, warehouse_location,
+        id, size, color, sku, stock_qty, low_stock_threshold,
         products!inner (
-          id, name, price, is_active, images,
-          product_sales_summary ( units_sold )
+          id, name, price, is_active,
+          product_images ( url, is_cover ),
+          product_sales_summary ( total_units_sold )
         )
       `)
       .eq('products.is_active', true)
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
       const price = Number(p?.price || 0)
       const qty = Number(v.stock_qty || 0)
       const thresh = Number(v.low_stock_threshold || 5)
-      const units_sold = Number(pss?.units_sold || 0)
+      const units_sold = Number(pss?.total_units_sold || 0)
  
       total_skus++
       total_stock_value += (qty * price)
@@ -70,12 +71,12 @@ export async function GET(req: NextRequest) {
         sku: v.sku || '',
         stock_qty: qty,
         low_stock_threshold: thresh,
-        warehouse_location: v.warehouse_location || '',
+        warehouse_location: '', // column not in DB schema
         units_sold_total: units_sold,
         price,
         stock_value: qty * price,
         status: itemStatus,
-        image_url: Array.isArray(p?.images) && p.images.length > 0 ? p.images[0] : null
+        image_url: Array.isArray(p?.product_images) && p.product_images.length > 0 ? p.product_images[0].url : null
       }
     })
 

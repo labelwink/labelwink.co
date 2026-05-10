@@ -1,0 +1,5 @@
+$kind: http-request
+name: Mark Review Helpful
+method: GET
+url: '{{baseUrl}}/api/storefront/reviews/{{reviewId}}/helpful'
+order: 4000

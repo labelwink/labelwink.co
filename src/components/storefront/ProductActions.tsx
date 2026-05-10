@@ -1,16 +1,19 @@
-'use client'
+﻿'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCartStore } from '@/store/useCartStore'
 import { Share2 } from 'lucide-react'
 import { SizeGuideModal } from '@/components/storefront/SizeGuideModal'
 import { StockAlertButton } from '@/components/storefront/StockAlertButton'
+import { createClient } from '@/lib/supabase/client'
+
+const SIZE_ORDER = ['XXS','XS','S','M','L','XL','2XL','3XL','4XL','5XL','6XL']
 
 interface Variant {
   id: string
   size: string
   price: number
-  mrp?: number
+  compare_at_price?: number
   stock_qty: number
   color?: string
   color_hex?: string
@@ -27,7 +30,21 @@ interface ProductActionsProps {
 
 export function ProductActions({ productId, productName, productSlug, variants, publicId, sizeGuide }: ProductActionsProps) {
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
+  const [settings, setSettings] = useState<any>(null)
   const { addItem } = useCartStore()
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/storefront/settings')
+        if (res.ok) {
+          const data = await res.json()
+          setSettings(data)
+        }
+      } catch { /* noop */ }
+    }
+    fetchSettings()
+  }, [])
 
   const selectedVariant = variants.find(v => v.size === selectedSize)
   const totalStock = variants.reduce((sum, v) => sum + (v.stock_qty ?? 0), 0)
@@ -42,7 +59,7 @@ export function ProductActions({ productId, productName, productSlug, variants, 
       name: productName,
       slug: productSlug,
       price: selectedVariant.price,
-      compareAtPrice: selectedVariant.mrp ?? null,
+      compareAtPrice: selectedVariant.compare_at_price ?? null,
       image: '',
       size: selectedVariant.size,
       color: selectedVariant.color ?? '',
@@ -85,7 +102,12 @@ export function ProductActions({ productId, productName, productSlug, variants, 
                       : 'border-sage/30 text-charcoal/70 hover:border-charcoal'
                   }`}
               >
-                {v.size}
+                <div className="flex flex-col items-center">
+                  <span>{v.size}</span>
+                  {settings?.size_surcharge_enabled && SIZE_ORDER.indexOf(v.size) >= SIZE_ORDER.indexOf(settings.size_surcharge_from_size || '4XL') && (
+                    <span className="text-[8px] text-amber-600 font-medium">+₹{settings.size_surcharge_amount || 100}</span>
+                  )}
+                </div>
                 {outOfStock && !isSelected && (
                   <span className="absolute inset-0 flex items-center justify-center">
                     <span className="block w-full h-px bg-sage/30 rotate-45 absolute" />
@@ -100,7 +122,7 @@ export function ProductActions({ productId, productName, productSlug, variants, 
         {selectedVariant && (() => {
           const qty = selectedVariant.stock_qty
           if (qty === 0) return (
-            <p className="text-sm font-medium text-gray-400">Out of stock in this size</p>
+            <p className="text-sm font-medium text-[#5a7060]">Out of stock in this size</p>
           )
           if (qty <= 5) return (
             <p className="text-sm font-medium text-red-600 flex items-center gap-1.5">
@@ -125,7 +147,7 @@ export function ProductActions({ productId, productName, productSlug, variants, 
           disabled={isDisabled}
           className={`flex-1 h-14 md:h-16 rounded-none text-xs font-bold tracking-[0.3em] uppercase transition-colors
             ${isDisabled
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              ? 'bg-gray-300 text-[#9aab9e] cursor-not-allowed'
               : 'bg-charcoal text-cream hover:bg-charcoal/90 active:scale-[0.98]'
             }`}
         >

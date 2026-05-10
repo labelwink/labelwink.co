@@ -7,7 +7,7 @@ export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ variant_id: string }> }) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   const sb = createAdminSupabaseClient()
   const { variant_id } = await params
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ vari
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ variant_id: string }> }) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   const sb = createAdminSupabaseClient()
   const { variant_id: variantId } = await params
@@ -98,6 +98,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ va
         const productName = Array.isArray(variant.products) ? variant.products[0]?.name : (variant.products as { name: string } | null)?.name
         const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shop.hawklab.in'
         const msg = `⚠️ <b>Out of Stock Alert</b>\n📦 ${productName} (Size: ${variant.size}) is now out of stock!\n👉 <a href="${SITE_URL}/admin/inventory">Restock Now</a>`
+        await sendTelegramMessage(msg)
+      }
+
+      // 4b. Send Telegram alert if low stock
+      const threshold = updatedVariant.low_stock_threshold || 5
+      if (updates.stock_qty <= threshold && previous_qty > threshold) {
+        const productName = Array.isArray(variant.products) ? variant.products[0]?.name : (variant.products as { name: string } | null)?.name
+        const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shop.hawklab.in'
+        const msg = `⚠️ <b>Low Stock Alert</b>\n📦 ${productName} (Size: ${variant.size}) is low on stock (${updates.stock_qty} left)!\n👉 <a href="${SITE_URL}/admin/inventory">Restock Now</a>`
         await sendTelegramMessage(msg)
       }
 

@@ -2,182 +2,352 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Facebook, Instagram, Mail, ArrowRight, MessageCircle, ChevronDown } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { createClient } from '@/lib/supabase/client';
+import Image from 'next/image';
+import { Facebook, Instagram, ArrowRight, ChevronDown } from 'lucide-react';
+import { LeafPattern } from '@/components/ui/LeafPattern';
 
-export function Footer({ 
-  columns = [], 
-  social = {}, 
-  tagline = "GRACE IN EVERY THREAD" 
-}: { 
-  columns?: any[], 
-  social?: any, 
-  tagline?: string 
-}) {
+const COLUMNS = [
+  {
+    id: 'collections',
+    title: 'COLLECTIONS',
+    links: [
+      { href: '/products', label: 'All Products' },
+      { href: '/products?filter=new', label: 'New Arrivals' },
+      { href: '/products?filter=popular', label: 'Best Sellers' },
+    ],
+  },
+  {
+    id: 'care',
+    title: 'CUSTOMER CARE',
+    links: [
+      { href: '/about', label: 'Our Story' },
+      { href: '/faq', label: 'FAQ' },
+      { href: '/size-guide', label: 'Size Guide' },
+      { href: '/contact', label: 'Contact Us' },
+      { href: '/policies?tab=shipping', label: 'Shipping & Returns' },
+      { href: '/policies?tab=privacy', label: 'Privacy Policy' },
+      { href: '/policies?tab=returns', label: 'Return Policy' },
+      { href: '/policies?tab=terms', label: 'Terms of Service' },
+    ],
+  },
+];
+
+function FooterColumn({ id, title, links }: { id: string; title: string; links: { href: string; label: string }[] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      {/* DESKTOP — always expanded, no toggle */}
+      <div className="hidden md:block">
+        <h4 className="text-[#c9a84c] font-semibold text-sm uppercase tracking-wider mb-3">
+          {title}
+        </h4>
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {links.map(link => (
+            <li key={link.href + link.label}>
+              <Link href={link.href} className="text-white/70 hover:text-[#c9a84c] transition-colors text-sm block">
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* MOBILE — collapsible */}
+      <div className="md:hidden" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <button
+          onClick={() => setOpen(!open)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
+            padding: '16px 0',
+          }}
+        >
+          <span className="text-[#c9a84c] font-semibold text-sm uppercase tracking-wider mb-3">
+            {title}
+          </span>
+          <ChevronDown
+            size={16}
+            style={{
+              color: '#6a8a72',
+              transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 200ms',
+            }}
+          />
+        </button>
+        {open && (
+          <ul style={{
+            listStyle: 'none',
+            padding: '0 0 16px',
+            margin: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+          }}>
+            {links.map(link => (
+              <li key={link.href + link.label}>
+                <Link href={link.href} className="text-white/70 hover:text-[#c9a84c] transition-colors text-sm block">
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </>
+  );
+}
+
+// Footer accepts (and ignores) legacy props passed from layout.tsx for backwards compatibility
+export function Footer(_props?: { columns?: any[]; social?: any; tagline?: string }) {
   const [settings, setSettings] = useState<any>({});
-  const [openSection, setOpenSection] = useState<string | null>(null);
-  const supabase = createClient();
+  const [email, setEmail] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     fetch('/api/storefront/settings')
-      .then(res => res.json())
-      .then(data => setSettings(data))
-      .catch(console.error);
+      .then(r => r.ok ? r.json() : {})
+      .then(d => setSettings(d))
+      .catch(() => {});
   }, []);
 
-  const whatsapp = settings.social_links?.whatsapp || settings.store_phone;
-  const email = settings.store_email || '';
+  const storeEmail = settings.store_email || 'hello@labelwink.in';
+  const socialLinks = settings.social_links || {};
 
-  const toggleSection = (section: string) => {
-    setOpenSection(prev => prev === section ? null : section);
+  const handleNewsletter = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setEmailSent(true);
+    setEmail('');
   };
 
   return (
-    <footer className="bg-[#1a3a34] text-[#faf7f2] pt-10 pb-6">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-0 md:gap-8 mb-8">
-          {/* Brand & Newsletter — always visible */}
-          <div className="lg:col-span-1 space-y-4 mb-8 md:mb-0">
-            <div>
-              <p className="text-[#faf7f2] font-serif tracking-widest text-lg mb-1">{settings?.store_name || 'Store'}</p>
-              <p className="text-[#c9a84c]/70 text-xs" style={{ letterSpacing: '0.15em' }}>
-                {settings?.store_tagline || tagline}
-              </p>
+    <footer className="relative bg-[#1C3829] text-white border-t border-white/5">
+      <LeafPattern opacity={0.06} id="footer" />
+      {/* Main grid */}
+      <div className="max-w-[1400px] mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 py-10 px-8">
+
+          {/* Column 1 — Brand */}
+          <div>
+            {/* Logo */}
+            <div className="mb-4">
+              <Image
+                src="/logo.png"
+                alt="Label Wink"
+                width={160}
+                height={56}
+                className="h-14 w-auto object-contain mb-3"
+              />
             </div>
-            <p className="text-xs text-[#faf7f2]/60 leading-relaxed max-w-[200px]">
-              Curated ethnic &amp; fusion wear for the modern Indian woman. Every piece is handcrafted with love and meticulous detail in the heart of India.
+            <p style={{
+              fontStyle: 'italic',
+              color: '#c9a84c',
+              fontSize: '14px',
+              margin: '0 0 16px',
+            }}>
+              Wear Wink
             </p>
-            {settings?.free_shipping_threshold && (
-              <p className="text-xs text-[#c9a84c] mt-2 font-bold">
-                Free shipping on orders above ₹{settings.free_shipping_threshold}
+            <p style={{
+              fontSize: '14px',
+              color: '#9aab9e',
+              lineHeight: 1.7,
+              maxWidth: '240px',
+              margin: '0 0 24px',
+            }}>
+              Curated ethnic & fusion wear for the modern Indian woman. Every piece is handcrafted with love and meticulous detail in the heart of India.
+            </p>
+
+            {/* Newsletter */}
+            <div>
+              <p style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.15em',
+                color: '#c9a84c',
+                margin: '0 0 4px',
+              }}>
+                JOIN THE WINK CLUB
               </p>
-            )}
-            <div className="space-y-2 pt-4 border-t border-[#2d5a52]">
-              <h3 className="text-xs font-bold tracking-widest text-[#c9a84c]">Join The Wink Club</h3>
-              <p className="text-[10px] text-[#faf7f2]/60 tracking-wider">Unlock exclusive deals and new arrivals!</p>
-              <form className="flex gap-0 mt-4" onSubmit={(e) => e.preventDefault()}>
-                <Input 
-                  type="email" 
-                  placeholder="Enter your email" 
-                  className="bg-transparent border-[#2d5a52] text-[#faf7f2] placeholder:text-[#faf7f2]/40 focus-visible:ring-[#c9a84c] focus-visible:border-[#c9a84c] rounded-none h-10 text-xs"
-                />
-                <Button type="submit" className="bg-[#c9a84c] text-[#1a3a34] hover:bg-[#c9a84c]/90 rounded-none h-10 px-4">
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </form>
+              <p style={{
+                fontSize: '11px',
+                color: '#6a8a72',
+                margin: '0 0 12px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}>
+                UNLOCK EXCLUSIVE DEALS AND NEW ARRIVALS!
+              </p>
+
+              {emailSent ? (
+                <p style={{ fontSize: '13px', color: '#c9a84c' }}>✓ You&apos;re on the list!</p>
+              ) : (
+                <form onSubmit={handleNewsletter} style={{ display: 'flex' }}>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    style={{
+                      flex: 1,
+                      height: '44px',
+                      background: 'rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRight: 'none',
+                      borderRadius: '6px 0 0 6px',
+                      padding: '0 16px',
+                      fontSize: '13px',
+                      color: '#ffffff',
+                      outline: 'none',
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      background: '#c9a84c',
+                      border: 'none',
+                      borderRadius: '0 6px 6px 0',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#1e3d29',
+                      transition: 'background 150ms',
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#e0bc5a')}
+                    onMouseLeave={e => (e.currentTarget.style.background = '#c9a84c')}
+                  >
+                    <ArrowRight size={18} />
+                  </button>
+                </form>
+              )}
             </div>
           </div>
 
-          {/* Collections — accordion on mobile */}
-          <div className="border-t border-[#2d5a52] md:border-0">
-            <button
-              className="flex w-full items-center justify-between py-3 md:hidden"
-              onClick={() => toggleSection('collections')}
-              aria-expanded={openSection === 'collections'}
-            >
-              <span className="text-[#c9a84c] tracking-[0.2em] text-xs font-medium">Collections</span>
-              <ChevronDown size={16} className={`text-[#faf7f2]/60 transition-transform duration-200 ${openSection === 'collections' ? 'rotate-180' : ''}`} />
-            </button>
-            <h3 className="hidden md:block text-[#c9a84c] tracking-[0.2em] text-xs border-b border-[#2d5a52] pb-3 mb-3">Collections</h3>
-            <ul className={`space-y-2 text-[10px] font-bold tracking-widest text-[#faf7f2]/70 pb-3 md:pb-0 ${openSection === 'collections' ? 'block' : 'hidden'} md:block`}>
-              <li><Link href="/products" className="hover:text-[#c9a84c] transition-colors block py-1">All Products</Link></li>
-              <li><Link href="/products?sort=newest" className="hover:text-[#c9a84c] transition-colors block py-1">New Arrivals</Link></li>
-              <li><Link href="/products?sort=bestseller" className="hover:text-[#c9a84c] transition-colors block py-1">Best Sellers</Link></li>
-            </ul>
-          </div>
+          {/* Column 2 — Collections */}
+          <FooterColumn id="collections" title="COLLECTIONS" links={COLUMNS[0].links} />
 
-          {/* Customer Care — accordion on mobile */}
-          <div className="border-t border-[#2d5a52] md:border-0">
-            <button
-              className="flex w-full items-center justify-between py-3 md:hidden"
-              onClick={() => toggleSection('customer-care')}
-              aria-expanded={openSection === 'customer-care'}
-            >
-              <span className="text-[#c9a84c] tracking-[0.2em] text-xs font-medium">Customer Care</span>
-              <ChevronDown size={16} className={`text-[#faf7f2]/60 transition-transform duration-200 ${openSection === 'customer-care' ? 'rotate-180' : ''}`} />
-            </button>
-            <h3 className="hidden md:block text-[#c9a84c] tracking-[0.2em] text-xs border-b border-[#2d5a52] pb-3 mb-3">Customer Care</h3>
-            <ul className={`space-y-2 text-[10px] font-bold tracking-widest text-[#faf7f2]/70 pb-3 md:pb-0 ${openSection === 'customer-care' ? 'block' : 'hidden'} md:block`}>
-              <li><Link href="/about" className="hover:text-[#c9a84c] transition-colors block py-1">Our Story</Link></li>
-              <li><Link href="/faq" className="hover:text-[#c9a84c] transition-colors block py-1">FAQ</Link></li>
-              <li><Link href="/size-guide" className="hover:text-[#c9a84c] transition-colors block py-1">Size Guide</Link></li>
-              <li><Link href="/contact" className="hover:text-[#c9a84c] transition-colors block py-1">Contact Us</Link></li>
-              <li><Link href="/policy/shipping-policy" className="hover:text-[#c9a84c] transition-colors block py-1">Shipping &amp; Returns</Link></li>
-              <li><Link href="/policy/privacy-policy" className="hover:text-[#c9a84c] transition-colors block py-1">Privacy Policy</Link></li>
-              <li><Link href="/policy/return-refund-policy" className="hover:text-[#c9a84c] transition-colors block py-1">Return Policy</Link></li>
-              <li><Link href="/policy/terms-and-conditions" className="hover:text-[#c9a84c] transition-colors block py-1">Terms of Service</Link></li>
-            </ul>
-          </div>
+          {/* Column 3 — Customer Care */}
+          <FooterColumn id="care" title="CUSTOMER CARE" links={COLUMNS[1].links} />
 
-          {/* Contact & Social — accordion on mobile */}
-          <div className="border-t border-[#2d5a52] md:border-0">
-            <button
-              className="flex w-full items-center justify-between py-3 md:hidden"
-              onClick={() => toggleSection('contact')}
-              aria-expanded={openSection === 'contact'}
-            >
-              <span className="text-[#c9a84c] tracking-[0.2em] text-xs font-medium">Contact</span>
-              <ChevronDown size={16} className={`text-[#faf7f2]/60 transition-transform duration-200 ${openSection === 'contact' ? 'rotate-180' : ''}`} />
-            </button>
-            <h3 className="hidden md:block text-[#c9a84c] tracking-[0.2em] text-xs border-b border-[#2d5a52] pb-3 mb-3">Contact</h3>
-            <div className={`space-y-6 pb-3 md:pb-0 ${openSection === 'contact' ? 'block' : 'hidden'} md:block`}>
-              <div className="space-y-1">
-                <p className="text-[10px] tracking-widest text-[#c9a84c] font-bold">Email us</p>
-                <a href={`mailto:${email}`} className="text-xs text-[#faf7f2]/70 hover:text-[#c9a84c] transition-colors">{email}</a>
-              </div>
-              {whatsapp && (
-                <div className="space-y-1">
-                  <p className="text-[10px] tracking-widest text-[#c9a84c] font-bold">WhatsApp Support</p>
-                  <a href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`} className="flex items-center gap-2 text-xs text-[#faf7f2]/70 hover:text-[#c9a84c] transition-colors">
-                    <MessageCircle className="w-4 h-4 text-green-500" /> {whatsapp}
-                  </a>
-                </div>
-              )}
-              {settings.store_address && (
-                <div className="space-y-1">
-                  <p className="text-[10px] tracking-widest text-[#c9a84c] font-bold">Visit Us</p>
-                  <p className="text-xs text-[#faf7f2]/70 leading-relaxed">
-                    {settings.store_address}<br/>
-                    {settings.store_city}, {settings.store_state} {settings.store_pincode}
-                  </p>
-                </div>
-              )}
-              
-              <div className="flex gap-4 pt-2">
-                {settings.social_links?.instagram && (
-                  <a href={settings.social_links.instagram} target="_blank" className="w-8 h-8 rounded-full border border-[#faf7f2]/20 flex items-center justify-center text-[#faf7f2]/60 hover:border-[#c9a84c] hover:text-[#c9a84c] transition-colors">
-                    <Instagram className="h-4 w-4" />
+          {/* Column 4 — Contact */}
+          <div>
+            {/* Desktop heading */}
+            <h4 className="hidden md:block text-[#c9a84c] font-semibold text-sm uppercase tracking-wider mb-3">
+              CONTACT
+            </h4>
+
+            {/* Mobile collapsible heading for Contact */}
+            <ContactMobileSection email={storeEmail} socialLinks={socialLinks} />
+
+            {/* Desktop contact content */}
+            <div className="hidden md:block">
+              <p style={{
+                fontSize: '11px',
+                color: '#6a8a72',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                margin: '0 0 8px',
+              }}>
+                EMAIL US
+              </p>
+              <a
+                href={`mailto:${storeEmail}`}
+                className="text-white/70 hover:text-[#c9a84c] transition-colors text-sm block"
+              >
+                {storeEmail}
+              </a>
+
+              {/* Social icons */}
+              <div className="mt-6 flex gap-3">
+                {socialLinks.instagram && (
+                  <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center">
+                    <Instagram size={16} />
                   </a>
                 )}
-                {settings.social_links?.facebook && (
-                  <a href={settings.social_links.facebook} target="_blank" className="w-8 h-8 rounded-full border border-[#faf7f2]/20 flex items-center justify-center text-[#faf7f2]/60 hover:border-[#c9a84c] hover:text-[#c9a84c] transition-colors">
-                    <Facebook className="h-4 w-4" />
+                {socialLinks.facebook && (
+                  <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center">
+                    <Facebook size={16} />
                   </a>
                 )}
+                {/* Always show Instagram placeholder if no links configured */}
+                {!socialLinks.instagram && !socialLinks.facebook && (
+                  <>
+                    <div className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center"><Instagram size={16} /></div>
+                    <div className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center"><Facebook size={16} /></div>
+                  </>
+                )}
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="bg-[#132e28] -mx-4 px-4 mt-6 border-t border-[#2d5a52]/50">
-          <div className="container mx-auto py-3 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="text-[9px] font-bold tracking-[0.3em] text-[#faf7f2]/40 text-center md:text-left flex items-center gap-4">
-              &copy; {new Date().getFullYear()} {settings?.store_name || 'Store'}. All rights reserved.
-              <Link href="/admin" className="hover:text-[#c9a84c] transition-colors underline">Admin</Link>
-            </div>
-            {/* Payment Badges */}
-            <div className="flex flex-wrap justify-center md:justify-end gap-2 text-[#faf7f2]/40 text-xs">
-              <span className="border border-[#faf7f2]/20 rounded px-2 py-1">VISA</span>
-              <span className="border border-[#faf7f2]/20 rounded px-2 py-1">MASTERCARD</span>
-              <span className="border border-[#faf7f2]/20 rounded px-2 py-1">UPI</span>
-              <span className="border border-[#faf7f2]/20 rounded px-2 py-1">RAZORPAY</span>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Bottom bar */}
+      <div className="border-t border-white/10 text-white/50 text-xs flex flex-wrap items-center justify-between gap-3 px-8 py-4">
+        <p className="m-0 tracking-wider">
+          © {new Date().getFullYear()} LABEL WINK. ALL RIGHTS RESERVED.
+        </p>
+
+        {/* Payment badges */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {['VISA', 'MASTERCARD', 'UPI', 'RAZORPAY'].map(badge => (
+            <span key={badge} style={{
+              border: '1px solid #4a6a52',
+              color: '#6a8a72',
+              fontSize: '11px',
+              padding: '4px 12px',
+              borderRadius: '4px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}>
+              {badge}
+            </span>
+          ))}
+        </div>
+      </div>
     </footer>
+  );
+}
+
+// Separate mobile-only collapsible for Contact column
+function ContactMobileSection({ email, socialLinks }: { email: string; socialLinks: any }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="md:hidden" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          width: '100%', padding: '16px 0',
+        }}
+      >
+        <span className="text-[#c9a84c] font-semibold text-sm uppercase tracking-wider mb-3">
+          CONTACT
+        </span>
+        <ChevronDown size={16} style={{ color: '#6a8a72', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms' }} />
+      </button>
+      {open && (
+        <div style={{ paddingBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <p style={{ fontSize: '11px', color: '#6a8a72', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>EMAIL US</p>
+          <a href={`mailto:${email}`} className="text-white/70 hover:text-[#c9a84c] transition-colors text-sm block">
+            {email}
+          </a>
+          <div className="mt-2 flex gap-3">
+            <div className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center"><Instagram size={16} /></div>
+            <div className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center"><Facebook size={16} /></div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

@@ -1,0 +1,12 @@
+$kind: http-request
+name: Update Redirect
+method: POST
+url: '{{baseUrl}}/api/admin/redirects/{{redirectId}}'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"to": "/updated-path"}

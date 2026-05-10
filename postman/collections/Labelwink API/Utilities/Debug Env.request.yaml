@@ -1,0 +1,5 @@
+$kind: http-request
+name: Debug Env
+method: GET
+url: '{{baseUrl}}/api/debug-env'
+order: 3000

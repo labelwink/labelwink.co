@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -37,7 +37,7 @@ export function HeroBannerSlider({ banners }: { banners: any[] }) {
             {b.cta_url && b.cta_text && (
               <Link 
                 href={b.cta_url}
-                className="bg-[#c9a84c] text-[#1a1a1a] font-bold px-8 py-3 rounded-lg w-max hover:bg-[#b8973d] transition-colors"
+                className="bg-[#c9a84c] text-[#ffffff] font-bold px-8 py-3 rounded-lg w-max hover:bg-[#b8973d] transition-colors"
               >
                 {b.cta_text}
               </Link>

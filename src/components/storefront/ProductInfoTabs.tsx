@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 
@@ -34,8 +34,8 @@ type Tab = (typeof TABS)[number]
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-3 py-2 border-b border-[#c9a84c]/10 last:border-0">
-      <span className="text-xs text-[#1a1a1a]/50 uppercase tracking-wider font-medium w-36 flex-shrink-0">{label}</span>
-      <span className="text-sm text-[#1a1a1a]/80 capitalize">{value}</span>
+      <span className="text-xs text-[#ffffff]/50 uppercase tracking-wider font-medium w-36 flex-shrink-0">{label}</span>
+      <span className="text-sm text-[#ffffff]/80 capitalize">{value}</span>
     </div>
   )
 }
@@ -59,7 +59,7 @@ export function ProductInfoTabs({
             className={`px-5 py-3.5 text-xs font-semibold uppercase tracking-widest whitespace-nowrap transition-colors border-b-2 -mb-px ${
               tab === t
                 ? 'border-[#c9a84c] text-[#c9a84c]'
-                : 'border-transparent text-[#1a1a1a]/50 hover:text-[#1a1a1a]'
+                : 'border-transparent text-[#ffffff]/50 hover:text-[#ffffff]'
             }`}
           >
             {t}
@@ -72,10 +72,10 @@ export function ProductInfoTabs({
         {tab === 'Description' && (
           description
             ? <div
-                className="prose prose-sm max-w-none text-[#1a1a1a]/70 leading-relaxed"
+                className="prose prose-sm max-w-none text-[#ffffff]/70 leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: description }}
               />
-            : <p className="text-sm text-[#1a1a1a]/40 italic">No description available.</p>
+            : <p className="text-sm text-[#ffffff]/40 italic">No description available.</p>
         )}
 
         {/* Product Details */}
@@ -111,9 +111,9 @@ export function ProductInfoTabs({
                 </thead>
                 <tbody>
                   {sizeGuide.rows.map((row, ri) => (
-                    <tr key={ri} className={ri % 2 === 1 ? 'bg-[#1a1a1a]/3' : ''}>
+                    <tr key={ri} className={ri % 2 === 1 ? 'bg-white/3' : ''}>
                       {row.map((cell, ci) => (
-                        <td key={ci} className={`px-4 py-2.5 text-xs ${ci === 0 ? 'font-bold text-[#1a1a1a]' : 'text-[#1a1a1a]/60'}`}>
+                        <td key={ci} className={`px-4 py-2.5 text-xs ${ci === 0 ? 'font-bold text-[#ffffff]' : 'text-[#ffffff]/60'}`}>
                           {cell}
                         </td>
                       ))}
@@ -123,7 +123,7 @@ export function ProductInfoTabs({
               </table>
             </div>
           ) : (
-            <div className="text-sm text-[#1a1a1a]/50">
+            <div className="text-sm text-[#ffffff]/50">
               <p>Please refer to our{' '}
                 <a href="/size-guide" className="text-[#c9a84c] underline underline-offset-2">general size guide</a>
                 {' '}for measurements.
@@ -137,14 +137,14 @@ export function ProductInfoTabs({
           careLines.length > 0 ? (
             <ul className="space-y-2">
               {careLines.map((line, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-[#1a1a1a]/70">
+                <li key={i} className="flex items-start gap-2 text-sm text-[#ffffff]/70">
                   <span className="mt-0.5">🧺</span>
                   <span>{line}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-[#1a1a1a]/40 italic">Care instructions not available.</p>
+            <p className="text-sm text-[#ffffff]/40 italic">Care instructions not available.</p>
           )
         )}
       </div>

@@ -1,0 +1,12 @@
+$kind: http-request
+name: Create Redirect
+method: POST
+url: '{{baseUrl}}/api/admin/redirects'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"from": "/old-path", "to": "/new-path", "type": 301}

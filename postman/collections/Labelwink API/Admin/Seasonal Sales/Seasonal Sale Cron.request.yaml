@@ -1,0 +1,5 @@
+$kind: http-request
+name: Seasonal Sale Cron
+method: GET
+url: '{{baseUrl}}/api/admin/seasonal-sales/cron'
+order: 6000

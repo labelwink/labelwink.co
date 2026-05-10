@@ -18,7 +18,7 @@ export default function FAQEditor() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ items }),
     })
-    showToast(res.ok ? 'Saved âœ“' : 'Save failed', res.ok ? 'success' : 'error')
+    showToast(res.ok ? 'Saved ?' : 'Save failed', res.ok ? 'success' : 'error')
   }
 
   const move = (i: number, dir: -1 | 1) => {
@@ -32,8 +32,8 @@ export default function FAQEditor() {
       {ToastComponent}
       <div className="flex items-center justify-between">
         <div>
-          <nav className="text-sm text-[#6b7280] mb-1">Admin â€º Pages â€º <span className="text-[#1a1a1a]">FAQ</span></nav>
-          <h1 className="text-2xl font-bold text-[#1a1a1a]">FAQ Editor</h1>
+          <nav className="text-sm text-[#6b7280] mb-1">Admin › Pages › <span className="text-[#1b3a34]">FAQ</span></nav>
+          <h1 className="text-2xl font-bold text-[#1b3a34]">FAQ Editor</h1>
         </div>
         <button onClick={save} className="px-5 py-2 bg-[#1b3a34] text-white rounded-xl text-sm hover:bg-[#234d44]">Save All</button>
       </div>

@@ -94,6 +94,10 @@ export async function POST(req: NextRequest) {
     isVerified = orderItems?.some((oi: any) => oi.orders?.user_id === user.id) ?? false
   }
 
+  if (!isVerified) {
+    return NextResponse.json({ error: 'You must purchase this product to review.' }, { status: 403 });
+  }
+
   const { error } = await supabase.from('reviews').insert({
     product_id,
     user_id: user.id,

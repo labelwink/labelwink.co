@@ -6,7 +6,7 @@ interface TrustStripProps {
 
 export function TrustStrip({ threshold = 999 }: TrustStripProps) {
   const features = [
-    { icon: Truck, title: "Free Shipping", description: `On orders over ₹${threshold}` },
+    { icon: Truck, title: "Fast Delivery", description: "Quick dispatch & delivery" },
     { icon: HeartHandshake, title: "Easy Returns", description: "7-day return policy" },
     { icon: ShieldCheck, title: "Handcrafted in India", description: "Ethically made" },
     { icon: CreditCard, title: "Secure Pay", description: "UPI & Cards accepted" },

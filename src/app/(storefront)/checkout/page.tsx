@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
 import { useCartStore } from '@/store/useCartStore';
@@ -9,10 +9,23 @@ import { ShoppingBag, ChevronRight, CheckCircle2, MapPin, Tag, Gift, Loader2, Cr
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import Script from 'next/script';
+// Mapping for CheckoutButton props:
+// items -> items
+// totalAmount -> total
+// subtotal -> subtotal
+// shippingFee -> shippingCharge
+// discountAmount -> discountAmt
+// couponCode -> coupon.status === 'valid' ? coupon.code : undefined
+// shippingAddress -> selected saved address object mapped from addresses and selectedAddressId
+// customerName -> user?.email
+// customerEmail -> user?.email
+// customerPhone -> user?.phone
+import CheckoutButton from '@/components/CheckoutButton';
 import { toast } from 'sonner';
 import { ProductImage } from '@/components/storefront/ProductImage';
 import OTPLoginModal from '@/components/auth/OTPLoginModal';
+
+const DIGITS_ONLY = new RegExp('[^0-9]', 'g');
 
 const INDIAN_STATES = [
   "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", 
@@ -254,89 +267,28 @@ export default function CheckoutPage() {
 
   const total = Math.max(0, subtotal + shippingCharge - discountAmt - pointsDiscount);
 
-  const handlePayment = async () => {
-    setLoading(true);
-    setStep(4);
-
-    try {
-      const createRes = await fetch('/api/storefront/checkout/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          address_id: selectedAddressId,
-          shipping_method: shippingMethod,
-          coupon_code: coupon.status === 'valid' ? coupon.code : undefined,
-          use_loyalty_points: usePoints ? pointsToRedeem : 0,
-          cart_items: items
-        })
-      });
-
-      if (!createRes.ok) {
-        const errorData = await createRes.json();
-        throw new Error(errorData.error || 'Failed to initialize payment');
+  const selectedAddress = addresses.find(addr => addr.id === selectedAddressId) ?? null;
+  const shippingAddress = selectedAddress
+    ? {
+        name: `${selectedAddress.first_name} ${selectedAddress.last_name || ''}`.trim(),
+        line1: selectedAddress.line1,
+        line2: selectedAddress.line2,
+        city: selectedAddress.city,
+        state: selectedAddress.state,
+        pincode: selectedAddress.pincode,
+        country: 'India',
       }
-
-      const data = await createRes.json();
-
-      const rzp = new (window as any).Razorpay({
-        key: data.key_id,
-        order_id: data.razorpay_order_id,
-        amount: data.amount,
-        currency: 'INR',
-        name: shopSettings?.store_name || 'LabelWink',
-        description: 'Order Payment',
-        image: shopSettings?.logo_url || undefined,
-        prefill: data.prefill,
-        theme: { color: '#c9a84c' },
-        handler: async (response: any) => {
-          try {
-            const confirmRes = await fetch('/api/storefront/checkout/confirm', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-                address_id: selectedAddressId,
-                shipping_method: shippingMethod,
-                coupon_code: coupon.status === 'valid' ? coupon.code : undefined,
-                use_loyalty_points: usePoints ? pointsToRedeem : 0,
-                cart_items: items
-              })
-            });
-
-            if (!confirmRes.ok) throw new Error('Confirmation failed');
-            const confirmData = await confirmRes.json();
-            
-            clearCart();
-            router.push(`/order-success?order_id=${confirmData.order_id}&invoice=${confirmData.invoice_number}`);
-          } catch (e: any) {
-            toast.error('Payment verification failed. Contact support with TXN: ' + response.razorpay_payment_id);
-            setStep(3);
-            setLoading(false);
-          }
-        },
-        modal: { 
-          ondismiss: () => {
-            setStep(3);
-            setLoading(false);
-          } 
-        }
-      });
-      rzp.open();
-    } catch (e: any) {
-      toast.error(e.message || 'Something went wrong');
-      setStep(3);
-      setLoading(false);
-    }
-  };
+    : null;
+  const customerName = user?.user_metadata?.full_name || user?.email || '';
+  const customerEmail = user?.email || '';
+  const customerPhone = user?.phone || '';
 
   if (items.length === 0 && step !== 4) {
     return (
       <div className="container mx-auto px-4 py-24 text-center">
-        <h1 className="text-3xl font-heading mb-6 text-[#1a1a1a]">Your cart is empty</h1>
+        <h1 className="text-3xl font-heading mb-6 text-[#ffffff]">Your cart is empty</h1>
         <Link href="/collections/all">
-          <Button className="bg-[#c9a84c] text-[#1a1a1a] hover:bg-[#b8973d] h-12 px-8">
+          <Button className="bg-[#c9a84c] text-[#ffffff] hover:bg-[#b8973d] h-12 px-8">
             Discover Collection
           </Button>
         </Link>
@@ -345,30 +297,28 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="bg-[#faf7f2] min-h-screen text-[#1a1a1a]">
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" />
+    <div className="bg-[#faf7f2] min-h-screen text-[#ffffff]">
       <OTPLoginModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onSuccess={() => { setShowAuthModal(false); checkUser(); }} />
       
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Progress Bar */}
-        <div className="flex items-center justify-between md:justify-center md:gap-8 mb-12">
           {[ {num:1, label:'Address'}, {num:2, label:'Shipping'}, {num:3, label:'Payment'}, {num:4, label:'Confirm'} ].map(s => {
             const isCompleted = step > s.num;
             const isActive = step === s.num;
             return (
               <div key={s.num} className="flex items-center gap-2">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                  isActive ? 'bg-[#c9a84c] text-[#1a1a1a]' : 
-                  isCompleted ? 'bg-[#c9a84c] text-[#1a1a1a]' : 'bg-gray-300 text-gray-500'
+                  isActive ? 'bg-[#c9a84c] text-[#ffffff]' : 
+                  isCompleted ? 'bg-[#c9a84c] text-[#ffffff]' : 'bg-gray-300 text-[#9aab9e]'
                 }`}>
                   {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : s.num}
                 </div>
                 <span className={`hidden md:inline font-bold text-sm uppercase tracking-wider ${
-                  isActive ? 'text-[#c9a84c]' : isCompleted ? 'text-[#1a1a1a]' : 'text-gray-400'
+                  isActive ? 'text-[#c9a84c]' : isCompleted ? 'text-[#ffffff]' : 'text-[#5a7060]'
                 }`}>
                   {s.label}
                 </span>
-                {s.num !== 4 && <ChevronRight className="w-4 h-4 text-gray-300 hidden md:block ml-4" />}
+                {s.num !== 4 && <ChevronRight className="w-4 h-4 text-[#5a7060] hidden md:block ml-4" />}
               </div>
             );
           })}
@@ -385,57 +335,57 @@ export default function CheckoutPage() {
                   <div className="grid gap-4">
                     {addresses.map(addr => (
                       <label key={addr.id} className={`block relative border rounded-xl p-4 cursor-pointer transition-colors ${
-                        selectedAddressId === addr.id ? 'border-[#c9a84c] bg-[#c9a84c]/5' : 'border-[#1a1a1a]/10 hover:border-[#1a1a1a]/30'
+                        selectedAddressId === addr.id ? 'border-[#c9a84c] bg-[#c9a84c]/5' : 'border-[#ffffff]/10 hover:border-[#ffffff]/30'
                       }`}>
                         <input type="radio" name="address" checked={selectedAddressId === addr.id} onChange={() => setSelectedAddressId(addr.id)} className="sr-only" />
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-2">
-                            <span className="bg-[#1a1a1a] text-[#faf7f2] text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded">
+                            <span className="bg-white text-[#faf7f2] text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded">
                               {addr.label}
                             </span>
-                            {addr.is_default && <span className="bg-[#c9a84c] text-[#1a1a1a] text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full">Default</span>}
+                            {addr.is_default && <span className="bg-[#c9a84c] text-[#ffffff] text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full">Default</span>}
                           </div>
                           {selectedAddressId === addr.id && <CheckCircle2 className="w-5 h-5 text-[#c9a84c]" />}
                         </div>
                         <p className="font-bold">{addr.first_name} {addr.last_name}</p>
                         <p className="text-sm mt-1">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</p>
                         <p className="text-sm">{addr.city}, {addr.state} - {addr.pincode}</p>
-                        <p className="text-sm mt-2 text-[#1a1a1a]/70">📱 +91 {addr.phone}</p>
+                        <p className="text-sm mt-2 text-[#ffffff]/70">📱 +91 {addr.phone}</p>
                       </label>
                     ))}
                     
-                    <Button variant="outline" onClick={() => setShowNewAddress(true)} className="w-full mt-2 border-[#1a1a1a]/20 text-[#1a1a1a]">
+                    <Button variant="outline" onClick={() => setShowNewAddress(true)} className="w-full mt-2 border-[#ffffff]/20 text-[#ffffff]">
                       + Add New Address
                     </Button>
                   </div>
                 )}
 
                 {(showNewAddress || addresses.length === 0) && (
-                  <form onSubmit={handleSaveAddress} className="border border-[#1a1a1a]/10 bg-white p-6 rounded-xl space-y-4">
+                  <form onSubmit={handleSaveAddress} className="border border-[#ffffff]/10 bg-white p-6 rounded-xl space-y-4">
                     <h3 className="font-bold mb-4 text-lg">Add New Address</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label>First Name</Label>
-                        <Input required value={newAddress.first_name} onChange={e => setNewAddress({...newAddress, first_name: e.target.value})} className="border-[#1a1a1a]/20" />
+                        <Input required value={newAddress.first_name} onChange={e => setNewAddress({...newAddress, first_name: e.target.value})} className="border-[#ffffff]/20" />
                       </div>
                       <div>
                         <Label>Last Name</Label>
-                        <Input value={newAddress.last_name} onChange={e => setNewAddress({...newAddress, last_name: e.target.value})} className="border-[#1a1a1a]/20" />
+                        <Input value={newAddress.last_name} onChange={e => setNewAddress({...newAddress, last_name: e.target.value})} className="border-[#ffffff]/20" />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label>Phone</Label>
-                        <Input required type="tel" maxLength={10} value={newAddress.phone} onChange={e => setNewAddress({...newAddress, phone: e.target.value.replace(/[^0-9]/g, '')})} className="border-[#1a1a1a]/20" />
+                        <Input required type="tel" maxLength={10} value={newAddress.phone} onChange={e => setNewAddress({...newAddress, phone: e.target.value.replace(DIGITS_ONLY, '')})} className="border-[#ffffff]/20" />
                       </div>
                       <div>
                         <Label>Alt Phone (Optional)</Label>
-                        <Input type="tel" maxLength={10} value={newAddress.alt_phone} onChange={e => setNewAddress({...newAddress, alt_phone: e.target.value.replace(/[^0-9]/g, '')})} className="border-[#1a1a1a]/20" />
+                        <Input type="tel" maxLength={10} value={newAddress.alt_phone} onChange={e => setNewAddress({...newAddress, alt_phone: e.target.value.replace(DIGITS_ONLY, '')})} className="border-[#ffffff]/20" />
                       </div>
                     </div>
                     <div>
                       <Label>Label</Label>
-                      <select value={newAddress.label} onChange={e => setNewAddress({...newAddress, label: e.target.value})} className="w-full h-10 px-3 rounded-md border border-[#1a1a1a]/20 bg-background text-sm outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c]">
+                      <select value={newAddress.label} onChange={e => setNewAddress({...newAddress, label: e.target.value})} className="w-full h-10 px-3 rounded-md border border-[#ffffff]/20 bg-background text-sm outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c]">
                         <option value="Home">Home</option>
                         <option value="Office">Office</option>
                         <option value="Other">Other</option>
@@ -443,24 +393,24 @@ export default function CheckoutPage() {
                     </div>
                     <div>
                       <Label>Address Line 1</Label>
-                      <Input required value={newAddress.line1} onChange={e => setNewAddress({...newAddress, line1: e.target.value})} className="border-[#1a1a1a]/20" />
+                      <Input required value={newAddress.line1} onChange={e => setNewAddress({...newAddress, line1: e.target.value})} className="border-[#ffffff]/20" />
                     </div>
                     <div>
                       <Label>Address Line 2 (Optional)</Label>
-                      <Input value={newAddress.line2} onChange={e => setNewAddress({...newAddress, line2: e.target.value})} className="border-[#1a1a1a]/20" />
+                      <Input value={newAddress.line2} onChange={e => setNewAddress({...newAddress, line2: e.target.value})} className="border-[#ffffff]/20" />
                     </div>
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <Label>Pincode</Label>
-                        <Input required maxLength={6} value={newAddress.pincode} onChange={e => handlePincodeChange(e.target.value.replace(/[^0-9]/g, ''))} className="border-[#1a1a1a]/20" />
+                        <Input required maxLength={6} value={newAddress.pincode} onChange={e => handlePincodeChange(e.target.value.replace(DIGITS_ONLY, ''))} className="border-[#ffffff]/20" />
                       </div>
                       <div>
                         <Label>City</Label>
-                        <Input required value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} className="border-[#1a1a1a]/20" />
+                        <Input required value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} className="border-[#ffffff]/20" />
                       </div>
                       <div>
                         <Label>State</Label>
-                        <select required value={newAddress.state} onChange={e => setNewAddress({...newAddress, state: e.target.value})} className="w-full h-10 px-3 rounded-md border border-[#1a1a1a]/20 bg-background text-sm outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c]">
+                        <select required value={newAddress.state} onChange={e => setNewAddress({...newAddress, state: e.target.value})} className="w-full h-10 px-3 rounded-md border border-[#ffffff]/20 bg-background text-sm outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c]">
                           <option value="">Select State</option>
                           {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
@@ -468,7 +418,7 @@ export default function CheckoutPage() {
                     </div>
                     
                     {pincodeMessage && (
-                      <div className={`text-sm font-semibold mt-2 ${pincodeStatus === 'available' ? 'text-green-600' : pincodeStatus === 'unavailable' ? 'text-red-500' : 'text-gray-500'}`}>
+                      <div className={`text-sm font-semibold mt-2 ${pincodeStatus === 'available' ? 'text-green-600' : pincodeStatus === 'unavailable' ? 'text-red-500' : 'text-[#9aab9e]'}`}>
                         {pincodeStatus === 'available' ? '✅' : pincodeStatus === 'unavailable' ? '❌' : '⏳'} {pincodeMessage}
                       </div>
                     )}
@@ -479,14 +429,14 @@ export default function CheckoutPage() {
                     </label>
 
                     <div className="flex gap-4 mt-6">
-                      {addresses.length > 0 && <Button type="button" variant="outline" onClick={() => setShowNewAddress(false)} className="border-[#1a1a1a]/20 text-[#1a1a1a]">Cancel</Button>}
-                      <Button type="submit" disabled={loading || pincodeStatus === 'unavailable'} className="bg-[#c9a84c] text-[#1a1a1a] hover:bg-[#b8973d] px-8 font-bold">Save Address</Button>
+                      {addresses.length > 0 && <Button type="button" variant="outline" onClick={() => setShowNewAddress(false)} className="border-[#ffffff]/20 text-[#ffffff]">Cancel</Button>}
+                      <Button type="submit" disabled={loading || pincodeStatus === 'unavailable'} className="bg-[#c9a84c] text-[#ffffff] hover:bg-[#b8973d] px-8 font-bold">Save Address</Button>
                     </div>
                   </form>
                 )}
 
                 {!showNewAddress && addresses.length > 0 && (
-                  <Button onClick={continueToShipping} disabled={pincodeStatus === 'unavailable' && showNewAddress} className="w-full mt-6 bg-[#c9a84c] text-[#1a1a1a] font-bold py-6 text-lg hover:bg-[#b8973d]">
+                  <Button onClick={continueToShipping} disabled={pincodeStatus === 'unavailable' && showNewAddress} className="w-full mt-6 bg-[#c9a84c] text-[#ffffff] font-bold py-6 text-lg hover:bg-[#b8973d]">
                     Continue to Shipping →
                   </Button>
                 )}
@@ -500,38 +450,38 @@ export default function CheckoutPage() {
                 {isFreeShipping ? (
                   <div className="bg-green-50 border border-green-200 p-6 rounded-xl flex items-center justify-between">
                     <div>
-                      <h3 className="font-bold text-green-800 text-lg">🎉 You qualify for free shipping!</h3>
+                      <h3 className="font-bold text-green-800 text-lg">🎉 Shipping charges waived!</h3>
                       <p className="text-green-600 mt-1">Standard Delivery (5-7 working days)</p>
                     </div>
                     <span className="font-bold text-green-800 text-xl">FREE</span>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <label className={`block relative border rounded-xl p-6 cursor-pointer transition-colors ${shippingMethod === 'standard' ? 'border-[#c9a84c] bg-[#c9a84c]/5' : 'border-[#1a1a1a]/10 hover:border-[#1a1a1a]/30'}`}>
+                    <label className={`block relative border rounded-xl p-6 cursor-pointer transition-colors ${shippingMethod === 'standard' ? 'border-[#c9a84c] bg-[#c9a84c]/5' : 'border-[#ffffff]/10 hover:border-[#ffffff]/30'}`}>
                       <input type="radio" name="shipping" checked={shippingMethod === 'standard'} onChange={() => setShippingMethod('standard')} className="sr-only" />
                       <div className="flex justify-between items-center mb-2">
                         <span className="font-bold text-lg">Standard Delivery</span>
                         <span className="font-bold text-lg">₹{shopSettings?.standard_shipping_charge || 79}</span>
                       </div>
-                      <p className="text-[#1a1a1a]/70">5–7 working days</p>
+                      <p className="text-[#ffffff]/70">5–7 working days</p>
                       <p className="text-sm mt-2 text-[#c9a84c] font-semibold">Estimated delivery: {new Date(Date.now() + 6 * 24*60*60*1000).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</p>
                     </label>
 
-                    <label className={`block relative border rounded-xl p-6 cursor-pointer transition-colors ${shippingMethod === 'express' ? 'border-[#c9a84c] bg-[#c9a84c]/5' : 'border-[#1a1a1a]/10 hover:border-[#1a1a1a]/30'}`}>
+                    <label className={`block relative border rounded-xl p-6 cursor-pointer transition-colors ${shippingMethod === 'express' ? 'border-[#c9a84c] bg-[#c9a84c]/5' : 'border-[#ffffff]/10 hover:border-[#ffffff]/30'}`}>
                       <input type="radio" name="shipping" checked={shippingMethod === 'express'} onChange={() => setShippingMethod('express')} className="sr-only" />
                       <div className="flex justify-between items-center mb-2">
                         <span className="font-bold text-lg">Express Delivery</span>
                         <span className="font-bold text-lg">₹{shopSettings?.express_shipping_charge || 149}</span>
                       </div>
-                      <p className="text-[#1a1a1a]/70">2–3 working days</p>
+                      <p className="text-[#ffffff]/70">2–3 working days</p>
                       <p className="text-sm mt-2 text-[#c9a84c] font-semibold">Estimated delivery: {new Date(Date.now() + 2 * 24*60*60*1000).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</p>
                     </label>
                   </div>
                 )}
 
                 <div className="flex gap-4 pt-4">
-                  <Button variant="outline" onClick={() => setStep(1)} className="py-6 border-[#1a1a1a]/20 text-[#1a1a1a]">← Back</Button>
-                  <Button onClick={() => setStep(3)} className="flex-1 bg-[#c9a84c] text-[#1a1a1a] font-bold py-6 text-lg hover:bg-[#b8973d]">
+                  <Button variant="outline" onClick={() => setStep(1)} className="py-6 border-[#ffffff]/20 text-[#ffffff]">← Back</Button>
+                  <Button onClick={() => setStep(3)} className="flex-1 bg-[#c9a84c] text-[#ffffff] font-bold py-6 text-lg hover:bg-[#b8973d]">
                     Continue to Payment →
                   </Button>
                 </div>
@@ -542,7 +492,7 @@ export default function CheckoutPage() {
               <div className="space-y-8">
                 <h2 className="text-2xl font-heading font-bold">3. Payment & Offers</h2>
                 
-                <div className="border border-[#1a1a1a]/10 p-6 rounded-xl bg-white">
+                <div className="border border-[#ffffff]/10 p-6 rounded-xl bg-white">
                   <details className="group">
                     <summary className="flex justify-between items-center font-bold cursor-pointer list-none">
                       <span className="flex items-center gap-2"><Tag className="w-5 h-5 text-[#c9a84c]"/> Have a coupon code?</span>
@@ -550,15 +500,15 @@ export default function CheckoutPage() {
                         <svg fill="none" height="24" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg>
                       </span>
                     </summary>
-                    <div className="pt-4 mt-4 border-t border-[#1a1a1a]/10">
+                    <div className="pt-4 mt-4 border-t border-[#ffffff]/10">
                       <div className="flex gap-2">
-                        <Input value={coupon.code} onChange={e => setCoupon({ ...coupon, code: e.target.value.toUpperCase() })} placeholder="Enter code" className="uppercase border-[#1a1a1a]/20" />
-                        <Button onClick={validateCoupon} disabled={coupon.status === 'loading'} className="bg-[#1a1a1a] text-white hover:bg-gray-800">Apply</Button>
+                        <Input value={coupon.code} onChange={e => setCoupon({ ...coupon, code: e.target.value.toUpperCase() })} placeholder="Enter code" className="uppercase border-[#ffffff]/20" />
+                        <Button onClick={validateCoupon} disabled={coupon.status === 'loading'} className="bg-white text-white hover:bg-white">Apply</Button>
                       </div>
                       {coupon.message && (
                         <div className={`mt-3 text-sm font-semibold flex justify-between items-center ${coupon.status === 'valid' ? 'text-green-600' : 'text-red-500'}`}>
                           {coupon.message}
-                          {coupon.status === 'valid' && <button onClick={() => setCoupon({ code: '', status: 'idle', discount: 0, message: '' })} className="text-gray-400 hover:text-[#1a1a1a]">×</button>}
+                          {coupon.status === 'valid' && <button onClick={() => setCoupon({ code: '', status: 'idle', discount: 0, message: '' })} className="text-[#5a7060] hover:text-[#ffffff]">×</button>}
                         </div>
                       )}
                     </div>
@@ -566,12 +516,12 @@ export default function CheckoutPage() {
                 </div>
 
                 {shopSettings?.loyalty_enabled && availablePoints > 0 && (
-                  <div className="border border-[#1a1a1a]/10 p-6 rounded-xl bg-white flex justify-between items-center">
+                  <div className="border border-[#ffffff]/10 p-6 rounded-xl bg-white flex justify-between items-center">
                     <div className="flex items-start gap-3">
                       <Gift className="w-6 h-6 text-[#c9a84c] mt-1" />
                       <div>
                         <p className="font-bold">Wink Points</p>
-                        <p className="text-sm text-[#1a1a1a]/70">You have {availablePoints} points</p>
+                        <p className="text-sm text-[#ffffff]/70">You have {availablePoints} points</p>
                       </div>
                     </div>
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -585,10 +535,10 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                <div className="border border-[#1a1a1a]/10 p-6 rounded-xl bg-white text-center">
-                  <CreditCard className="w-10 h-10 mx-auto text-[#1a1a1a] mb-4" />
+                <div className="border border-[#ffffff]/10 p-6 rounded-xl bg-white text-center">
+                  <CreditCard className="w-10 h-10 mx-auto text-[#ffffff] mb-4" />
                   <h3 className="font-bold text-lg mb-1">Pay Securely with Razorpay</h3>
-                  <p className="text-sm text-[#1a1a1a]/70 mb-4">UPI • Cards • Net Banking • EMI • Wallets</p>
+                  <p className="text-sm text-[#ffffff]/70 mb-4">UPI • Cards • Net Banking • EMI • Wallets</p>
                   <div className="flex justify-center gap-3">
                     <span className="bg-gray-100 border border-gray-200 px-3 py-1 text-xs font-bold rounded">UPI</span>
                     <span className="bg-gray-100 border border-gray-200 px-3 py-1 text-xs font-bold rounded">VISA</span>
@@ -598,10 +548,19 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="flex gap-4 pt-4">
-                  <Button variant="outline" onClick={() => setStep(2)} className="py-6 border-[#1a1a1a]/20 text-[#1a1a1a]">← Back</Button>
-                  <Button onClick={handlePayment} disabled={loading} className="flex-1 bg-[#c9a84c] text-[#1a1a1a] font-bold py-6 text-xl hover:bg-[#b8973d] shadow-lg">
-                    Pay ₹{total.toLocaleString('en-IN')}
-                  </Button>
+                  <Button variant="outline" onClick={() => setStep(2)} className="py-6 border-[#ffffff]/20 text-[#ffffff]">← Back</Button>
+                  <CheckoutButton
+                    items={items}
+                    totalAmount={total}
+                    subtotal={subtotal}
+                    shippingFee={shippingCharge}
+                    discountAmount={discountAmt}
+                    couponCode={coupon.status === 'valid' ? coupon.code : undefined}
+                    shippingAddress={shippingAddress}
+                    customerName={customerName}
+                    customerEmail={customerEmail}
+                    customerPhone={customerPhone}
+                  />
                 </div>
               </div>
             )}
@@ -610,14 +569,14 @@ export default function CheckoutPage() {
               <div className="text-center py-24">
                 <Loader2 className="w-16 h-16 animate-spin text-[#c9a84c] mx-auto mb-6" />
                 <h2 className="text-3xl font-heading font-bold mb-2">Processing Payment...</h2>
-                <p className="text-[#1a1a1a]/70">Please do not close this window or click back.</p>
+                <p className="text-[#ffffff]/70">Please do not close this window or click back.</p>
               </div>
             )}
           </div>
 
           {/* Right Column - Order Summary */}
           <div className="w-full md:w-[40%]">
-            <div className="bg-white border border-[#1a1a1a]/10 rounded-xl p-6 md:p-8 sticky top-24 shadow-sm">
+            <div className="bg-white border border-[#ffffff]/10 rounded-xl p-6 md:p-8 sticky top-24 shadow-sm">
               <h2 className="text-xl font-heading font-bold mb-6">Order Summary</h2>
               
               <div className="space-y-4 mb-6 max-h-[40vh] overflow-y-auto pr-2">
@@ -625,11 +584,11 @@ export default function CheckoutPage() {
                   <div key={item.id} className="flex gap-4 items-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-lg relative overflow-hidden flex-shrink-0 border border-gray-200">
                       <ProductImage publicId={item.publicId || ''} alt={item.name} width={64} height={64} className="object-cover w-full h-full" />
-                      <span className="absolute -top-2 -right-2 bg-[#1a1a1a] text-white text-[10px] w-6 h-6 rounded-full flex items-center justify-center font-bold">{item.quantity}</span>
+                      <span className="absolute -top-2 -right-2 bg-white text-white text-[10px] w-6 h-6 rounded-full flex items-center justify-center font-bold">{item.quantity}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm truncate">{item.name}</p>
-                      <p className="text-xs text-[#1a1a1a]/60 uppercase">{item.size} {item.color ? `/ ${item.color}` : ''}</p>
+                      <p className="text-xs text-[#ffffff]/60 uppercase">{item.size} {item.color ? `/ ${item.color}` : ''}</p>
                     </div>
                     <div className="font-bold text-sm whitespace-nowrap">
                       ₹{(item.price * item.quantity).toLocaleString('en-IN')}
@@ -638,14 +597,14 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
-              <div className="space-y-3 border-t border-[#1a1a1a]/10 pt-6 text-sm">
+              <div className="space-y-3 border-t border-[#ffffff]/10 pt-6 text-sm">
                 <div className="flex justify-between font-medium">
-                  <span className="text-[#1a1a1a]/70">Subtotal</span>
+                  <span className="text-[#ffffff]/70">Subtotal</span>
                   <span>₹{subtotal.toLocaleString('en-IN')}</span>
                 </div>
                 
                 <div className="flex justify-between font-medium">
-                  <span className="text-[#1a1a1a]/70">Shipping</span>
+                  <span className="text-[#ffffff]/70">Shipping</span>
                   {shippingCharge === 0 ? (
                     <span className="text-green-600 font-bold">FREE 🎉</span>
                   ) : (
@@ -667,15 +626,14 @@ export default function CheckoutPage() {
                   </div>
                 )}
 
-                <div className="flex justify-between text-2xl font-heading font-bold pt-4 border-t border-[#1a1a1a]/10 text-[#c9a84c]">
+                <div className="flex justify-between text-2xl font-heading font-bold pt-4 border-t border-[#ffffff]/10 text-[#c9a84c]">
                   <span>Total</span>
                   <span>₹{total.toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>
-          </div>
-
         </div>
+
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useMemo } from 'react'
 import { FilterSidebar, ActiveFilters } from '@/components/storefront/FilterSidebar'
@@ -9,7 +9,7 @@ import { X } from 'lucide-react'
 interface Variant {
   size: string
   price: number
-  mrp?: number
+  compare_at_price?: number
   stock_qty: number
 }
 
@@ -103,8 +103,8 @@ export function CollectionFiltersClient({
       // Discount filter
       if (filters.discount) {
         const threshold = Number(filters.discount)
-        const mrp = firstVariant?.mrp ?? price
-        const discountPct = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0
+        const compare = firstVariant?.compare_at_price ?? price
+        const discountPct = compare > price ? Math.round(((compare - price) / compare) * 100) : 0
         if (discountPct < threshold) return false
       }
 
@@ -119,8 +119,8 @@ export function CollectionFiltersClient({
         case 'price_asc': return (va?.price ?? 0) - (vb?.price ?? 0)
         case 'price_desc': return (vb?.price ?? 0) - (va?.price ?? 0)
         case 'discount': {
-          const da = va?.mrp ? Math.round(((va.mrp - va.price) / va.mrp) * 100) : 0
-          const db = vb?.mrp ? Math.round(((vb.mrp - vb.price) / vb.mrp) * 100) : 0
+          const da = va?.compare_at_price ? Math.round(((va.compare_at_price - va.price) / va.compare_at_price) * 100) : 0
+          const db = vb?.compare_at_price ? Math.round(((vb.compare_at_price - vb.price) / vb.compare_at_price) * 100) : 0
           return db - da
         }
         default: return 0
@@ -161,7 +161,7 @@ export function CollectionFiltersClient({
     <div className="flex flex-col lg:flex-row gap-8">
       {/* Sidebar */}
       <FilterSidebar
-        availableSizes={availableSizes.length > 0 ? availableSizes : ['XS', 'S', 'M', 'L', 'XL', 'XXL']}
+        availableSizes={availableSizes}
         availableOccasions={occasions}
         availableFabrics={fabrics}
         maxPrice={maxPrice}
@@ -189,20 +189,20 @@ export function CollectionFiltersClient({
                 </button>
               </span>
             ))}
-            <button onClick={clearAll} className="text-sm text-gray-500 hover:text-[#1b3a34] hover:underline ml-1">
+            <button onClick={clearAll} className="text-sm text-[#9aab9e] hover:text-[#1b3a34] hover:underline ml-1">
               Clear All
             </button>
           </div>
         )}
 
         {/* Result count */}
-        <p className="text-sm text-gray-500 mb-4">{filtered.length} product{filtered.length !== 1 ? 's' : ''} found</p>
+        <p className="text-sm text-[#9aab9e] mb-4">{filtered.length} product{filtered.length !== 1 ? 's' : ''} found</p>
 
         {/* Grid */}
         {filtered.length === 0 ? (
           <div className="py-20 text-center">
             <p className="text-4xl mb-4">👗</p>
-            <p className="text-gray-500 text-sm">No products match your filters.</p>
+            <p className="text-[#9aab9e] text-sm">No products match your filters.</p>
             <button onClick={clearAll} className="mt-4 text-sm text-[#1b3a34] hover:underline">Clear all filters</button>
           </div>
         ) : (
@@ -233,7 +233,7 @@ export function CollectionFiltersClient({
                   name={p.name}
                   slug={p.slug}
                   basePrice={firstVariant?.price ?? 0}
-                  compareAtPrice={firstVariant?.mrp ?? null}
+                  compareAtPrice={firstVariant?.compare_at_price ?? null}
                   image={resolvedImage}
                   publicId={directUrl || (imgPublicId ? imgPublicId : undefined)}
                   isNewArrival={p.tags?.includes('new')}

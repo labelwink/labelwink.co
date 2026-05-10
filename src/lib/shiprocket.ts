@@ -1,17 +1,21 @@
 const SHIPROCKET_EMAIL = process.env.SHIPROCKET_EMAIL!
 const SHIPROCKET_PASSWORD = process.env.SHIPROCKET_PASSWORD!
-let token: string | null = null
+let cachedToken: string | null = null
+let tokenExpiry: number = 0
 
 export async function getShiprocketToken() {
-  if (token) return token
+  if (cachedToken && Date.now() < tokenExpiry) return cachedToken
   const res = await fetch('https://apiv2.shiprocket.in/v1/external/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: SHIPROCKET_EMAIL, password: SHIPROCKET_PASSWORD }),
   })
+  if (!res.ok) throw new Error(`Shiprocket auth failed: ${res.status}`)
   const data = await res.json()
-  token = data.token
-  return token
+  if (!data.token) throw new Error('Shiprocket auth returned no token')
+  cachedToken = data.token
+  tokenExpiry = Date.now() + 23 * 60 * 60 * 1000 // 23 hours
+  return cachedToken
 }
 
 export async function createShiprocketOrder(order: any) {
@@ -57,5 +61,44 @@ export async function getShiprocketTracking(shipmentId: string) {
     `https://apiv2.shiprocket.in/v1/external/courier/track/shipment/${shipmentId}`,
     { headers: { Authorization: `Bearer ${t}` } }
   )
+  return res.json()
+}
+
+export async function generateShiprocketAWB(shipmentId: string) {
+  const t = await getShiprocketToken()
+  const res = await fetch(
+    'https://apiv2.shiprocket.in/v1/external/courier/assign/awb',
+    {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json', 
+        Authorization: `Bearer ${t}` 
+      },
+      body: JSON.stringify({ shipment_id: shipmentId }),
+    }
+  )
+  if (!res.ok) throw new Error(`AWB generation failed: ${res.status}`)
+  const data = await res.json()
+  return {
+    awb_code: data.response?.data?.awb_code || data.awb_code,
+    courier_name: data.response?.data?.courier_name || data.courier_name,
+    shipment_id: shipmentId,
+  }
+}
+
+export async function requestShiprocketPickup(shipmentId: string) {
+  const t = await getShiprocketToken()
+  const res = await fetch(
+    'https://apiv2.shiprocket.in/v1/external/courier/generate/pickup',
+    {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json', 
+        Authorization: `Bearer ${t}` 
+      },
+      body: JSON.stringify({ shipment_id: [shipmentId] }),
+    }
+  )
+  if (!res.ok) throw new Error(`Pickup request failed: ${res.status}`)
   return res.json()
 }

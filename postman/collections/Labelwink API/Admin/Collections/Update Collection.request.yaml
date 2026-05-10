@@ -1,0 +1,12 @@
+$kind: http-request
+name: Update Collection
+method: POST
+url: '{{baseUrl}}/api/admin/collections/{{collectionId}}'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"name": "Updated Collection"}

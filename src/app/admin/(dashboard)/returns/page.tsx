@@ -95,7 +95,7 @@ function ReturnCard({
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <p className="text-xs font-semibold text-[#1a1a1a]">{formatCurrency(orderTotal)}</p>
+            <p className="text-xs font-semibold text-[#1b3a34]">{formatCurrency(orderTotal)}</p>
             <p className="text-[10px] text-[#9ca3af]">{formatDateTime(ret.created_at)}</p>
           </div>
           {expanded ? <ChevronUp size={15} className="text-[#9ca3af]" /> : <ChevronDown size={15} className="text-[#9ca3af]" />}
@@ -285,7 +285,7 @@ export default function ReturnsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#1a1a1a]">Returns</h1>
+          <h1 className="text-xl font-bold text-[#1b3a34]">Returns</h1>
           <p className="text-xs text-[#6b7280] mt-0.5">Manage return requests and refunds</p>
         </div>
         <button
@@ -336,7 +336,7 @@ export default function ReturnsPage() {
         </div>
       ) : returns.length === 0 ? (
         <div className="bg-white border border-[#e5e7eb] rounded-xl p-16 text-center">
-          <RotateCcw size={32} className="mx-auto text-gray-200 mb-3" />
+          <RotateCcw size={32} className="mx-auto text-[#1a2e1e] mb-3" />
           <p className="text-sm text-[#6b7280]">No {RETURN_STATUS_LABELS[status].toLowerCase()} returns</p>
         </div>
       ) : (

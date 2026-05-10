@@ -1,7 +1,8 @@
 import type { Config } from "tailwindcss";
+import tailwindAnimate from "tailwindcss-animate";
 
 const config = {
-  darkMode: ["class"],
+  darkMode: 'media', // disabled effectively — use media, never class
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
@@ -19,60 +20,84 @@ const config = {
     },
     extend: {
       colors: {
-        border: "var(--border)",
-        input: "var(--input)",
-        ring: "var(--ring)",
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        // Brand colors
+        labelwink: {
+          green:          '#1C3829',
+          'green-hover':  '#24472F',
+          gold:           '#c9a84c',
+          'gold-hover':   '#d4b76a',
+          cream:          '#FDF8F0',
+          'cream-card':   '#FAF5E9',
+          'cream-border': '#E8DFC8',
+          dark:           '#1A1A1A',
+          muted:          '#6B6B5A',
+        },
+        green: {
+          DEFAULT: '#2d5a3d',
+          hover: '#3d7a53',
+          dark: '#1e3d29',
+          tint: '#eef5f1',
+          light: '#d4e8db',
+        },
+        gold: {
+          DEFAULT: '#c9a84c',
+          hover: '#e0bc5a',
+          tint: '#fdf6e3',
+          dark: '#a0842e',
+        },
+        cream: {
+          DEFAULT: '#faf8f4',
+          surface: '#f5f2ec',
+          border: '#e8e2d6',
+        },
+        brand: {
+          bg: '#faf8f4',
+          text: '#1a2e1e',
+          muted: '#5a7060',
+          faint: '#9aab9e',
+        },
+        // shadcn tokens
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "var(--primary)",
-          foreground: "var(--primary-foreground)",
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
-          DEFAULT: "var(--secondary)",
-          foreground: "var(--secondary-foreground)",
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
         },
         destructive: {
-          DEFAULT: "var(--destructive)",
-          foreground: "var(--destructive-foreground)",
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
-          DEFAULT: "var(--muted)",
-          foreground: "var(--muted-foreground)",
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "var(--accent)",
-          foreground: "var(--accent-foreground)",
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
         },
         popover: {
-          DEFAULT: "var(--popover)",
-          foreground: "var(--popover-foreground)",
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
         },
         card: {
-          DEFAULT: "var(--card)",
-          foreground: "var(--card-foreground)",
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
         },
-        cream: "#f9f6f1",
-        blush: "#f5e0d8",
-        sage: "#c8d8c0",
-        charcoal: "#2b2b2b",
-        teal: "#016a6e",
-        gold: "#c9a84c",
       },
       fontFamily: {
-        cinzel:    ['var(--font-cinzel)', 'Georgia', 'serif'],
-        display:   ['var(--font-cormorant)', 'Georgia', 'serif'],
-        body:      ['var(--font-jost)', 'system-ui', 'sans-serif'],
-        // Aliases for semantic use
-        brand:     ['var(--font-cinzel)', 'Georgia', 'serif'],
-        heading:   ['var(--font-cormorant)', 'Georgia', 'serif'],
-        sans:      ['var(--font-jost)', 'system-ui', 'sans-serif'],
-      },
-      letterSpacing: {
-        cinzel: '0.15em',
-        brand:  '0.2em',
-        nav:    '0.08em',
-        label:  '0.12em',
+        sans:    ['Inter', 'system-ui', 'sans-serif'],
+        body:    ['Inter', 'system-ui', 'sans-serif'],
+        brand:   ['Inter', 'system-ui', 'sans-serif'],
+        heading: ['Inter', 'system-ui', 'sans-serif'],
+        cinzel:  ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Inter', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -101,7 +126,7 @@ const config = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindAnimate],
 } satisfies Config;
 
 export default config;

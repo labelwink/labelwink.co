@@ -16,16 +16,25 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!token) redirect('/admin/login')
 
-  const payload = await verifyAdminToken(token)
+  const payload = await verifyAdminToken(token) as Record<string, unknown> | null
   if (!payload) redirect('/admin/login')
+
+  // Role guard — only admin and super_admin may enter
+  const role = payload.role as string | undefined
+  if (!role || !['admin', 'super_admin'].includes(role)) {
+    redirect('/admin/login')
+  }
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen bg-[#f9f9f9] overflow-hidden font-body">
+      <div
+        className="flex h-screen overflow-hidden"
+        style={{ background: '#faf8f4', fontFamily: "'Inter', -apple-system, sans-serif" }}
+      >
         <AdminSidebar />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <AdminTopBar />
-          <main className="flex-1 overflow-y-auto p-6 lg:p-8">
+          <main className="page-transition flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 min-h-screen">
             {children}
           </main>
         </div>

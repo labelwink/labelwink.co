@@ -1,0 +1,12 @@
+$kind: http-request
+name: Create Collection
+method: POST
+url: '{{baseUrl}}/api/admin/collections'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"name": "Summer Collection", "slug": "summer-collection", "description": "", "image": "", "is_active": true}

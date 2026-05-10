@@ -7,7 +7,7 @@ type Ctx = { params: Promise<{ id: string }> }
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
   const { id }    = await params
   const supabase  = createAdminClient()
   const body      = await req.json()

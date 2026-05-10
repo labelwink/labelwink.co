@@ -1,80 +1,202 @@
 export const metadata = {
   title: 'Size Guide | Label Wink',
-  description: 'Find your perfect fit with the Label Wink size guide. Standard Indian women\'s measurements in inches and centimetres.',
+  description: "Find your perfect fit with the Label Wink size guide. Standard Indian women's ethnic wear measurements.",
 }
 
 const sizes = [
-  { size: 'XS', chestIn: 32, waistIn: 26, hipIn: 35, chestCm: 81, waistCm: 66, hipCm: 89 },
-  { size: 'S',  chestIn: 34, waistIn: 28, hipIn: 37, chestCm: 86, waistCm: 71, hipCm: 94 },
-  { size: 'M',  chestIn: 36, waistIn: 30, hipIn: 39, chestCm: 91, waistCm: 76, hipCm: 99 },
-  { size: 'L',  chestIn: 38, waistIn: 32, hipIn: 41, chestCm: 97, waistCm: 81, hipCm: 104 },
-  { size: 'XL', chestIn: 40, waistIn: 34, hipIn: 43, chestCm: 102, waistCm: 86, hipCm: 109 },
-  { size: 'XXL',chestIn: 42, waistIn: 36, hipIn: 45, chestCm: 107, waistCm: 91, hipCm: 114 },
+  { size: 'XS', chest: '32"', waist: '25"', hip: '34"', length: '52"' },
+  { size: 'S',  chest: '34"', waist: '27"', hip: '36"', length: '53"' },
+  { size: 'M',  chest: '36"', waist: '29"', hip: '38"', length: '54"' },
+  { size: 'L',  chest: '38"', waist: '31"', hip: '40"', length: '55"' },
+  { size: 'XL', chest: '40"', waist: '33"', hip: '42"', length: '56"' },
+  { size: 'XXL',chest: '42"', waist: '35"', hip: '44"', length: '57"' },
 ]
 
 const howToMeasure = [
   {
     label: 'Chest',
-    desc: 'Measure around the fullest part of your chest, keeping the tape parallel to the ground and relaxed — not too tight.',
+    icon: '📏',
+    desc: 'Measure around the fullest part of your chest, keeping tape horizontal.',
   },
   {
     label: 'Waist',
-    desc: 'Measure around your natural waistline, which is the narrowest part of your torso, usually above your belly button.',
+    icon: '🎀',
+    desc: 'Measure around your natural waistline, the narrowest part of your torso.',
   },
   {
-    label: 'Hip',
-    desc: 'Stand with your feet together and measure around the fullest part of your hips and seat, keeping the tape level.',
+    label: 'Hips',
+    icon: '📐',
+    desc: 'Stand with feet together. Measure around the fullest part of your hips.',
   },
 ]
 
 export default function SizeGuidePage() {
   return (
-    <div className="container mx-auto px-4 py-12 max-w-4xl">
-      <h1 className="text-3xl font-bold text-[#1b3a34] mb-8">Size Guide</h1>
+    <div style={{ minHeight: '100vh', backgroundColor: '#faf8f4' }}>
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 mb-12">
-        <table className="w-full text-sm text-left">
-          <thead>
-            <tr className="bg-[#1b3a34] text-white">
-              <th className="px-5 py-3 font-semibold">Size</th>
-              <th className="px-5 py-3 font-semibold">Chest (in)</th>
-              <th className="px-5 py-3 font-semibold">Waist (in)</th>
-              <th className="px-5 py-3 font-semibold">Hip (in)</th>
-              <th className="px-5 py-3 font-semibold">Chest (cm)</th>
-              <th className="px-5 py-3 font-semibold">Waist (cm)</th>
-              <th className="px-5 py-3 font-semibold">Hip (cm)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sizes.map((row, i) => (
-              <tr key={row.size} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="px-5 py-3 font-semibold text-[#1b3a34]">{row.size}</td>
-                <td className="px-5 py-3">{row.chestIn}</td>
-                <td className="px-5 py-3">{row.waistIn}</td>
-                <td className="px-5 py-3">{row.hipIn}</td>
-                <td className="px-5 py-3">{row.chestCm}</td>
-                <td className="px-5 py-3">{row.waistCm}</td>
-                <td className="px-5 py-3">{row.hipCm}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Hero */}
+      <div style={{
+        background: '#1e3d29',
+        padding: '64px 24px',
+        textAlign: 'center',
+      }}>
+        <h1 style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontSize: '40px',
+          fontWeight: 400,
+          color: '#ffffff',
+          letterSpacing: '0.05em',
+          margin: '0 0 12px',
+        }}>
+          Size Guide
+        </h1>
+        <p style={{
+          fontSize: '16px',
+          color: '#9aab9e',
+          margin: 0,
+        }}>
+          Find your perfect fit
+        </p>
       </div>
 
-      <div>
-        <h2 className="text-xl font-bold text-[#1b3a34] mb-6">How to Measure</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {howToMeasure.map(({ label, desc }) => (
-            <div key={label} className="bg-[#f9f9f9] border border-gray-200 rounded-xl p-5">
-              <h3 className="font-semibold text-[#1b3a34] mb-2">{label}</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">{desc}</p>
+      {/* Content */}
+      <div style={{ maxWidth: '896px', margin: '0 auto', padding: '64px 16px' }}>
+
+        {/* Intro */}
+        <p style={{
+          fontSize: '15px',
+          color: '#5a7060',
+          textAlign: 'center',
+          maxWidth: '480px',
+          margin: '0 auto 48px',
+          lineHeight: 1.7,
+        }}>
+          We recommend measuring over your innerwear for the most accurate fit.
+          When in doubt, size up for a relaxed fit.
+        </p>
+
+        {/* Table title */}
+        <h2 style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontSize: '22px',
+          fontWeight: 400,
+          color: '#1a2e1e',
+          marginBottom: '20px',
+        }}>
+          Women&apos;s Ethnic Wear
+        </h2>
+
+        {/* Size table */}
+        <div style={{
+          background: '#ffffff',
+          border: '1px solid #e8e2d6',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          marginBottom: '48px',
+        }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#1e3d29' }}>
+                  {['Size', 'Chest', 'Waist', 'Hip', 'Length'].map(h => (
+                    <th key={h} style={{
+                      color: '#ffffff',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.08em',
+                      padding: '14px 20px',
+                      textAlign: 'left',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sizes.map((row, i) => (
+                  <tr key={row.size} style={{
+                    borderBottom: '1px solid #f5f2ec',
+                    background: i % 2 === 1 ? '#faf8f4' : '#ffffff',
+                  }}>
+                    <td style={{
+                      padding: '14px 20px',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: '#2d5a3d',
+                    }}>
+                      {row.size}
+                    </td>
+                    <td style={{ padding: '14px 20px', fontSize: '14px', color: '#1a2e1e' }}>{row.chest}</td>
+                    <td style={{ padding: '14px 20px', fontSize: '14px', color: '#1a2e1e' }}>{row.waist}</td>
+                    <td style={{ padding: '14px 20px', fontSize: '14px', color: '#1a2e1e' }}>{row.hip}</td>
+                    <td style={{ padding: '14px 20px', fontSize: '14px', color: '#1a2e1e' }}>{row.length}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* How to Measure */}
+        <h2 style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontSize: '22px',
+          fontWeight: 400,
+          color: '#1a2e1e',
+          marginBottom: '24px',
+        }}>
+          How to Measure
+        </h2>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '24px',
+          marginBottom: '32px',
+        }}>
+          {howToMeasure.map(({ label, icon, desc }) => (
+            <div key={label} style={{
+              background: '#ffffff',
+              border: '1px solid #e8e2d6',
+              borderRadius: '12px',
+              padding: '24px',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '32px', marginBottom: '12px' }}>{icon}</div>
+              <h3 style={{
+                fontSize: '15px',
+                fontWeight: 600,
+                color: '#1a2e1e',
+                margin: '0 0 8px',
+              }}>
+                {label}
+              </h3>
+              <p style={{
+                fontSize: '14px',
+                color: '#5a7060',
+                lineHeight: 1.6,
+                margin: 0,
+              }}>
+                {desc}
+              </p>
             </div>
           ))}
         </div>
 
-        <p className="text-sm text-gray-500 mt-6 italic">
-          💡 Tip: If you fall between two sizes, we recommend sizing up for a comfortable fit.
-        </p>
+        {/* Tip box */}
+        <div style={{
+          background: '#fdf6e3',
+          border: '1px solid #f0e4b8',
+          borderRadius: '10px',
+          padding: '16px',
+          fontSize: '14px',
+          color: '#a0842e',
+          lineHeight: 1.6,
+        }}>
+          💡 <strong>Tip:</strong> All our garments have 1–2 inch ease built in for comfortable wear.
+        </div>
       </div>
     </div>
   )

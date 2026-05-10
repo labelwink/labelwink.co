@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/lib/supabase/server'
 import { ProductCard } from '@/components/product/ProductCard'
 import { LoginPromptButton } from './LoginPromptButton'
 import { ShareButton } from './ShareButton'
@@ -20,8 +20,8 @@ export default async function WishlistPage() {
         <div className="w-20 h-20 bg-[#faf7f2] rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
           <span className="text-4xl">❤️</span>
         </div>
-        <h1 className="text-3xl font-bold text-[#1a1a1a] mb-4">Sign in to view your wishlist</h1>
-        <p className="text-gray-500 mb-8 max-w-md mx-auto">
+        <h1 className="text-3xl font-bold text-[#ffffff] mb-4">Sign in to view your wishlist</h1>
+        <p className="text-[#9aab9e] mb-8 max-w-md mx-auto">
           Save your favorite items and access them from any device by signing in to your account.
         </p>
         <LoginPromptButton />
@@ -53,13 +53,13 @@ export default async function WishlistPage() {
         <div className="w-20 h-20 bg-[#faf7f2] rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
           <span className="text-4xl">❤️</span>
         </div>
-        <h1 className="text-3xl font-bold text-[#1a1a1a] mb-2">Your wishlist is empty</h1>
-        <p className="text-gray-500 mb-8 max-w-md mx-auto">
+        <h1 className="text-3xl font-bold text-[#ffffff] mb-2">Your wishlist is empty</h1>
+        <p className="text-[#9aab9e] mb-8 max-w-md mx-auto">
           Start adding products you love ❤️
         </p>
         <Link 
           href="/collections/all"
-          className="bg-[#1a1a1a] text-[#faf7f2] px-8 py-3 rounded-md font-medium hover:bg-[#333] transition"
+          className="bg-white text-[#faf7f2] px-8 py-3 rounded-md font-medium hover:bg-[#333] transition"
         >
           Browse Collections &rarr;
         </Link>
@@ -70,7 +70,7 @@ export default async function WishlistPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-12 min-h-screen">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 pb-6 border-b border-gray-100">
-        <h1 className="text-3xl font-bold text-[#1a1a1a]">My Wishlist <span className="text-gray-400 font-normal text-xl">({items.length})</span></h1>
+        <h1 className="text-3xl font-bold text-[#ffffff]">My Wishlist <span className="text-[#5a7060] font-normal text-xl">({items.length})</span></h1>
         <div className="mt-4 md:mt-0">
           <ShareButton userId={user.id} />
         </div>

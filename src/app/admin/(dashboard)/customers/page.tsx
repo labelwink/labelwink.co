@@ -167,7 +167,7 @@ export default function CustomersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#1a1a1a]">Customers</h1>
+          <h1 className="text-xl font-bold text-[#1b3a34]">Customers</h1>
           <p className="text-xs text-[#6b7280] mt-0.5">{total.toLocaleString('en-IN')} registered</p>
         </div>
         <div className="flex gap-2">
@@ -195,7 +195,7 @@ export default function CustomersPage() {
               <kpi.icon size={15} className={kpi.color} />
             </div>
             <div>
-              <p className="text-lg font-bold text-[#1a1a1a] leading-none">{kpi.value.toLocaleString('en-IN')}</p>
+              <p className="text-lg font-bold text-[#1b3a34] leading-none">{kpi.value.toLocaleString('en-IN')}</p>
               <p className="text-[10px] text-[#9ca3af] mt-0.5">{kpi.label}</p>
             </div>
           </div>
@@ -227,7 +227,7 @@ export default function CustomersPage() {
               key={s.key}
               onClick={() => push({ segment: s.key, page: '' })}
               className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-colors ${
-                segment === s.key ? 'bg-white shadow-sm text-[#1a1a1a]' : 'text-[#6b7280] hover:text-[#1a1a1a]'
+                segment === s.key ? 'bg-white shadow-sm text-[#1b3a34]' : 'text-[#6b7280] hover:text-[#1b3a34]'
               }`}
             >
               {s.label}
@@ -265,7 +265,7 @@ export default function CustomersPage() {
               ) : customers.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="text-center py-16">
-                    <Users size={32} className="mx-auto text-gray-200 mb-3" />
+                    <Users size={32} className="mx-auto text-[#1a2e1e] mb-3" />
                     <p className="text-sm text-[#6b7280]">
                       {search ? `No results for "${search}"` : 'No customers found'}
                     </p>
@@ -282,7 +282,7 @@ export default function CustomersPage() {
                           {initials}
                         </div>
                         <div>
-                          <p className="text-xs font-semibold text-[#1a1a1a]">{c.full_name || 'Anonymous'}</p>
+                          <p className="text-xs font-semibold text-[#1b3a34]">{c.full_name || 'Anonymous'}</p>
                           <p className="text-[10px] text-[#9ca3af]">{c.email}</p>
                         </div>
                       </div>
@@ -291,11 +291,11 @@ export default function CustomersPage() {
                     <td className="px-4 py-3.5 text-xs text-[#4b5563]">{c.phone || '—'}</td>
                     {/* Orders */}
                     <td className="px-4 py-3.5 text-center">
-                      <span className="text-xs font-bold text-[#1a1a1a]">{c.order_count}</span>
+                      <span className="text-xs font-bold text-[#1b3a34]">{c.order_count}</span>
                     </td>
                     {/* Lifetime Value */}
                     <td className="px-4 py-3.5 text-right">
-                      <span className="text-xs font-bold text-[#1a1a1a]">{formatCurrency(c.lifetime_value)}</span>
+                      <span className="text-xs font-bold text-[#1b3a34]">{formatCurrency(c.lifetime_value)}</span>
                     </td>
                     {/* Points */}
                     <td className="px-4 py-3.5 text-right">

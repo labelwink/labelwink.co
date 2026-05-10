@@ -6,7 +6,7 @@ export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminSupabaseClient() as any
@@ -16,13 +16,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const { data: discounts, error } = await sb.from('discount_codes')
-      .select(`
-        *,
-        discount_code_uses (
-          id,
-          orders ( discount_amount )
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
 
     if (error) throw new Error(error.message)
@@ -31,17 +25,8 @@ export async function GET(req: NextRequest) {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mapped = (discounts || []).map((d: any) => {
-      let total_uses = 0
-      let total_discount_given = 0
-      
-      const uses = Array.isArray(d.discount_code_uses) ? d.discount_code_uses : []
-      for (const use of uses) {
-        total_uses++
-        const order = Array.isArray(use.orders) ? use.orders[0] : use.orders
-        if (order && order.discount_amount) {
-          total_discount_given += Number(order.discount_amount)
-        }
-      }
+      let total_uses = Number(d.usage_count || 0)
+      let total_discount_given = 0 // Not tracked at discount code level currently
 
       let dStatus = 'active'
       if (!d.is_active) {
@@ -50,7 +35,7 @@ export async function GET(req: NextRequest) {
         dStatus = 'scheduled'
       } else if (d.expires_at && new Date(d.expires_at) < now) {
         dStatus = 'expired'
-      } else if (d.max_uses && d.used_count >= d.max_uses) {
+      } else if (d.usage_limit && d.usage_count >= d.usage_limit) {
         dStatus = 'expired' // Max uses reached
       }
 
@@ -77,7 +62,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   const sb = createAdminSupabaseClient()
   
@@ -113,7 +98,7 @@ export async function POST(req: NextRequest) {
       type,
       value: type === 'free_shipping' ? 0 : val,
       min_order_amount: min_order_amount ? Number(min_order_amount) : 0,
-      max_uses: max_uses ? Number(max_uses) : null,
+      usage_limit: max_uses ? Number(max_uses) : null,
       single_use_per_customer: !!single_use_per_customer,
       is_active: is_active ?? true,
       description: description || null

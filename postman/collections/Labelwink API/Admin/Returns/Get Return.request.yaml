@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Return
+method: GET
+url: '{{baseUrl}}/api/admin/returns/{{returnId}}'
+order: 2000

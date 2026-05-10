@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,10 @@ function LoginContent() {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [loading, setLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [loginMode, setLoginMode] = useState<'phone' | 'email'>('phone');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -60,7 +65,7 @@ function LoginContent() {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.verifyOtp({
+    const { error, data } = await supabase.auth.verifyOtp({
       phone: `+91${phone}`,
       token: otp,
       type: 'sms'
@@ -72,8 +77,25 @@ function LoginContent() {
       return;
     }
 
+    // Fetch user role and determine redirect
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user?.id)
+      .single();
+
+    const role = profile?.role || 'customer';
+    const redirectMap: Record<string, string> = {
+      super_admin: '/superadmin',
+      admin: '/admin',
+      employee: '/admin/orders',
+      customer: redirectTo,
+    };
+
+    const finalRedirect = redirectMap[role] || redirectTo;
+
     toast.success('Welcome back!');
-    router.push(redirectTo);
+    router.push(finalRedirect);
     router.refresh();
   };
 
@@ -86,6 +108,25 @@ function LoginContent() {
     });
   };
 
+  const handleEmailLogin = async () => {
+    if (!email || !password) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      toast.success('Welcome back!');
+      router.push(redirectTo);
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err.message ?? 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-24 max-w-md">
       <div className="bg-white border border-sage/20 p-10 shadow-sm rounded-sm">
@@ -94,7 +135,27 @@ function LoginContent() {
           <p className="text-muted-foreground text-xs uppercase tracking-widest">Growth-stage fashion for you</p>
         </div>
 
-        {step === 'phone' ? (
+        <div className="flex border-b border-gray-200 mb-6">
+          {(['phone', 'email'] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => {
+                setLoginMode(mode);
+                setStep('phone');
+                setOtp('');
+              }}
+              className={`flex-1 pb-3 text-sm font-medium transition-colors ${
+                loginMode === mode
+                  ? 'border-b-2 border-[#1C3829] text-[#1C3829]'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}>
+              {mode === 'phone' ? '📱 Mobile OTP' : '✉️ Email Login'}
+            </button>
+          ))}
+        </div>
+
+        {loginMode === 'phone' ? (
           <form onSubmit={sendOTP} className="space-y-6">
             <div className="space-y-3">
               <Label htmlFor="phone" className="text-[10px] font-bold uppercase tracking-widest text-charcoal/60">Mobile Number</Label>
@@ -103,7 +164,7 @@ function LoginContent() {
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="9876543210"
+                  placeholder="Enter 10-digit mobile number"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                   required
@@ -119,6 +180,57 @@ function LoginContent() {
               {loading ? <Loader2 className="animate-spin w-4 h-4" /> : 'Get Secure OTP'}
             </Button>
           </form>
+        ) : (
+          <div className="space-y-6 animate-in fade-in slide-in-from-right duration-500">
+            {step === 'phone' ? (
+              <>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-widest text-charcoal/60 mb-1">Email Address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 text-sm bg-white focus:ring-2 focus:ring-[#1C3829] focus:border-transparent outline-none"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="password" className="text-[10px] font-bold uppercase tracking-widest text-charcoal/60 mb-1">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Enter your password"
+                        className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-xl text-gray-900 text-sm bg-white focus:ring-2 focus:ring-[#1C3829] focus:border-transparent outline-none"
+                      />
+                      <button type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        {showPassword ? '🙈' : '👁'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <a href="/account/forgot-password"
+                      className="text-xs text-[#1C3829] hover:text-[#C9A84C] transition-colors">
+                      Forgot password?
+                    </a>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={handleEmailLogin}
+                    disabled={loading || !email || !password}
+                    className="w-full py-3 bg-[#1C3829] text-white rounded-xl font-medium hover:bg-[#24472F] transition-colors disabled:opacity-60">
+                    {loading ? 'Signing in...' : 'Sign In'}
+                  </Button>
+                </div>
+              </>
+            ) : null}
+          </div>
         ) : (
           <form onSubmit={verifyOTP} className="space-y-6 animate-in fade-in slide-in-from-right duration-500">
             <div className="space-y-3 text-center">

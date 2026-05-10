@@ -1,0 +1,10 @@
+$kind: http-request
+name: List Inventory
+method: GET
+url: '{{baseUrl}}/api/admin/inventory'
+order: 1000
+queryParams:
+  - key: page
+    value: '1'
+  - key: per_page
+    value: '20'

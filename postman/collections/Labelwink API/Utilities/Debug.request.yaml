@@ -1,0 +1,5 @@
+$kind: http-request
+name: Debug
+method: GET
+url: '{{baseUrl}}/api/debug'
+order: 2000

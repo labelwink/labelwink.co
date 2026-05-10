@@ -1,0 +1,8 @@
+$kind: http-request
+name: Check Wishlist
+method: GET
+url: '{{baseUrl}}/api/storefront/wishlist/check'
+order: 4000
+queryParams:
+  - key: product_id
+    value: prod_id

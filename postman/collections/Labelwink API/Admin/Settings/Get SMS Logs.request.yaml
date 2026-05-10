@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get SMS Logs
+method: GET
+url: '{{baseUrl}}/api/admin/settings/sms-logs'
+order: 3000

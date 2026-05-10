@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Newsletter Stats
+method: GET
+url: '{{baseUrl}}/api/admin/newsletter/stats'
+order: 3000

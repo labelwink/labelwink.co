@@ -1,0 +1,12 @@
+$kind: http-request
+name: Create Flash Sale
+method: POST
+url: '{{baseUrl}}/api/admin/cms/flash-sale'
+order: 10000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"title": "Flash Sale", "discount_percent": 20, "ends_at": "2024-12-31T23:59:59Z"}

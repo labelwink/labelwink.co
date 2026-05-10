@@ -1,0 +1,5 @@
+$kind: http-request
+name: List Addresses
+method: GET
+url: '{{baseUrl}}/api/storefront/addresses'
+order: 3000

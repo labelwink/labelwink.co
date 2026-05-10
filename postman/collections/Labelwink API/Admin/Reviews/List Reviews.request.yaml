@@ -1,0 +1,10 @@
+$kind: http-request
+name: List Reviews
+method: GET
+url: '{{baseUrl}}/api/admin/reviews'
+order: 1000
+queryParams:
+  - key: page
+    value: '1'
+  - key: status
+    value: pending

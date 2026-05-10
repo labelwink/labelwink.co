@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -27,7 +27,7 @@ export function RemoveFromWishlistButton({ productId }: { productId: string }) {
     <button
       onClick={handleRemove}
       disabled={loading}
-      className="text-xs text-gray-400 hover:text-red-500 underline transition-colors"
+      className="text-xs text-[#5a7060] hover:text-red-500 underline transition-colors"
     >
       {loading ? 'Removing...' : 'Remove'}
     </button>

@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createAdminClient();
+  const { data: settings } = await supabase.from('shop_settings').select('store_name').single();
   const eventType = event.event;
 
   // ── payment.captured ─────────────────────────────────────────────────────────
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (fullOrder?.customer_email) {
-          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co';
+          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
           await fetch(`${siteUrl}/api/send-email`, {
             method: 'POST',
             headers: {
@@ -114,7 +115,7 @@ export async function POST(req: NextRequest) {
               to:    fullOrder.customer_email,
               type:  'order_confirmed',
               title: 'Your order is confirmed!',
-              body:  `Hi ${fullOrder.customer_name || 'there'}, your Label Wink order has been confirmed.`,
+              body:  `Hi ${fullOrder.customer_name || 'there'}, your order from ${settings?.store_name || 'Our Store'} has been confirmed.`,
               data:  { order_id: fullOrder.id },
             }),
           });

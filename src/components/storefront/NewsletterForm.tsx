@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 
 export function NewsletterForm() {
@@ -37,12 +37,12 @@ export function NewsletterForm() {
         placeholder="Enter your email address" 
         required
         disabled={status === 'loading'}
-        className="flex-1 bg-white/5 border border-white/10 text-[#faf7f2] px-4 py-3 rounded-lg focus:outline-none focus:border-[#c9a84c]"
+        className="flex-1 bg-white/5 border border-[#e8e2d6] text-[#faf7f2] px-4 py-3 rounded-lg focus:outline-none focus:border-[#c9a84c]"
       />
       <button 
         type="submit" 
         disabled={status === 'loading'}
-        className="bg-[#c9a84c] text-[#1a1a1a] font-bold px-8 py-3 rounded-lg hover:bg-[#b8973d] transition-colors disabled:opacity-50"
+        className="bg-[#c9a84c] text-[#ffffff] font-bold px-8 py-3 rounded-lg hover:bg-[#b8973d] transition-colors disabled:opacity-50"
       >
         {status === 'loading' ? 'Subscribing...' : 'Subscribe'}
       </button>

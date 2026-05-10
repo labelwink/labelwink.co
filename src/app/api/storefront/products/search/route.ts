@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { searchRatelimit, getClientIP } from '@/lib/ratelimit'
 
 const PRODUCT_SELECT =
-  'id, name, slug, price, mrp, compare_at_price, images, fabric_material, sleeve_type, occasion_tags'
+  'id, name, slug, price, compare_at_price, fabric, occasion, tags, product_images(url, alt, is_cover, sort_order)'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -15,6 +16,12 @@ export async function GET(req: NextRequest) {
       { error: 'Query must be at least 2 characters', products: [], total: 0, query: q },
       { status: 400 }
     )
+  }
+
+  const ip = getClientIP(req)
+  const { success } = await searchRatelimit.limit(ip)
+  if (!success) {
+    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 })
   }
 
   const supabase = await createClient()

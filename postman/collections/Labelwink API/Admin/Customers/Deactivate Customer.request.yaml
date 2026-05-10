@@ -1,0 +1,5 @@
+$kind: http-request
+name: Deactivate Customer
+method: GET
+url: '{{baseUrl}}/api/admin/customers/{{customerId}}/deactivate'
+order: 3000

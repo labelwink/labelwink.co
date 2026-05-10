@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, user_id, status, updated_at, customer_name, invoices(invoice_number)')
+      .select('id, user_id, status, updated_at, shipping_name, invoice_number')
       .eq('id', order_id)
       .single();
 
@@ -34,8 +34,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order must be delivered to request a return' }, { status: 400 });
     }
 
-    const { data: settings } = await supabase.from('shop_settings').select('return_window_days').eq('id', 1).single();
-    const returnDays = settings?.return_window_days || 7;
+    // Fetch return_window_days from site_settings (key-value store)
+    const adminSupabase = createAdminClient();
+    const { data: rows } = await adminSupabase.from('site_settings').select('key, value').eq('key', 'return_window_days');
+    const row = rows?.[0];
+    const raw = row?.value;
+    const returnDays = Number((raw !== null && typeof raw === 'object' && 'v' in raw ? raw.v : raw) || 7);
 
     const deliveredAt = new Date(order.updated_at).getTime();
     const now = Date.now();
@@ -52,8 +56,6 @@ export async function POST(req: NextRequest) {
     if (existingReturn) {
       return NextResponse.json({ error: 'A return request already exists for this order' }, { status: 400 });
     }
-
-    const adminSupabase = createAdminClient();
 
     const { data: returnData, error: returnError } = await adminSupabase
       .from('returns')
@@ -74,17 +76,18 @@ export async function POST(req: NextRequest) {
 
     await adminSupabase.from('orders').update({ status: 'return_requested' }).eq('id', order_id);
 
-    const invoiceNumber = order.invoices?.[0]?.invoice_number || 'PENDING';
+    const invoiceNumber = order.invoice_number || 'PENDING';
+    const customerName = order.shipping_name || 'Customer';
 
     await adminSupabase.from('admin_notifications').insert({
       type: 'return_requested',
       title: 'Return Requested',
-      body: `${order.customer_name} requested return for ${invoiceNumber}`,
+      body: `${customerName} requested return for ${invoiceNumber}`,
       entity_id: order_id
     });
 
     const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co';
-    const message = `🔄 <b>Return Requested</b>\n📄 Invoice: ${invoiceNumber}\n👤 ${order.customer_name}\n📦 Reason: ${reason}\n👉 <a href="${SITE_URL}/admin/orders/${order_id}">Review Return</a>`;
+    const message = `🔄 <b>Return Requested</b>\n📄 Invoice: ${invoiceNumber}\n👤 ${customerName}\n📦 Reason: ${reason}\n👉 <a href="${SITE_URL}/admin/orders/${order_id}">Review Return</a>`;
     await sendTelegramMessage(message).catch(console.error);
 
     return NextResponse.json({ success: true, return_id: returnData.id });
@@ -100,7 +103,7 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('returns')
-    .select('*, orders(id, total, status, customer_name, customer_email), profiles:user_id(first_name, last_name, email)')
+    .select('*, orders(id, total_amount, status, shipping_name), profiles:user_id(full_name, email)')
     .order('created_at', { ascending: false });
 
   if (error) {

@@ -15,7 +15,7 @@ export const runtime = 'nodejs'
  */
 export async function POST(req: NextRequest) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   let body: { newPassword?: string; confirmPassword?: string; email?: string; currentPassword?: string }
   try {

@@ -1,0 +1,5 @@
+$kind: http-request
+name: List Collections
+method: GET
+url: '{{baseUrl}}/api/admin/collections'
+order: 1000

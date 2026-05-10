@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import Image from 'next/image'
 
 interface ProductImageZoomProps {
   images: string[]
@@ -51,11 +52,16 @@ export function ProductImageZoom({ images, currentIndex, onIndexChange }: Produc
           onMouseLeave={() => setShowZoom(false)}
         >
           {currentImage && (
-            <img
-              src={currentImage}
-              alt="Product"
-              className="w-full h-full object-cover"
-            />
+            <div className="relative w-full h-full">
+              <Image
+                src={currentImage}
+                alt="Product"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover"
+                priority
+              />
+            </div>
           )}
 
           {/* Zoom panel */}
@@ -79,11 +85,16 @@ export function ProductImageZoom({ images, currentIndex, onIndexChange }: Produc
           aria-label="View full image"
         >
           {currentImage && (
-            <img
-              src={currentImage}
-              alt="Product"
-              className="w-full h-full object-cover"
-            />
+            <div className="relative w-full h-full">
+              <Image
+                src={currentImage}
+                alt="Product"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover"
+                priority
+              />
+            </div>
           )}
         </button>
       </div>
@@ -98,7 +109,15 @@ export function ProductImageZoom({ images, currentIndex, onIndexChange }: Produc
               i === currentIndex ? 'border-[#1b3a34]' : 'border-transparent hover:border-gray-300'
             }`}
           >
-            <img src={img} alt={`Thumbnail ${i + 1}`} className="w-full h-full object-cover" />
+            <div className="relative w-full h-full">
+              <Image 
+                src={img} 
+                alt={`Thumbnail ${i + 1}`} 
+                fill
+                sizes="64px"
+                className="object-cover" 
+              />
+            </div>
           </button>
         ))}
       </div>
@@ -126,11 +145,15 @@ export function ProductImageZoom({ images, currentIndex, onIndexChange }: Produc
             onTouchEnd={handleTouchEnd}
             className="max-w-[90vw] max-h-[80vh]"
           >
-            <img
-              src={currentImage}
-              alt="Product full view"
-              className="max-w-[90vw] max-h-[80vh] object-contain"
-            />
+            <div className="relative w-[90vw] h-[80vh]">
+              <Image
+                src={currentImage}
+                alt="Product full view"
+                fill
+                sizes="90vw"
+                className="object-contain"
+              />
+            </div>
           </div>
 
           {/* Prev */}

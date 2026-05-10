@@ -1,0 +1,12 @@
+$kind: http-request
+name: Import Inventory
+method: POST
+url: '{{baseUrl}}/api/admin/inventory/import'
+order: 4000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"data": []}

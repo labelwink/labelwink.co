@@ -1,0 +1,12 @@
+$kind: http-request
+name: Update Profile
+method: PATCH
+url: '{{baseUrl}}/api/storefront/profile'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"first_name": "John", "last_name": "Doe", "email": "john@example.com"}

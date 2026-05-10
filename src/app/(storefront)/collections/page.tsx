@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 
@@ -39,7 +39,7 @@ export default async function CollectionsPage() {
             LW
           </div>
           <p className="text-lg font-medium text-[#1a3a34]">Collections coming soon</p>
-          <p className="text-sm text-gray-500 max-w-xs">
+          <p className="text-sm text-[#9aab9e] max-w-xs">
             We&apos;re curating something beautiful. Check back shortly.
           </p>
           <Link

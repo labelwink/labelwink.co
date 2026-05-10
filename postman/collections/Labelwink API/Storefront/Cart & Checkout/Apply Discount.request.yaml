@@ -1,0 +1,8 @@
+$kind: http-request
+name: Apply Discount
+method: GET
+url: '{{baseUrl}}/api/storefront/discount'
+order: 6000
+queryParams:
+  - key: code
+    value: SAVE10

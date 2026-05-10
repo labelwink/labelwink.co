@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Navigation
+method: GET
+url: '{{baseUrl}}/api/admin/navigation'
+order: 3000

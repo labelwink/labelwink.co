@@ -101,6 +101,7 @@ function Carousel({
 
     return () => {
       api?.off("select", onSelect)
+      api?.off("reInit", onSelect)
     }
   }, [api, onSelect])
 
@@ -120,6 +121,7 @@ function Carousel({
     >
       <div
         onKeyDownCapture={handleKeyDown}
+        tabIndex={0}
         className={cn("relative", className)}
         role="region"
         aria-roledescription="carousel"

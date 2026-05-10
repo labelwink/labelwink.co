@@ -1,154 +1,83 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// LabelWink — Cloudinary CDN Utilities
-// ─────────────────────────────────────────────────────────────────────────────
+// src/lib/utils/cloudinary.ts
+// CLIENT-SAFE: pure URL helpers — no SDK, no fs
 
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? process.env.CLOUDINARY_CLOUD_NAME
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
 
-/**
- * Generate an optimized Cloudinary URL with auto format + quality
- * Works with both full URLs and public IDs.
- */
-export function getOptimizedUrl(
-  publicIdOrUrl: string,
-  options: {
-    width?: number
-    height?: number
-    crop?: 'fill' | 'fit' | 'limit' | 'thumb' | 'scale' | 'crop'
-    quality?: number | 'auto'
-    format?: string | 'auto'
-    gravity?: string
-  } = {}
-): string {
-  if (!publicIdOrUrl) return ''
-
-  // If it's already a full Cloudinary URL, extract the public ID
-  let publicId = publicIdOrUrl
-  if (publicIdOrUrl.includes('cloudinary.com')) {
-    const match = publicIdOrUrl.match(/\/upload\/(?:v\d+\/)?(.+)$/)
-    if (match) {
-      publicId = match[1].replace(/\.[^/.]+$/, '')  // remove extension
-    }
-  }
-
-  const transforms: string[] = []
-
-  if (options.width) transforms.push(`w_${options.width}`)
-  if (options.height) transforms.push(`h_${options.height}`)
-  if (options.crop) transforms.push(`c_${options.crop}`)
-  if (options.gravity) transforms.push(`g_${options.gravity}`)
-  transforms.push(`f_${options.format ?? 'auto'}`)
-  transforms.push(`q_${options.quality ?? 'auto'}`)
-
-  const transformStr = transforms.join(',')
-
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${transformStr}/${publicId}`
+// ── Raw ID extractor ───────────────────────────────────────────────────────
+export function toCloudinaryId(urlOrId: string): string {
+  if (!urlOrId) return ''
+  if (!urlOrId.includes('cloudinary.com')) return urlOrId
+  const parts = urlOrId.split('/upload/')
+  return parts[1]?.replace(/^v\d+\//, '') ?? urlOrId
 }
 
-/**
- * Get a thumbnail URL (square crop, 300px)
- */
-export function getThumbnailUrl(publicIdOrUrl: string, size = 300): string {
-  return getOptimizedUrl(publicIdOrUrl, {
-    width: size,
-    height: size,
-    crop: 'fill',
-    gravity: 'auto',
-  })
-}
-
-/**
- * Upload an image to Cloudinary from a server-side File or Buffer.
- * Returns the secure URL.
- */
-export async function uploadImage(
-  file: File,
-  folder = 'labelwink/products'
-): Promise<{ url: string; publicId: string }> {
-  const { v2: cloudinary } = await import('cloudinary')
-
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME ?? CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true,
-  })
-
-  const arrayBuffer = await file.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
-
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: 'image' },
-      (error, result) => {
-        if (error || !result) return reject(error ?? new Error('Upload failed'))
-        resolve({ url: result.secure_url, publicId: result.public_id })
-      }
-    )
-    stream.end(buffer)
-  })
-}
-
-/**
- * Delete an image from Cloudinary by public ID
- */
-export async function deleteImage(publicId: string): Promise<void> {
-  const { v2: cloudinary } = await import('cloudinary')
-
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME ?? CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-  })
-
-  await cloudinary.uploader.destroy(publicId)
-}
-
-/**
- * Extract public ID from a Cloudinary URL
- */
-export function getPublicIdFromUrl(url: string): string | null {
-  const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[^/.]+)?$/)
-  return match ? match[1] : null
-}
-
-// ─── Batch 30E: Preset-based URL builder ─────────────────────────────────────
-type CloudinaryPreset = 'thumbnail' | 'pdp' | 'cart' | 'admin'
-
-const PRESETS: Record<CloudinaryPreset, { width: number; height: number }> = {
-  thumbnail: { width: 400,  height: 500  },
-  pdp:       { width: 800,  height: 1000 },
-  cart:      { width: 80,   height: 100  },
-  admin:     { width: 48,   height: 48   },
-}
-
-/**
- * Returns an optimized Cloudinary URL using a named preset or explicit dimensions.
- * Usage:
- *   cloudinaryUrl(url, 'thumbnail')          → catalog card size
- *   cloudinaryUrl(url, 'pdp')                → product hero
- *   cloudinaryUrl(url, 'cart')               → cart thumbnail
- *   cloudinaryUrl(url, 400, 500)             → explicit w/h
- */
+// ── Base URL builder ───────────────────────────────────────────────────────
 export function cloudinaryUrl(
-  url: string | null | undefined,
-  widthOrPreset: number | CloudinaryPreset,
-  height?: number,
+  publicId: string,
+  transforms: string = ''
 ): string {
-  if (!url) return ''
-
-  let w: number, h: number
-  if (typeof widthOrPreset === 'string') {
-    const preset = PRESETS[widthOrPreset]
-    w = preset.width; h = preset.height
-  } else {
-    w = widthOrPreset; h = height ?? widthOrPreset
+  if (!publicId) return '/placeholder-product.jpg'
+  if (publicId.startsWith('/')) return publicId
+  if (!CLOUD_NAME) {
+    console.warn('[Cloudinary] NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME not set')
+    return '/placeholder-product.jpg'
   }
-
-  // If it's already a Cloudinary URL, inject transformations
-  if (url.includes('cloudinary.com')) {
-    return url.replace('/upload/', `/upload/w_${w},h_${h},c_fill,f_auto,q_auto/`)
-  }
-
-  // Otherwise treat as public ID
-  return getOptimizedUrl(url, { width: w, height: h, crop: 'fill' })
+  const cleanId = toCloudinaryId(publicId)
+  const base = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload`
+  return transforms
+    ? `${base}/${transforms}/${cleanId}`
+    : `${base}/${cleanId}`
 }
+
+// ── Legacy flexible builder (used by ProductImage component) ───────────────
+export function getCloudinaryUrl(
+  publicIdOrUrl: string,
+  options: { width?: number; height?: number; quality?: number } = {}
+): string {
+  if (!publicIdOrUrl) return '/placeholder-product.jpg'
+  if (publicIdOrUrl.startsWith('/')) return publicIdOrUrl
+
+  const { width, height, quality = 80 } = options
+  const t: string[] = ['f_webp', `q_${quality}`]
+  if (width) t.push(`w_${width}`)
+  if (height) t.push(`h_${height}`, 'c_fill')
+
+  const publicId = toCloudinaryId(publicIdOrUrl)
+  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${t.join(',')}/v1/${publicId}`
+}
+
+// ── Legacy size helper ────────────────────────────────────────────────────
+export function getProductImageUrl(
+  image: string | undefined | null,
+  size: 'thumb' | 'card' | 'full' = 'card'
+): string {
+  if (!image) return '/placeholder-product.jpg'
+  const sizes = {
+    thumb: { width: 80,  height: 80  },
+    card:  { width: 400, height: 500 },
+    full:  { width: 800, height: 1000 },
+  }
+  return getCloudinaryUrl(image, sizes[size])
+}
+
+// ── Named presets ─────────────────────────────────────────────────────────
+
+/** Product image — portrait 4:5 ratio, optimised WebP */
+export const cloudinaryProduct = (publicId: string): string =>
+  cloudinaryUrl(publicId, 'w_800,h_1000,c_fill,q_auto,f_auto')
+
+/** Thumbnail — square 400×400 */
+export const cloudinaryThumb = (publicId: string): string =>
+  cloudinaryUrl(publicId, 'w_400,h_400,c_fill,q_auto,f_auto')
+
+/** Hero / banner — wide 1400×600 */
+export const cloudinaryHero = (publicId: string): string =>
+  cloudinaryUrl(publicId, 'w_1400,h_600,c_fill,q_auto,f_auto')
+
+/** Lookbook — editorial tall 1200×1600 */
+export const cloudinaryLookbook = (publicId: string): string =>
+  cloudinaryUrl(publicId, 'w_1200,h_1600,c_fill,q_auto,f_auto')
+
+/** Avatar — small square with face gravity */
+export const cloudinaryAvatar = (publicId: string): string =>
+  cloudinaryUrl(publicId, 'w_200,h_200,c_fill,g_face,q_auto,f_auto')

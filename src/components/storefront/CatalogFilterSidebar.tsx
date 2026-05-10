@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { ChevronDown, SlidersHorizontal } from 'lucide-react'
@@ -54,7 +54,7 @@ function Section({ title, children, defaultOpen = true }: { title: string; child
     <div className="border-b border-[#c9a84c]/15 pb-4 mb-4 last:border-0 last:mb-0">
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center justify-between w-full text-xs font-semibold uppercase tracking-widest text-[#1a1a1a]/70 mb-3"
+        className="flex items-center justify-between w-full text-xs font-semibold uppercase tracking-widest text-[#ffffff]/70 mb-3"
       >
         {title}
         <ChevronDown size={14} className={`text-[#c9a84c] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
@@ -71,7 +71,7 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
       className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-all duration-150 ${
         active
           ? 'bg-[#c9a84c] border-[#c9a84c] text-white shadow-sm'
-          : 'border-[#1a1a1a]/20 text-[#1a1a1a]/70 hover:border-[#c9a84c] hover:text-[#c9a84c]'
+          : 'border-[#ffffff]/20 text-[#ffffff]/70 hover:border-[#c9a84c] hover:text-[#c9a84c]'
       }`}
     >
       {children}
@@ -88,7 +88,7 @@ function nameToHex(name: string): string | null {
   const map: Record<string, string> = {
     red:'#ef4444',pink:'#ec4899',orange:'#f97316',yellow:'#eab308',
     green:'#22c55e',teal:'#14b8a6',blue:'#3b82f6',indigo:'#6366f1',
-    purple:'#a855f7',violet:'#8b5cf6',white:'#f8f8f8',black:'#1a1a1a',
+    purple:'#a855f7',violet:'#8b5cf6',white:'#f8f8f8',black:'#ffffff',
     grey:'#9ca3af',gray:'#9ca3af',brown:'#92400e',navy:'#1e3a5f',
     beige:'#d2b48c',cream:'#faf7f2',gold:'#c9a84c',maroon:'#800000',
   }
@@ -117,7 +117,7 @@ export function CatalogFilterSidebar({
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-[#1a1a1a]">
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-[#ffffff]">
           <SlidersHorizontal size={14} className="text-[#c9a84c]" /> Filters
         </h2>
         {activeCount > 0 && (
@@ -142,7 +142,7 @@ export function CatalogFilterSidebar({
       <Section title="Price Range">
         <div className="flex items-center gap-2 mb-3">
           <div className="relative flex-1">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#1a1a1a]/40 text-xs">₹</span>
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#ffffff]/40 text-xs">₹</span>
             <input
               type="number"
               value={localMin}
@@ -150,12 +150,12 @@ export function CatalogFilterSidebar({
               onBlur={applyPrice}
               onKeyDown={e => e.key === 'Enter' && applyPrice()}
               placeholder={String(options?.price_range.min ?? 0)}
-              className="w-full pl-6 pr-2 py-2 border border-[#c9a84c]/30 rounded-lg text-xs text-[#1a1a1a] focus:outline-none focus:border-[#c9a84c] bg-white"
+              className="w-full pl-6 pr-2 py-2 border border-[#c9a84c]/30 rounded-lg text-xs text-[#ffffff] focus:outline-none focus:border-[#c9a84c] bg-white"
             />
           </div>
-          <span className="text-[#1a1a1a]/30 text-xs">–</span>
+          <span className="text-[#ffffff]/30 text-xs">–</span>
           <div className="relative flex-1">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#1a1a1a]/40 text-xs">₹</span>
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#ffffff]/40 text-xs">₹</span>
             <input
               type="number"
               value={localMax}
@@ -163,7 +163,7 @@ export function CatalogFilterSidebar({
               onBlur={applyPrice}
               onKeyDown={e => e.key === 'Enter' && applyPrice()}
               placeholder={String(options?.price_range.max ?? 10000)}
-              className="w-full pl-6 pr-2 py-2 border border-[#c9a84c]/30 rounded-lg text-xs text-[#1a1a1a] focus:outline-none focus:border-[#c9a84c] bg-white"
+              className="w-full pl-6 pr-2 py-2 border border-[#c9a84c]/30 rounded-lg text-xs text-[#ffffff] focus:outline-none focus:border-[#c9a84c] bg-white"
             />
           </div>
         </div>
@@ -202,7 +202,7 @@ export function CatalogFilterSidebar({
                   }`}
                   style={{ backgroundColor: hex ?? '#e5e7eb' }}
                 >
-                  {!hex && <span className="text-[9px] font-bold text-[#1a1a1a]/70">{c[0].toUpperCase()}</span>}
+                  {!hex && <span className="text-[9px] font-bold text-[#ffffff]/70">{c[0].toUpperCase()}</span>}
                 </button>
               )
             })}
@@ -222,7 +222,7 @@ export function CatalogFilterSidebar({
                   onChange={() => onFabrics(toggle(fabrics, fab))}
                   className="w-3.5 h-3.5 rounded border-[#c9a84c]/40 accent-[#c9a84c]"
                 />
-                <span className="text-xs text-[#1a1a1a]/70 capitalize">{fab}</span>
+                <span className="text-xs text-[#ffffff]/70 capitalize">{fab}</span>
               </label>
             ))}
           </div>
@@ -252,7 +252,7 @@ export function CatalogFilterSidebar({
                   onChange={() => onOccasions(toggle(occasions, occ))}
                   className="w-3.5 h-3.5 rounded border-[#c9a84c]/40 accent-[#c9a84c]"
                 />
-                <span className="text-xs text-[#1a1a1a]/70 capitalize">{occ}</span>
+                <span className="text-xs text-[#ffffff]/70 capitalize">{occ}</span>
               </label>
             ))}
           </div>

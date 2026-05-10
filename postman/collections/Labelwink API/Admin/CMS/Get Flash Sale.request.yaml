@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Flash Sale
+method: GET
+url: '{{baseUrl}}/api/admin/cms/flash-sale'
+order: 9000

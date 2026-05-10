@@ -5,7 +5,7 @@ import { sendOrderConfirmationEmail, sendDispatchEmail, sendEmail } from '@/lib/
 
 export async function POST(req: NextRequest) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   try {
     const { template_key, test_email } = await req.json()

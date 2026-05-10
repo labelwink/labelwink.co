@@ -1,47 +1,61 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/requireAdmin';
+
+export const runtime = 'nodejs';
 
 export async function GET() {
+  const auth = await requireAdmin();
+  if (auth instanceof NextResponse) return auth;
+
   const supabase = createAdminClient();
-  const { data, error } = await supabase.from('shop_settings').select('*').eq('id', 1).single();
-  
+  const { data, error } = await supabase
+    .from('site_settings')
+    .select('key, value');
+
   if (error) {
+    console.error('[admin/settings GET]', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  return NextResponse.json(data);
+
+  // Reduce key-value rows into a flat object
+  const settings = (data ?? []).reduce((acc: Record<string, any>, row) => {
+    const raw = row.value;
+    acc[row.key] = raw !== null && typeof raw === 'object' && 'v' in raw ? raw.v : raw;
+    return acc;
+  }, {});
+
+  return NextResponse.json(settings);
 }
 
 export async function PATCH(req: Request) {
+  const auth = await requireAdmin();
+  if (auth instanceof NextResponse) return auth;
+
   const supabase = createAdminClient();
   const body = await req.json();
 
-  const allowedFields = [
-    'store_name', 'store_tagline', 'store_email', 'store_phone', 'store_address',
-    'store_city', 'store_state', 'store_pincode', 'gst_number', 'hsn_code',
-    'logo_url', 'favicon_url', 'free_shipping_threshold', 'standard_shipping_charge',
-    'express_shipping_charge', 'loyalty_enabled', 'loyalty_points_per_rupee',
-    'loyalty_redemption_ratio', 'return_window_days', 'invoice_footer_note',
-    'invoice_terms', 'label_warning_text', 'shiprocket_mode'
-  ];
-
-  const updates: Record<string, any> = {};
-  for (const field of allowedFields) {
-    if (field in body) {
-      updates[field] = body[field];
-    }
+  // body is expected as { key: value, key2: value2, ... }
+  // Each entry becomes a row upsert in site_settings
+  const entries = Object.entries(body);
+  if (entries.length === 0) {
+    return NextResponse.json({ error: 'No settings provided' }, { status: 400 });
   }
 
-  updates.updated_at = new Date().toISOString();
+  const rows = entries.map(([key, value]) => ({
+    key,
+    value: typeof value === 'object' ? value : { v: value },
+    updated_at: new Date().toISOString(),
+  }));
 
-  const { data, error } = await supabase
-    .from('shop_settings')
-    .update(updates)
-    .eq('id', 1)
-    .select('*')
-    .single();
+  const { error } = await supabase
+    .from('site_settings')
+    .upsert(rows, { onConflict: 'key' });
 
   if (error) {
+    console.error('[admin/settings PATCH]', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  return NextResponse.json(data);
+
+  return NextResponse.json({ success: true, updated: rows.length });
 }

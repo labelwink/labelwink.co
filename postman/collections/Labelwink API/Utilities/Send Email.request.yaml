@@ -1,0 +1,12 @@
+$kind: http-request
+name: Send Email
+method: POST
+url: '{{baseUrl}}/api/send-email'
+order: 5000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"to": "user@example.com", "subject": "Test", "htmlContent": "<p>Test</p>"}

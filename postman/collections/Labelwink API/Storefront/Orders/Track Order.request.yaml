@@ -1,0 +1,12 @@
+$kind: http-request
+name: Track Order
+method: POST
+url: '{{baseUrl}}/api/storefront/track-order'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"order_number": "LW-12345"}

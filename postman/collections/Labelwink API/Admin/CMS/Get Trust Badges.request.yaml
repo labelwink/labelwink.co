@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Trust Badges
+method: GET
+url: '{{baseUrl}}/api/admin/cms/trust-badges'
+order: 18000

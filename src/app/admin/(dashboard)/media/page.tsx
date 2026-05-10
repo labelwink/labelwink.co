@@ -51,7 +51,7 @@ export default function MediaPage() {
       await fetch('/api/admin/upload', { method: 'POST', body: fd })
     }
     setUploading(false)
-    showToast('Upload complete ✓')
+    showToast('Upload complete ?')
     load()
   }
 
@@ -71,7 +71,7 @@ export default function MediaPage() {
 
   const copyUrl = (url: string) => {
     navigator.clipboard.writeText(url)
-    showToast('URL copied ✓')
+    showToast('URL copied ?')
   }
 
   const filtered = items.filter(i =>
@@ -86,7 +86,7 @@ export default function MediaPage() {
 
   if (error) return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-[#1a1a1a]">Media Library</h1>
+      <h1 className="text-2xl font-bold text-[#1b3a34]">Media Library</h1>
       <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-red-700 text-sm">{error}</div>
     </div>
   )
@@ -102,7 +102,7 @@ export default function MediaPage() {
 
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-[#1a1a1a]">Media Library</h1>
+        <h1 className="text-2xl font-bold text-[#1b3a34]">Media Library</h1>
         <button
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
@@ -116,18 +116,18 @@ export default function MediaPage() {
 
       {/* Search */}
       <div className="relative">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5a7060]" />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="w-full pl-9 pr-4 py-2.5 border border-[#e5e7eb] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
-          placeholder="Search by filename…"
+          placeholder="Search by filename�"
         />
       </div>
 
       {filtered.length === 0 ? (
         <div className="bg-white border border-dashed border-[#e5e7eb] rounded-2xl p-16 text-center">
-          <p className="text-4xl mb-4">🖼️</p>
+          <p className="text-4xl mb-4">???</p>
           <p className="text-[#6b7280] text-sm">
             {items.length === 0 ? 'No images uploaded yet. Upload your first image.' : 'No results for that search.'}
           </p>
@@ -147,7 +147,7 @@ export default function MediaPage() {
               </div>
               <div className="p-2">
                 <p className="text-[10px] text-[#6b7280] truncate font-mono">{item.public_id.split('/').pop()}</p>
-                <p className="text-[10px] text-gray-400">{formatBytes(item.bytes)}</p>
+                <p className="text-[10px] text-[#5a7060]">{formatBytes(item.bytes)}</p>
               </div>
               <button
                 onClick={e => { e.stopPropagation(); handleDelete(item) }}
@@ -167,11 +167,11 @@ export default function MediaPage() {
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl" onClick={e => e.stopPropagation()}>
             <img src={selected.secure_url} alt={selected.public_id} className="w-full max-h-64 object-contain rounded-lg bg-gray-50" />
             <div className="space-y-1">
-              <p className="text-xs font-semibold text-[#1a1a1a] uppercase tracking-wide">Public ID</p>
+              <p className="text-xs font-semibold text-[#1b3a34] uppercase tracking-wide">Public ID</p>
               <p className="text-xs font-mono text-[#6b7280] break-all">{selected.public_id}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-semibold text-[#1a1a1a] uppercase tracking-wide">URL</p>
+              <p className="text-xs font-semibold text-[#1b3a34] uppercase tracking-wide">URL</p>
               <div className="flex items-center gap-2">
                 <p className="text-xs font-mono text-[#6b7280] break-all flex-1">{selected.secure_url}</p>
                 <button onClick={() => copyUrl(selected.secure_url)}
@@ -181,7 +181,7 @@ export default function MediaPage() {
               </div>
             </div>
             <div className="flex gap-4 text-xs text-[#6b7280]">
-              <span>{selected.width}×{selected.height}px</span>
+              <span>{selected.width}�{selected.height}px</span>
               <span>{formatBytes(selected.bytes)}</span>
               <span>{selected.format.toUpperCase()}</span>
             </div>
@@ -199,7 +199,7 @@ export default function MediaPage() {
         </div>
       )}
 
-      <p className="text-xs text-gray-400 text-right">{filtered.length} of {items.length} images</p>
+      <p className="text-xs text-[#5a7060] text-right">{filtered.length} of {items.length} images</p>
     </div>
   )
 }

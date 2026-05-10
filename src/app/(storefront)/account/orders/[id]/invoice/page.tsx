@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // Helper to convert numbers to words for rupees
 function numberToWords(num: number): string {
@@ -60,7 +61,19 @@ export default function CustomerInvoice() {
         {/* Header */}
         <div className="flex justify-between items-start border-b-2 border-black pb-6 mb-6">
           <div>
-            {settings.logo_url ? <img src={settings.logo_url} alt="Logo" className="h-12 mb-2" /> : <h1 className="text-2xl font-bold uppercase">{settings.store_name}</h1>}
+            {settings.logo_url ? (
+              <div className="h-12 w-32 relative mb-2">
+                <Image 
+                  src={settings.logo_url} 
+                  alt="Logo" 
+                  fill 
+                  sizes="128px"
+                  className="object-contain object-left" 
+                />
+              </div>
+            ) : (
+              <h1 className="text-2xl font-bold uppercase">{settings.store_name}</h1>
+            )}
             <p className="text-sm whitespace-pre-wrap">{settings.store_address}</p>
             <p className="text-sm">GSTIN: <span className="font-bold">{settings.gst_number}</span></p>
             <p className="text-sm">Phone: {settings.store_phone}</p>

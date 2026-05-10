@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Order Invoice
+method: GET
+url: '{{baseUrl}}/api/admin/orders/{{orderId}}/invoice'
+order: 3000

@@ -1,0 +1,12 @@
+$kind: http-request
+name: Update Settings
+method: PATCH
+url: '{{baseUrl}}/api/admin/settings'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"free_shipping_threshold": 999, "standard_shipping_charge": 79}

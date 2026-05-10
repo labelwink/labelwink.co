@@ -1,0 +1,8 @@
+$kind: http-request
+name: Can Review
+method: GET
+url: '{{baseUrl}}/api/storefront/reviews/can-review'
+order: 3000
+queryParams:
+  - key: product_id
+    value: prod_id

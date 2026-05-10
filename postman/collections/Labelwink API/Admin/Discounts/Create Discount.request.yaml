@@ -1,0 +1,12 @@
+$kind: http-request
+name: Create Discount
+method: POST
+url: '{{baseUrl}}/api/admin/discounts'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"code": "SAVE10", "type": "percentage", "value": 10, "min_order_amount": 500, "max_uses": 100, "is_active": true}

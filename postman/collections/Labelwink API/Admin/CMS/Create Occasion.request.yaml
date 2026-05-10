@@ -1,0 +1,12 @@
+$kind: http-request
+name: Create Occasion
+method: POST
+url: '{{baseUrl}}/api/admin/cms/occasions'
+order: 14000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"name": "Wedding", "slug": "wedding", "image": ""}

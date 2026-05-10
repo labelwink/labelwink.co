@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 
+// ─── Storefront EmptyState ────────────────────────────────────────────────────
 interface EmptyStateProps {
   icon: string;
   title: string;
@@ -16,20 +17,56 @@ export function EmptyState({ icon, title, description, action }: EmptyStateProps
       <p className="text-sm text-charcoal/60 max-w-sm mb-6">{description}</p>
       {action && (
         action.href ? (
-          <Link 
-            href={action.href} 
+          <Link
+            href={action.href}
             className="inline-flex items-center justify-center rounded-full bg-teal px-8 py-3 text-sm font-medium text-white transition-colors hover:bg-teal/90"
           >
             {action.label}
           </Link>
         ) : (
-          <button 
-            onClick={action.onClick} 
+          <button
+            onClick={action.onClick}
             className="inline-flex items-center justify-center rounded-full bg-teal px-8 py-3 text-sm font-medium text-white transition-colors hover:bg-teal/90"
           >
             {action.label}
           </button>
         )
+      )}
+    </div>
+  );
+}
+
+// ─── Admin EmptyState ─────────────────────────────────────────────────────────
+interface AdminEmptyStateProps {
+  icon?: React.ReactNode;
+  title: string;
+  description?: string;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+}
+
+export function AdminEmptyState({ icon, title, description, action }: AdminEmptyStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+      {icon && (
+        <div className="w-14 h-14 bg-[#1C3829]/8 rounded-2xl flex items-center justify-center mb-4 text-[#1C3829]">
+          {icon}
+        </div>
+      )}
+      <h3 className="text-base font-semibold text-gray-900 mb-1">{title}</h3>
+      {description && (
+        <p className="text-sm text-gray-500 max-w-xs mb-5">{description}</p>
+      )}
+      {action && (
+        <button
+          type="button"
+          onClick={action.onClick}
+          className="bg-[#1C3829] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#24472F] transition-colors"
+        >
+          {action.label}
+        </button>
       )}
     </div>
   );

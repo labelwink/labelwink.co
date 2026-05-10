@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ═══════════════════════════════════════════════════════════════════
  * LabelWink — Supabase Schema Notes
  * This file is the single source of truth for all DB schema changes.
@@ -203,6 +203,7 @@
  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS hips numeric;
  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS height numeric;
  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS weight numeric;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS loyalty_tier text DEFAULT 'Bronze';
  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS referral_code text UNIQUE DEFAULT UPPER(LEFT(gen_random_uuid()::text, 8));
  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS referred_by uuid REFERENCES auth.users(id);
  ALTER TABLE profiles ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
@@ -803,7 +804,7 @@
  ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS
    announcement_bar_bg text DEFAULT '#c9a84c';
  ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS
-   announcement_bar_text_color text DEFAULT '#1a1a1a';
+   announcement_bar_text_color text DEFAULT '#ffffff';
  ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS
    announcement_bar_link text;
  
@@ -859,7 +860,7 @@
  
  -- Seed default sections
  INSERT INTO homepage_sections (section_key, title, subtitle, is_active, sort_order) VALUES
-   ('announcement_bar', 'Free shipping on orders above ₹999', null, false, 0),
+   ('announcement_bar', 'Free shipping on orders above ₹3,499', null, false, 0),
    ('featured_collections', 'Shop by Collection', 'Explore our latest arrivals', true, 1),
    ('new_arrivals', 'New Arrivals', 'Fresh styles added daily', true, 2),
    ('shop_by_occasion', 'Shop by Occasion', null, true, 3),
@@ -1091,3 +1092,106 @@
  
  NOTIFY pgrst, 'reload schema';
  */
+
+/**
+ * BATCH 7: MARKETING, REFERRALS & ABANDONED CARTS
+ * ─────────────────────────────────────────────────────────────────
+ */
+
+-- ── ABANDONED CART TRACKING ───────────────────────
+-- CREATE TABLE IF NOT EXISTS abandoned_carts (
+--   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+--   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+--   email text NOT NULL,
+--   cart_items jsonb NOT NULL DEFAULT '[]',
+--   cart_total numeric DEFAULT 0,
+--   recovery_token text UNIQUE DEFAULT gen_random_uuid()::text,
+--   email_sent_at timestamptz,
+--   email_sent_count integer DEFAULT 0,
+--   recovered boolean DEFAULT false,
+--   recovered_at timestamptz,
+--   created_at timestamptz DEFAULT now(),
+--   updated_at timestamptz DEFAULT now()
+-- );
+-- ALTER TABLE abandoned_carts ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "admin_abandoned_carts" ON abandoned_carts FOR ALL USING (true);
+-- CREATE INDEX IF NOT EXISTS idx_abandoned_carts_email ON abandoned_carts (email, updated_at DESC);
+-- CREATE INDEX IF NOT EXISTS idx_abandoned_carts_token ON abandoned_carts (recovery_token);
+
+-- ── REFERRALS ─────────────────────────────────────
+-- ALTER TABLE profiles ADD COLUMN IF NOT EXISTS referral_code text UNIQUE DEFAULT UPPER(SUBSTRING(gen_random_uuid()::text FROM 1 FOR 8));
+-- ALTER TABLE profiles ADD COLUMN IF NOT EXISTS referred_by uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+
+-- CREATE TABLE IF NOT EXISTS referrals (
+--   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+--   referrer_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+--   referred_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+--   status text DEFAULT 'pending',
+--   referrer_points_awarded integer DEFAULT 0,
+--   referred_points_awarded integer DEFAULT 0,
+--   qualifying_order_id uuid REFERENCES orders(id),
+--   created_at timestamptz DEFAULT now(),
+--   UNIQUE (referred_id)
+-- );
+-- ALTER TABLE referrals ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "user_own_referrals" ON referrals USING (auth.uid() = referrer_id OR auth.uid() = referred_id);
+-- CREATE POLICY "admin_all_referrals" ON referrals FOR ALL USING (true);
+
+-- ── REFERRAL SETTINGS in shop_settings ────────────
+-- ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS referral_enabled boolean DEFAULT false;
+-- ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS referral_referrer_points integer DEFAULT 200;
+-- ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS referral_referred_points integer DEFAULT 100;
+-- ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS referral_qualifying_min_order numeric DEFAULT 500;
+
+-- ── EMAIL CAMPAIGNS ───────────────────────────────
+-- CREATE TABLE IF NOT EXISTS email_campaigns (
+--   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+--   name text NOT NULL,
+--   subject text NOT NULL,
+--   preview_text text,
+--   body_html text NOT NULL,
+--   segment text DEFAULT 'all',
+--   status text DEFAULT 'draft',
+--   scheduled_at timestamptz,
+--   sent_at timestamptz,
+--   recipient_count integer DEFAULT 0,
+--   open_count integer DEFAULT 0,
+--   click_count integer DEFAULT 0,
+--   created_at timestamptz DEFAULT now(),
+--   updated_at timestamptz DEFAULT now()
+-- );
+-- ALTER TABLE email_campaigns ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "admin_campaigns" ON email_campaigns FOR ALL USING (true);
+
+-- ── SEASONAL SALES ────────────────────────────────
+-- CREATE TABLE IF NOT EXISTS seasonal_sales (
+--   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+--   name text NOT NULL,
+--   discount_percent numeric NOT NULL,
+--   applies_to text DEFAULT 'all',
+--   collection_ids uuid[] DEFAULT '{}',
+--   product_ids uuid[] DEFAULT '{}',
+--   starts_at timestamptz NOT NULL,
+--   ends_at timestamptz NOT NULL,
+--   is_active boolean DEFAULT true,
+--   created_at timestamptz DEFAULT now()
+-- );
+-- ALTER TABLE seasonal_sales ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "admin_seasonal_sales" ON seasonal_sales FOR ALL USING (true);
+-- CREATE POLICY "public_read_seasonal" ON seasonal_sales FOR SELECT USING (true);
+
+-- ── NEWSLETTER CAMPAIGNS LOG ──────────────────────
+-- CREATE TABLE IF NOT EXISTS campaign_sends (
+--   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+--   campaign_id uuid REFERENCES email_campaigns(id) ON DELETE CASCADE,
+--   email text NOT NULL,
+--   sent_at timestamptz DEFAULT now(),
+--   status text DEFAULT 'sent'
+-- );
+-- ALTER TABLE campaign_sends ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "admin_campaign_sends" ON campaign_sends FOR ALL USING (true);
+
+-- NOTIFY pgrst, 'reload schema';
+ */
+
+

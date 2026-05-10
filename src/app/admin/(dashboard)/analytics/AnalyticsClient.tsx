@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import {
@@ -114,7 +114,7 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#1a1a1a]">Analytics</h1>
+          <h1 className="text-xl font-bold text-[#ffffff]">Analytics</h1>
           <p className="text-xs text-[#6b7280] mt-0.5">Store performance overview</p>
         </div>
         <div className="flex items-center gap-2">
@@ -123,7 +123,7 @@ export default function AnalyticsPage() {
             {DAY_OPTIONS.map(d => (
               <button key={d} onClick={() => setDays(d)}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  days === d ? 'bg-white shadow text-[#1a1a1a]' : 'text-[#6b7280] hover:text-[#1a1a1a]'
+                  days === d ? 'bg-white shadow text-[#ffffff]' : 'text-[#6b7280] hover:text-[#ffffff]'
                 }`}>
                 {d}d
               </button>
@@ -152,7 +152,7 @@ export default function AnalyticsPage() {
               <kpi.icon size={16} className={kpi.color} />
             </div>
             <p className="text-[10px] font-semibold uppercase tracking-wide text-[#9ca3af] mb-0.5">{kpi.title}</p>
-            <p className="text-xl font-bold text-[#1a1a1a]">{kpi.value}</p>
+            <p className="text-xl font-bold text-[#ffffff]">{kpi.value}</p>
             <div className={`flex items-center gap-1 mt-1 text-[10px] font-medium ${kpi.subColor}`}>
               {kpi.trend !== null && (
                 kpi.trend >= 0
@@ -170,7 +170,7 @@ export default function AnalyticsPage() {
         {/* Revenue/Order Chart */}
         <div className="lg:col-span-2 bg-white border border-[#e5e7eb] rounded-xl p-5">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-[#ffffff] flex items-center gap-2">
               <BarChart2 size={15} className="text-[#1b3a34]" />
               {chartMode === 'revenue' ? 'Revenue' : 'Orders'} — Last {days} days
             </h3>
@@ -178,7 +178,7 @@ export default function AnalyticsPage() {
               {CHART_MODE_OPTIONS.map(m => (
                 <button key={m} onClick={() => setChartMode(m)}
                   className={`px-2.5 py-1 rounded text-[10px] font-semibold capitalize transition-colors ${
-                    chartMode === m ? 'bg-white shadow text-[#1a1a1a]' : 'text-[#6b7280]'
+                    chartMode === m ? 'bg-white shadow text-[#ffffff]' : 'text-[#6b7280]'
                   }`}>
                   {m}
                 </button>
@@ -240,7 +240,7 @@ export default function AnalyticsPage() {
 
         {/* Order Status Breakdown */}
         <div className="bg-white border border-[#e5e7eb] rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-[#1a1a1a] mb-4">Order Status</h3>
+          <h3 className="text-sm font-semibold text-[#ffffff] mb-4">Order Status</h3>
           {loading ? (
             <div className="space-y-3">
               {[...Array(5)].map((_, i) => (
@@ -265,7 +265,7 @@ export default function AnalyticsPage() {
                       <span className="text-[10px] font-medium text-[#6b7280]">
                         {ORDER_STATUS_LABELS[status as keyof typeof ORDER_STATUS_LABELS] ?? status}
                       </span>
-                      <span className="text-[10px] font-bold text-[#1a1a1a]">{count}</span>
+                      <span className="text-[10px] font-bold text-[#ffffff]">{count}</span>
                     </div>
                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                       <div
@@ -286,7 +286,7 @@ export default function AnalyticsPage() {
 
       {/* Top Products */}
       <div className="bg-white border border-[#e5e7eb] rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-[#1a1a1a] mb-4 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-[#ffffff] mb-4 flex items-center gap-2">
           <Package size={14} className="text-[#c9a84c]" />
           Top Products — Last {days} days
         </h3>
@@ -313,7 +313,7 @@ export default function AnalyticsPage() {
                 <div key={i} className="flex items-center gap-4 py-3">
                   <span className="text-xs font-bold text-[#9ca3af] w-4 text-center">{i + 1}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-[#1a1a1a] truncate">{p.product_name}</p>
+                    <p className="text-xs font-semibold text-[#ffffff] truncate">{p.product_name}</p>
                     <div className="mt-1 h-1 bg-gray-100 rounded-full overflow-hidden w-full">
                       <div className="h-full bg-[#1b3a34] rounded-full" style={{ width: `${pct}%` }} />
                     </div>
@@ -321,7 +321,7 @@ export default function AnalyticsPage() {
                   <span className="text-[10px] text-[#6b7280] w-14 text-right flex-shrink-0">
                     {p.quantity} sold
                   </span>
-                  <span className="text-xs font-bold text-[#1a1a1a] w-20 text-right flex-shrink-0">
+                  <span className="text-xs font-bold text-[#ffffff] w-20 text-right flex-shrink-0">
                     {formatCurrency(revenue)}
                   </span>
                 </div>

@@ -1,0 +1,12 @@
+$kind: http-request
+name: Create Product
+method: POST
+url: '{{baseUrl}}/api/admin/products'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"name": "Sample Product", "slug": "sample-product", "price": 999, "mrp": 1299, "description": "", "category_id": "", "images": [], "tags": [], "is_active": true}

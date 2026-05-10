@@ -1,0 +1,12 @@
+$kind: http-request
+name: Create Order
+method: POST
+url: '{{baseUrl}}/api/storefront/checkout/create-order'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"address_id": "addr_id", "shipping_method": "standard", "coupon_code": "", "use_loyalty_points": false, "cart_items": [{"product_id": "prod_id", "quantity": 1, "size": "M"}]}

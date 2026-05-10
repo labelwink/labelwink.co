@@ -1,0 +1,5 @@
+$kind: http-request
+name: Test Razorpay
+method: GET
+url: '{{baseUrl}}/api/admin/settings/test-razorpay'
+order: 4000

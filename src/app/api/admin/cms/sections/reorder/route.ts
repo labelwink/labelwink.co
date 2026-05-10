@@ -1,19 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createClient, createAdminClient } from '@/lib/supabase/server';
-
-async function verifyAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-  
-  const supabaseAdmin = createAdminClient();
-  const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single();
-  return profile?.role === 'admin';
-}
+import { requireAdmin } from '@/lib/requireAdmin';
 
 export async function PUT(req: Request) {
-  const isAdmin = await verifyAdmin();
-  if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
   try {
     const { sections } = await req.json();

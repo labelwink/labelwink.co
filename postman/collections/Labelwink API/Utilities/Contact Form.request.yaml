@@ -1,0 +1,12 @@
+$kind: http-request
+name: Contact Form
+method: POST
+url: '{{baseUrl}}/api/contact'
+order: 4000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"name": "John Doe", "email": "john@example.com", "message": "Hello!"}

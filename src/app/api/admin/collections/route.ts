@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/requireAdmin'
 
 export const runtime = 'nodejs'
 
 export async function GET() {
+  const guard = await requireAdmin()
+  if (guard instanceof NextResponse) return guard
   try {
     const supabase = createAdminSupabaseClient()
     const { data, error } = await supabase
@@ -17,13 +20,15 @@ export async function GET() {
     }
 
     return NextResponse.json(data ?? [])
-  } catch (err: any) {
-    console.error('[GET /api/admin/collections] unexpected:', { error: err })
-    return NextResponse.json({ error: err?.message ?? 'Unknown error' }, { status: 500 })
+  } catch (error) {
+    console.error('[admin/collections]', error)
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 export async function POST(req: NextRequest) {
+  const guard = await requireAdmin()
+  if (guard instanceof NextResponse) return guard
   try {
     const supabase = createAdminSupabaseClient()
     const body = await req.json()
@@ -53,8 +58,8 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(data, { status: 201 })
-  } catch (err: any) {
-    console.error('[POST /api/admin/collections] unexpected:', { error: err })
-    return NextResponse.json({ error: err?.message ?? 'Unknown error' }, { status: 500 })
+  } catch (error) {
+    console.error('[admin/collections]', error)
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

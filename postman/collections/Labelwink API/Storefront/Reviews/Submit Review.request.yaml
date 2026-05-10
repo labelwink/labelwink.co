@@ -1,0 +1,12 @@
+$kind: http-request
+name: Submit Review
+method: POST
+url: '{{baseUrl}}/api/storefront/reviews'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"product_id": "prod_id", "rating": 5, "title": "Great product", "body": "Loved it!"}

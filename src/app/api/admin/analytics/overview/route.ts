@@ -36,7 +36,7 @@ function getDateRange(period: Period): { start: string | null; prevStart: string
 
 export async function GET(req: NextRequest) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminSupabaseClient() as any
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
       // 1. Revenue stats — current period
       (() => {
         let q = sb.from('orders')
-          .select('total, discount_amount, shipping_amount')
+          .select('total_amount, discount_amount, shipping_amount')
           .eq('payment_status', 'paid')
         if (start) q = q.gte('created_at', start)
         return q
@@ -85,16 +85,19 @@ export async function GET(req: NextRequest) {
       (() => {
         if (!prevStart || !prevEnd) return Promise.resolve({ data: [] })
         return sb.from('orders')
-          .select('total')
+          .select('total_amount')
           .eq('payment_status', 'paid')
           .gte('created_at', prevStart)
           .lt('created_at', prevEnd)
       })(),
 
-      // 7. Daily chart data
+      // 7. Daily chart data (aggregated from orders)
       (() => {
-        let q = sb.from('daily_revenue').select('date, revenue, order_count').order('date', { ascending: true })
-        if (start) q = q.gte('date', start.slice(0, 10)) // date-only
+        let q = sb.from('orders')
+          .select('created_at, total_amount')
+          .eq('payment_status', 'paid')
+          .order('created_at', { ascending: true })
+        if (start) q = q.gte('created_at', start)
         return q
       })(),
 
@@ -111,10 +114,10 @@ export async function GET(req: NextRequest) {
     ])
 
     // ── Aggregate revenue stats ────────────────────────────────────────────────
-    const paidOrders: { total: number; discount_amount: number; shipping_amount: number }[] =
+    const paidOrders: { total_amount: number; discount_amount: number; shipping_amount: number }[] =
       revenueResult.data ?? []
     const order_count      = paidOrders.length
-    const revenue          = paidOrders.reduce((s, o) => s + Number(o.total ?? 0), 0)
+    const revenue          = paidOrders.reduce((s, o) => s + Number(o.total_amount ?? 0), 0)
     const total_discounts  = paidOrders.reduce((s, o) => s + Number(o.discount_amount ?? 0), 0)
     const total_shipping   = paidOrders.reduce((s, o) => s + Number(o.shipping_amount ?? 0), 0)
     const avg_order_value  = order_count ? revenue / order_count : 0
@@ -127,10 +130,21 @@ export async function GET(req: NextRequest) {
 
     // ── Growth % ───────────────────────────────────────────────────────────────
     const prevRevenue = ((prevRevenueResult as any).data ?? [])
-      .reduce((s: number, o: { total: number }) => s + Number(o.total ?? 0), 0)
+      .reduce((s: number, o: { total_amount: number }) => s + Number(o.total_amount ?? 0), 0)
     const revenue_growth_pct = prevRevenue > 0
       ? Math.round(((revenue - prevRevenue) / prevRevenue) * 100 * 10) / 10
       : null
+
+    // ── Daily chart ───────────────────────────────────────────────────────────
+    const dailyMap: Record<string, { date: string, revenue: number, order_count: number }> = {}
+    for (const o of ((dailyChartResult as any).data ?? [])) {
+      const date = o.created_at?.slice(0, 10)
+      if (!date) continue
+      if (!dailyMap[date]) dailyMap[date] = { date, revenue: 0, order_count: 0 }
+      dailyMap[date].revenue += Number(o.total_amount ?? 0)
+      dailyMap[date].order_count++
+    }
+    const daily_chart = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date))
 
     return NextResponse.json({
       period,
@@ -144,13 +158,13 @@ export async function GET(req: NextRequest) {
       total_customers:   totalCustomersResult.count ?? 0,
       pending_orders:    pendingResult.count ?? 0,
       revenue_growth_pct,
-      daily_chart:       dailyChartResult.data ?? [],
+      daily_chart,
       low_stock_count:   lowStockResult.count ?? 0,
       out_of_stock_count: outOfStockResult.count ?? 0,
     })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error'
     console.error('[analytics/overview]', msg)
-    return NextResponse.json({ error: msg }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

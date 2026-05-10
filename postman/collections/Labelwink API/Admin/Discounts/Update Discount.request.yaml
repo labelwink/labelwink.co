@@ -1,0 +1,12 @@
+$kind: http-request
+name: Update Discount
+method: POST
+url: '{{baseUrl}}/api/admin/discounts/{{discountId}}'
+order: 4000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"is_active": false}

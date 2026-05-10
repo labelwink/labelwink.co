@@ -7,6 +7,9 @@ import { WhatsAppButton } from '@/components/storefront/WhatsAppButton'
 import { CartDrawer } from '@/components/cart/CartDrawer'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 import { AuthModalProvider } from '@/components/auth/OTPLoginModal'
+import { MobileBottomNav } from '@/components/storefront/MobileBottomNav'
+import { PWAInstallPrompt, ServiceWorkerRegistration } from '@/components/PWAInstallPrompt'
+import { AbandonedCartTracker } from '@/components/cart/AbandonedCartTracker'
 
 function getNavigation() {
   try {
@@ -68,9 +71,14 @@ export default async function StorefrontLayout({ children }: { children: React.R
       />
       <Navbar />
       <CartDrawer />
-      <main>{children}</main>
+      <main className="page-transition bg-[#FDF8F0] min-h-screen pb-20 md:pb-0 pt-16 md:pt-[72px]">{children}</main>
       <Footer columns={nav.footer_columns} social={settings.social} tagline={settings.tagline} />
       <WhatsAppButton />
+      <MobileBottomNav />
+      <PWAInstallPrompt />
+      <ServiceWorkerRegistration />
+      <AbandonedCartTracker />
     </AuthModalProvider>
   )
 }
+

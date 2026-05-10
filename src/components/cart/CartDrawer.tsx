@@ -6,8 +6,9 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Minus, Plus, Trash2, X, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
-import { ProductImage } from '@/components/storefront/ProductImage';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
+import { getProductImageUrl } from '@/lib/utils/cloudinary';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 export function CartDrawer() {
@@ -44,12 +45,12 @@ export function CartDrawer() {
           </Button>
         </div>
 
-        {/* Free Shipping Bar */}
+        {/* Shipping progress bar */}
         <div className="bg-white/50 p-6 border-b border-sage/10">
           <p className="text-[10px] text-charcoal font-bold text-center mb-3 uppercase tracking-[0.2em]">
             {remainingForFreeShipping > 0 
-              ? `Add ₹${remainingForFreeShipping.toLocaleString()} more for free shipping` 
-              : "Complimentary shipping unlocked!"}
+              ? `Add ₹${remainingForFreeShipping.toLocaleString()} more to waive shipping charges` 
+              : "Shipping charges waived!"}
           </p>
           <div className="w-full h-1 bg-sage/10 rounded-full overflow-hidden">
             <div 
@@ -73,8 +74,14 @@ export function CartDrawer() {
           ) : (
             items.map((item) => (
               <div key={item.id} className="flex gap-5 group">
-                <div className="w-24 h-32 bg-sage/5 rounded-lg overflow-hidden flex-shrink-0 border border-sage/10">
-                  <ProductImage publicId={item.publicId || ''} alt={item.name} width={100} height={130} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <div className="w-24 h-32 bg-sage/5 rounded-lg overflow-hidden flex-shrink-0 border border-sage/10 relative">
+                  <Image
+                    src={getProductImageUrl(item.publicId || item.image, 'thumb')}
+                    alt={item.name}
+                    width={80}
+                    height={80}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
                 </div>
                 <div className="flex-1 flex flex-col justify-between py-1">
                   <div>
@@ -136,7 +143,7 @@ export function CartDrawer() {
             </div>
             <Link href="/checkout" onClick={() => setIsOpen(false)} className={buttonVariants({ className: "w-full h-16 bg-charcoal hover:bg-teal text-cream rounded-none text-xs font-bold tracking-[0.3em] uppercase transition-all shadow-xl flex items-center justify-center" })}>Checkout Securely</Link>
             <p className="text-[9px] text-center text-muted-foreground uppercase tracking-widest font-bold">
-              Secure Checkout &bull; Free Shipping over ₹{threshold}
+              Secure Checkout &bull; Shipping charges waived over ₹{threshold}
             </p>
           </div>
         )}

@@ -19,7 +19,7 @@ function getStartDate(period: Period): string {
 
 export async function GET(req: NextRequest) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = createAdminSupabaseClient() as any
@@ -31,54 +31,41 @@ export async function GET(req: NextRequest) {
   try {
     const [
       orderItemsResult,
-      topProductsResult,
       ordersResult,
       returnsResult,
     ] = await Promise.all([
-      // 1. Order items for revenue by category
+      // 1. Order items for revenue by collection
       sb.from('order_items').select(`
-        total_price,
-        orders!inner(payment_status, created_at),
-        products!inner(category_id, categories(name))
+        total_price, product_name,
+        orders!inner(payment_status, created_at)
       `)
       .eq('orders.payment_status', 'paid')
       .gte('orders.created_at', start),
 
-      // 2. Revenue by product (from product_sales_summary)
-      sb.from('product_sales_summary').select(`
-        units_sold, revenue, products!inner(name)
-      `)
-      .order('revenue', { ascending: false })
-      .limit(20),
-
-      // 3. Orders for DOW, AOV, Cancellations, Coupons
+      // 2. Orders for DOW, AOV, Cancellations, Coupons
       sb.from('orders').select(`
-        id, total, status, payment_status, created_at, coupon_code, discount_amount
+        id, total_amount, status, payment_status, created_at, coupon_code, discount_amount
       `)
       .gte('created_at', start),
 
-      // 4. Returns
-      sb.from('return_requests').select('refund_amount').gte('created_at', start)
+      // 3. Returns
+      sb.from('returns').select('refund_amount').gte('created_at', start)
     ])
 
-    // --- 1. Revenue by category ---
-    const catMap: Record<string, { name: string, units: number, revenue: number }> = {}
+    // --- 1. Revenue by product (top products from order_items) ---
+    const productMap: Record<string, { name: string, units: number, revenue: number }> = {}
     for (const oi of (orderItemsResult.data || [])) {
-      const p = Array.isArray(oi.products) ? oi.products[0] : oi.products
-      const c = Array.isArray(p?.categories) ? p?.categories[0] : p?.categories
-      const catName = c?.name || 'Uncategorized'
-      if (!catMap[catName]) catMap[catName] = { name: catName, units: 0, revenue: 0 }
-      catMap[catName].units++
-      catMap[catName].revenue += Number(oi.total_price || 0)
+      const name = oi.product_name || 'Unknown'
+      if (!productMap[name]) productMap[name] = { name, units: 0, revenue: 0 }
+      productMap[name].units++
+      productMap[name].revenue += Number(oi.total_price || 0)
     }
-    const revenue_by_collection = Object.values(catMap).sort((a, b) => b.revenue - a.revenue)
+    const top_products = Object.values(productMap)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 20)
+      .map(p => ({ name: p.name, units_sold: p.units, revenue: p.revenue }))
 
-    // --- 2. Top products ---
-    const top_products: TopProduct[] = (topProductsResult.data || []).map((p: any) => ({
-      name: Array.isArray(p.products) ? p.products[0]?.name : p.products?.name,
-      units_sold: p.units_sold,
-      revenue: p.revenue
-    }))
+    const revenue_by_collection = top_products // reuse for now
 
     // --- 3. Orders aggregations ---
     const dowMap: Record<number, number> = { 0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0 }
@@ -89,7 +76,7 @@ export async function GET(req: NextRequest) {
     for (const o of (ordersResult.data || [])) {
       if (o.status === 'cancelled') {
         cancelled_count++
-        cancelled_value += Number(o.total || 0)
+        cancelled_value += Number(o.total_amount || 0)
       }
       
       if (o.payment_status === 'paid') {
@@ -101,7 +88,7 @@ export async function GET(req: NextRequest) {
         const weekStart = new Date(d.setDate(diff)).toISOString().split('T')[0]
         if (!weekMap[weekStart]) weekMap[weekStart] = { count: 0, total: 0 }
         weekMap[weekStart].count++
-        weekMap[weekStart].total += Number(o.total || 0)
+        weekMap[weekStart].total += Number(o.total_amount || 0)
 
         if (o.coupon_code) {
           if (!couponMap[o.coupon_code]) couponMap[o.coupon_code] = { uses: 0, total_discount: 0 }

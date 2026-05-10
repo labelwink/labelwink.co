@@ -56,7 +56,7 @@ function SectionCard({ title, children, action }: { title: string; children: Rea
   return (
     <div className="bg-white border border-[#e5e7eb] rounded-xl shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-[#f3f4f6]">
-        <h2 className="font-semibold text-[#1a1a1a] text-sm">{title}</h2>
+        <h2 className="font-semibold text-[#1b3a34] text-sm">{title}</h2>
         {action}
       </div>
       <div className="p-5">{children}</div>
@@ -80,7 +80,7 @@ function KpiCard({ icon, title, value, sub, trend, amber, href }: {
         )}
       </div>
       <p className="text-[11px] text-[#6b7280] uppercase tracking-wider mb-1">{title}</p>
-      <p className="text-2xl font-bold text-[#1a1a1a]">{value}</p>
+      <p className="text-2xl font-bold text-[#1b3a34]">{value}</p>
       <p className="text-[11px] text-[#9ca3af] mt-1">{sub}</p>
     </div>
   )
@@ -105,7 +105,7 @@ function BarChart({ data }: { data: DayBar[] }) {
                 style={{ height: `${pct}%` }}
               />
               {/* Tooltip */}
-              <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 bg-[#1a1a1a] text-white text-[10px] rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity">
+              <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 bg-white text-white text-[10px] rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity">
                 {fmtDate(d.date)}: {fmtShort(d.revenue)} · {d.order_count} orders
               </div>
             </div>
@@ -151,7 +151,7 @@ function DonutChart({ byStatus }: { byStatus: Record<string, number> }) {
         />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-16 h-16 rounded-full bg-white flex flex-col items-center justify-center">
-            <span className="text-base font-bold text-[#1a1a1a]">{total}</span>
+            <span className="text-base font-bold text-[#1b3a34]">{total}</span>
             <span className="text-[8px] text-[#9ca3af]">orders</span>
           </div>
         </div>
@@ -162,7 +162,7 @@ function DonutChart({ byStatus }: { byStatus: Record<string, number> }) {
           <div key={s.status} className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[s.status] ?? '#9ca3af' }} />
             <span className="text-xs text-[#374151] capitalize">{s.status}</span>
-            <span className="text-xs font-semibold text-[#1a1a1a]">{s.count}</span>
+            <span className="text-xs font-semibold text-[#1b3a34]">{s.count}</span>
             <span className="text-[10px] text-[#9ca3af]">({s.pct.toFixed(0)}%)</span>
           </div>
         ))}
@@ -182,7 +182,7 @@ function CircleProgress({ pct, label }: { pct: number; label: string }) {
           strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" />
       </svg>
       <div className="text-center -mt-10 mb-2">
-        <span className="text-sm font-bold text-[#1a1a1a]">{pct.toFixed(1)}%</span>
+        <span className="text-sm font-bold text-[#1b3a34]">{pct.toFixed(1)}%</span>
       </div>
       <p className="text-[11px] text-[#6b7280] text-center">{label}</p>
     </div>
@@ -234,7 +234,7 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-[#1a1a1a]">Analytics</h1>
+          <h1 className="text-xl font-bold text-[#1b3a34]">Analytics</h1>
           <p className="text-xs text-[#6b7280] mt-0.5">Business performance overview</p>
         </div>
         <div className="flex items-center gap-2">
@@ -245,8 +245,8 @@ export default function AnalyticsPage() {
                 onClick={() => setPeriod(p.value)}
                 className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                   period === p.value
-                    ? 'bg-[#1a1a1a] text-white shadow-sm'
-                    : 'text-[#6b7280] hover:text-[#1a1a1a]'
+                    ? 'bg-white text-[#1b3a34] shadow-sm'
+                    : 'text-[#6b7280] hover:text-[#1b3a34]'
                 }`}>
                 {p.label}
               </button>
@@ -304,6 +304,7 @@ export default function AnalyticsPage() {
               {!products?.bestsellers?.length ? (
                 <p className="text-sm text-[#9ca3af] text-center py-4">No sales data yet</p>
               ) : (
+                <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-[10px] uppercase tracking-wider text-[#9ca3af] border-b border-[#f3f4f6]">
@@ -320,12 +321,13 @@ export default function AnalyticsPage() {
                           <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${i === 0 ? 'bg-[#c9a84c] text-white' : 'bg-[#f3f4f6] text-[#6b7280]'}`}>{i+1}</span>
                         </td>
                         <td className="py-2 text-xs text-[#374151] font-medium truncate max-w-[160px]">{p.name}</td>
-                        <td className="py-2 text-right text-xs font-semibold text-[#1a1a1a]">{p.units_sold}</td>
+                        <td className="py-2 text-right text-xs font-semibold text-[#1b3a34]">{p.units_sold}</td>
                         <td className="py-2 text-right text-xs text-[#6b7280]">{fmtShort(p.revenue)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </SectionCard>
 
@@ -383,7 +385,7 @@ export default function AnalyticsPage() {
 
                 {/* Top customers table */}
                 <div>
-                  <p className="text-xs font-bold text-[#1a1a1a] mb-3 uppercase tracking-wider">Top Customers by Lifetime Value</p>
+                  <p className="text-xs font-bold text-[#1b3a34] mb-3 uppercase tracking-wider">Top Customers by Lifetime Value</p>
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-[10px] uppercase tracking-wider text-[#9ca3af] border-b border-[#f3f4f6]">
@@ -400,10 +402,10 @@ export default function AnalyticsPage() {
                           <td className="py-2 pr-2">
                             <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${i === 0 ? 'bg-[#c9a84c] text-white' : 'bg-[#f3f4f6] text-[#6b7280]'}`}>{i+1}</span>
                           </td>
-                          <td className="py-2 text-xs text-[#1a1a1a] font-medium">{c.full_name || '—'}</td>
+                          <td className="py-2 text-xs text-[#1b3a34] font-medium">{c.full_name || '—'}</td>
                           <td className="py-2 text-xs text-[#9ca3af] hidden sm:table-cell truncate max-w-[160px]">{c.email || '—'}</td>
                           <td className="py-2 text-right text-xs text-[#6b7280]">{c.order_count}</td>
-                          <td className="py-2 text-right text-xs font-bold text-[#1a1a1a]">{fmtShort(c.lifetime)}</td>
+                          <td className="py-2 text-right text-xs font-bold text-[#1b3a34]">{fmtShort(c.lifetime)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -422,7 +424,7 @@ export default function AnalyticsPage() {
                   const scale = 0.7 + (s.count / maxCount) * 0.5
                   return (
                     <span key={i}
-                      className="bg-[#faf7f2] border border-[#c9a84c]/20 text-[#1a1a1a] rounded-full px-3 py-1 cursor-default hover:bg-[#c9a84c]/10 transition-colors"
+                      className="bg-[#faf7f2] border border-[#c9a84c]/20 text-[#1b3a34] rounded-full px-3 py-1 cursor-default hover:bg-[#c9a84c]/10 transition-colors"
                       style={{ fontSize: `${Math.round(scale * 12)}px`, fontWeight: s.count === maxCount ? 700 : 500 }}
                       title={`${s.count} searches · avg ${s.avg_results.toFixed(0)} results`}>
                       {s.query}
@@ -438,9 +440,9 @@ export default function AnalyticsPage() {
           <SectionCard title="Financial Summary">
             <div className="max-w-sm space-y-2">
               {[
-                { label: 'Gross Revenue',     value: overview.revenue,         color: 'text-[#1a1a1a]', prefix: '' },
+                { label: 'Gross Revenue',     value: overview.revenue,         color: 'text-[#1b3a34]', prefix: '' },
                 { label: 'Total Discounts',   value: -overview.total_discounts, color: 'text-red-600',   prefix: '' },
-                { label: 'Shipping Income',   value: overview.total_shipping,  color: 'text-[#1a1a1a]', prefix: '' },
+                { label: 'Shipping Income',   value: overview.total_shipping,  color: 'text-[#1b3a34]', prefix: '' },
               ].map(row => (
                 <div key={row.label} className="flex justify-between items-center text-sm">
                   <span className="text-[#6b7280]">{row.label}</span>
@@ -450,7 +452,7 @@ export default function AnalyticsPage() {
                 </div>
               ))}
               <div className="border-t border-[#e5e7eb] pt-2 mt-2 flex justify-between items-center">
-                <span className="font-bold text-[#1a1a1a] text-sm">Net Revenue</span>
+                <span className="font-bold text-[#1b3a34] text-sm">Net Revenue</span>
                 <span className="font-bold text-[#c9a84c] text-base">
                   {formatCurrency(overview.revenue - overview.total_discounts)}
                 </span>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Bell, Package, RotateCcw, Star, X, CheckCheck } from 'lucide-react';
@@ -158,7 +158,7 @@ export function StorefrontNotificationBell() {
                     <CheckCheck className="w-3 h-3" /> Mark all read
                   </button>
                 )}
-                <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600 p-0.5 rounded">
+                <button onClick={() => setOpen(false)} className="text-[#5a7060] hover:text-gray-600 p-0.5 rounded">
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -167,13 +167,13 @@ export function StorefrontNotificationBell() {
             <div className="max-h-[360px] overflow-y-auto divide-y divide-gray-50">
               {notifications.length === 0 ? (
                 <div className="text-center py-12 flex flex-col items-center gap-2">
-                  <Bell className="w-8 h-8 text-gray-200" />
-                  <p className="text-sm text-gray-400">No notifications yet</p>
-                  <p className="text-xs text-gray-300">Order updates will appear here</p>
+                  <Bell className="w-8 h-8 text-[#1a2e1e]" />
+                  <p className="text-sm text-[#5a7060]">No notifications yet</p>
+                  <p className="text-xs text-[#5a7060]">Order updates will appear here</p>
                 </div>
               ) : notifications.map(n => {
                 const Icon = ICON_MAP[n.type] ?? Bell;
-                const colorClass = COLOR_MAP[n.type] ?? 'bg-gray-100 text-gray-500';
+                const colorClass = COLOR_MAP[n.type] ?? 'bg-gray-100 text-[#9aab9e]';
                 return (
                   <Link
                     key={n.id}
@@ -186,8 +186,8 @@ export function StorefrontNotificationBell() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-[#1a3a34] truncate">{n.title}</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-2">{n.body}</p>
-                      <p className="text-[10px] text-gray-400 mt-1">{timeAgo(n.created_at)}</p>
+                      <p className="text-[11px] text-[#9aab9e] mt-0.5 line-clamp-2">{n.body}</p>
+                      <p className="text-[10px] text-[#5a7060] mt-1">{timeAgo(n.created_at)}</p>
                     </div>
                     {!n.is_read && <span className="w-2 h-2 rounded-full bg-[#016a6e] flex-shrink-0 mt-2" />}
                   </Link>

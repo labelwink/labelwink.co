@@ -1,0 +1,5 @@
+$kind: http-request
+name: Share Wishlist
+method: GET
+url: '{{baseUrl}}/api/storefront/wishlist/share'
+order: 5000

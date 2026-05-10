@@ -1,0 +1,8 @@
+$kind: http-request
+name: Lookup Referral
+method: GET
+url: '{{baseUrl}}/api/storefront/referrals/lookup'
+order: 5000
+queryParams:
+  - key: code
+    value: REF123

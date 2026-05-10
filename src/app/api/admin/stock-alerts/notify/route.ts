@@ -13,12 +13,12 @@ export async function POST(req: NextRequest) {
     const { variant_id } = await req.json()
     if (!variant_id) return NextResponse.json({ error: 'Missing variant_id' }, { status: 400 })
 
-    // 1. Fetch pending alerts
+    // 1. Fetch pending alerts — use 'notified' column (actual DB column)
     const { data: alerts, error: alertErr } = await sb
       .from('stock_alerts')
-      .select('*, products(name, slug, images)')
+      .select(`*, products(name, slug, product_images(url, is_cover, sort_order))`)
       .eq('variant_id', variant_id)
-      .eq('is_notified', false)
+      .eq('notified', false)
 
     if (alertErr) throw new Error(alertErr.message)
     if (!alerts || alerts.length === 0) {
@@ -31,14 +31,17 @@ export async function POST(req: NextRequest) {
       const p = Array.isArray(alert.products) ? alert.products[0] : alert.products
       if (!p) continue
 
-      const image = p.images && p.images.length > 0 ? p.images[0] : ''
+      // Get cover image from product_images join
+      const images: any[] = Array.isArray(p.product_images) ? p.product_images : []
+      const coverImg = images.find((i: any) => i.is_cover) || images[0]
+      const image = coverImg?.url || ''
       
       await sendBackInStockEmail(alert, p.name, alert.size, image, p.slug)
       
-      // Update as notified
+      // Update as notified using correct column name
       await sb
         .from('stock_alerts')
-        .update({ is_notified: true, notified_at: new Date().toISOString() })
+        .update({ notified: true, notified_at: new Date().toISOString() })
         .eq('id', alert.id)
         
       notified_count++

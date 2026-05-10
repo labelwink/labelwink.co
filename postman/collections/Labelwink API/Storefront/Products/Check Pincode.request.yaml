@@ -1,0 +1,8 @@
+$kind: http-request
+name: Check Pincode
+method: GET
+url: '{{baseUrl}}/api/storefront/check-pincode'
+order: 9000
+queryParams:
+  - key: pincode
+    value: '400001'

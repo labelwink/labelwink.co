@@ -17,17 +17,17 @@ export default function ContactEditor() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     })
-    showToast(res.ok ? 'Saved âœ“' : 'Save failed', res.ok ? 'success' : 'error')
+    showToast(res.ok ? 'Saved ?' : 'Save failed', res.ok ? 'success' : 'error')
   }
 
-  if (!data) return <div className="text-center py-20 text-[#6b7280]">Loadingâ€¦</div>
+  if (!data) return <div className="text-center py-20 text-[#6b7280]">Loading…</div>
 
   return (
     <div className="space-y-6 max-w-2xl">
       {ToastComponent}
       <div>
-        <nav className="text-sm text-[#6b7280] mb-1">Admin â€º Pages â€º <span className="text-[#1a1a1a]">Contact</span></nav>
-        <h1 className="text-2xl font-bold text-[#1a1a1a]">Contact Page Editor</h1>
+        <nav className="text-sm text-[#6b7280] mb-1">Admin › Pages › <span className="text-[#1b3a34]">Contact</span></nav>
+        <h1 className="text-2xl font-bold text-[#1b3a34]">Contact Page Editor</h1>
       </div>
       <div className="bg-white border border-[#e5e7eb] rounded-xl p-6 space-y-5">
         {[

@@ -1,0 +1,12 @@
+$kind: http-request
+name: Set Featured Collections
+method: POST
+url: '{{baseUrl}}/api/admin/collections/featured'
+order: 4000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"collection_ids": ["id1", "id2"]}

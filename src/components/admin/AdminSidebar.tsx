@@ -9,18 +9,21 @@ import {
   ClipboardList,
   ShoppingBag,
   Users,
-  FileText,
   Layers,
   Tag,
   Star,
   RotateCcw,
-  Megaphone,
   BarChart2,
   Settings,
   X,
   ExternalLink,
   ChevronDown,
   Gift,
+  Image as ImageIcon,
+  LogOut,
+  Crown,
+  Monitor,
+  FileText,
 } from 'lucide-react'
 
 // ── Sidebar Context ──────────────────────────────────────────────────────────
@@ -34,9 +37,7 @@ const SidebarContext = createContext<SidebarContextValue>({
   setIsOpen: () => {},
 })
 
-export function useSidebar() {
-  return useContext(SidebarContext)
-}
+export function useSidebar() { return useContext(SidebarContext) }
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -47,7 +48,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-// ── Badge Counts (live from API) ─────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 interface BadgeCounts {
   pending_orders: number
   low_stock: number
@@ -55,7 +56,6 @@ interface BadgeCounts {
   pending_returns: number
 }
 
-// ── Nav Structure ─────────────────────────────────────────────────────────────
 interface NavItem {
   href: string
   label: string
@@ -71,40 +71,46 @@ interface NavGroup {
 
 const navGroups: NavGroup[] = [
   {
-    label: 'Storefront',
+    label: 'OVERVIEW',
     items: [
-      { href: '/admin',            label: 'Dashboard',   icon: LayoutDashboard, exact: true },
-      { href: '/admin/analytics',  label: 'Analytics',   icon: BarChart2 },
+      { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
     ],
   },
   {
-    label: 'Catalogue',
+    label: 'COMMERCE',
     items: [
-      { href: '/admin/products',    label: 'Products',    icon: Package },
-      { href: '/admin/inventory',   label: 'Inventory',   icon: ClipboardList, badge: 'low_stock' },
-      { href: '/admin/collections', label: 'Collections', icon: Layers },
-      { href: '/admin/categories',  label: 'Categories',  icon: Tag },
+      { href: '/admin/orders',    label: 'Orders',     icon: ShoppingBag,  badge: 'pending_orders' },
+      { href: '/admin/products',  label: 'Products',   icon: Package },
+      { href: '/admin/inventory', label: 'Inventory',  icon: ClipboardList, badge: 'low_stock' },
+      { href: '/admin/customers', label: 'Customers',  icon: Users },
     ],
   },
   {
-    label: 'Commerce',
+    label: 'CONTENT',
     items: [
-      { href: '/admin/orders',    label: 'Orders',    icon: ShoppingBag,  badge: 'pending_orders' },
-      { href: '/admin/returns',   label: 'Returns',   icon: RotateCcw,    badge: 'pending_returns' },
-      { href: '/admin/customers', label: 'Customers', icon: Users },
-      { href: '/admin/reviews',   label: 'Reviews',   icon: Star,         badge: 'pending_reviews' },
+      { href: '/admin/cms',         label: 'CMS',         icon: Layers },
+      { href: '/admin/collections', label: 'Collections', icon: ImageIcon },
+      { href: '/admin/media',       label: 'Media',       icon: Monitor },
+    ],
+  },
+  {
+    label: 'TOOLS',
+    items: [
       { href: '/admin/discounts', label: 'Discounts', icon: Gift },
+      { href: '/admin/returns',   label: 'Returns',   icon: RotateCcw, badge: 'pending_returns' },
+      { href: '/admin/analytics', label: 'Analytics', icon: BarChart2 },
+      { href: '/admin/reviews',   label: 'Reviews',   icon: Star, badge: 'pending_reviews' },
     ],
   },
   {
-    label: 'Content',
+    label: 'FINANCE',
     items: [
-      { href: '/admin/cms',     label: 'CMS & Banners', icon: Megaphone },
-      { href: '/admin/pages',   label: 'Pages',          icon: FileText },
+      { href: '/admin/accounting',   label: 'Accounting',   icon: BarChart2 },
+      { href: '/admin/gst-invoices', label: 'GST Invoices', icon: FileText },
     ],
   },
   {
-    label: 'System',
+    label: 'SETTINGS',
     items: [
       { href: '/admin/settings', label: 'Settings', icon: Settings },
     ],
@@ -130,28 +136,59 @@ function SidebarNavItem({
     <Link
       href={item.href}
       onClick={onClick}
-      className={`
-        group flex items-center justify-between gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium
-        transition-all duration-150 w-full
-        ${isActive
-          ? 'bg-[#c9a84c]/15 text-[#e8c97a] border-l-2 border-[#c9a84c] pl-[10px]'
-          : 'text-white/55 hover:text-white/90 hover:bg-white/6 border-l-2 border-transparent pl-[10px]'
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        height: '40px',
+        padding: isActive ? '0 12px 0 9px' : '0 12px',
+        marginLeft: '8px',
+        marginRight: '8px',
+        marginBottom: '2px',
+        borderRadius: '8px',
+        fontSize: '14px',
+        fontWeight: isActive ? 600 : 500,
+        color: isActive ? '#2d5a3d' : '#5a7060',
+        textDecoration: 'none',
+        background: isActive ? '#eef5f1' : 'transparent',
+        borderLeft: isActive ? '3px solid #2d5a3d' : '3px solid transparent',
+        transition: 'all 150ms',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => {
+        if (!isActive) {
+          (e.currentTarget as HTMLElement).style.background = '#f5f2ec'
+          ;(e.currentTarget as HTMLElement).style.color = '#1a2e1e'
         }
-      `}
+      }}
+      onMouseLeave={e => {
+        if (!isActive) {
+          (e.currentTarget as HTMLElement).style.background = 'transparent'
+          ;(e.currentTarget as HTMLElement).style.color = '#5a7060'
+        }
+      }}
     >
-      <span className="flex items-center gap-2.5 min-w-0">
+      <span style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
         <Icon
-          size={15}
-          strokeWidth={isActive ? 2.5 : 1.8}
-          className={isActive ? 'text-[#c9a84c]' : 'text-white/40 group-hover:text-white/70'}
+          size={16}
+          style={{ color: isActive ? '#2d5a3d' : '#9aab9e', flexShrink: 0 }}
         />
-        <span className="truncate">{item.label}</span>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {item.label}
+        </span>
       </span>
       {badgeCount > 0 && (
-        <span className={`
-          flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center
-          ${isActive ? 'bg-[#c9a84c] text-[#1b3a34]' : 'bg-red-500/80 text-white'}
-        `}>
+        <span style={{
+          flexShrink: 0,
+          fontSize: '10px',
+          fontWeight: 700,
+          padding: '2px 6px',
+          borderRadius: '20px',
+          minWidth: '18px',
+          textAlign: 'center',
+          background: isActive ? '#2d5a3d' : '#fdf0ef',
+          color: isActive ? '#ffffff' : '#c0392b',
+        }}>
           {badgeCount > 99 ? '99+' : badgeCount}
         </span>
       )}
@@ -160,58 +197,87 @@ function SidebarNavItem({
 }
 
 // ── Sidebar Content ───────────────────────────────────────────────────────────
-function SidebarContent({ badges, onNavClick }: { badges: BadgeCounts; onNavClick?: () => void }) {
+function SidebarContent({ badges, onNavClick, role }: { badges: BadgeCounts; onNavClick?: () => void; role?: string | null }) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const toggle = (label: string) => setCollapsed(prev => ({ ...prev, [label]: !prev[label] }))
 
-  const toggleGroup = (label: string) => {
-    setCollapsed(prev => ({ ...prev, [label]: !prev[label] }))
+  const handleLogout = async () => {
+    await fetch('/api/admin/auth/logout', { method: 'POST' })
+    window.location.href = '/admin/login'
   }
 
   return (
-    <aside className="w-[230px] flex-shrink-0 bg-[#162f2a] text-white flex flex-col h-full overflow-y-auto border-r border-white/[0.06]">
-      {/* Logo */}
-      <div className="px-5 py-5 border-b border-white/[0.08]">
-        <p
-          className="font-bold text-base tracking-[0.2em] bg-gradient-to-r from-[#e8c97a] to-[#b8862a] bg-clip-text text-transparent"
-          style={{ fontFamily: 'Georgia, serif' }}
-        >
-          LABEL WINK
-        </p>
-        <p className="text-[#f5ede0]/35 text-[10px] mt-0.5 tracking-wider">Admin Dashboard</p>
+    <aside style={{
+      width: '240px',
+      flexShrink: 0,
+      background: '#ffffff',
+      borderRight: '1px solid #e8e2d6',
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      overflowY: 'auto',
+    }}>
+      {/* Logo Header */}
+      <div style={{
+        height: '64px',
+        padding: '0 20px',
+        borderBottom: '1px solid #e8e2d6',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexShrink: 0,
+      }}>
+        <div>
+          <p style={{ fontSize: '20px', fontWeight: 300, color: '#1a2e1e', margin: 0, lineHeight: 1 }}>
+            Label<span style={{ fontWeight: 700, color: '#2d5a3d' }}>Wink</span>
+          </p>
+        </div>
+        <span style={{
+          fontSize: '10px',
+          fontWeight: 700,
+          textTransform: 'uppercase' as const,
+          letterSpacing: '0.08em',
+          color: '#2d5a3d',
+          background: '#eef5f1',
+          padding: '3px 8px',
+          borderRadius: '4px',
+        }}>
+          Admin
+        </span>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2.5 py-3 space-y-1 overflow-y-auto">
+      <nav style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
         {navGroups.map((group) => {
           const isCollapsed = collapsed[group.label]
-          const hasActiveBadge = group.items.some(
-            item => item.badge && badges[item.badge] > 0
-          )
-
           return (
-            <div key={group.label}>
-              {/* Group header */}
+            <div key={group.label} style={{ marginBottom: '4px' }}>
               <button
-                onClick={() => toggleGroup(group.label)}
-                className="w-full flex items-center justify-between px-2 py-1.5 mb-0.5 group"
+                onClick={() => toggle(group.label)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  width: '100%', padding: '6px 20px',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#9aab9e',
+                  fontSize: '11px', fontWeight: 600,
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.08em',
+                  marginTop: '12px',
+                }}
               >
-                <span className="text-[10px] font-semibold tracking-[0.12em] text-white/30 group-hover:text-white/50 transition-colors uppercase">
-                  {group.label}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  {hasActiveBadge && isCollapsed && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
-                  )}
-                  <ChevronDown
-                    size={11}
-                    className={`text-white/25 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`}
-                  />
-                </span>
+                <span>{group.label}</span>
+                <ChevronDown
+                  size={10}
+                  style={{
+                    color: '#d4cebf',
+                    transform: isCollapsed ? 'rotate(-90deg)' : '',
+                    transition: 'transform 200ms',
+                  }}
+                />
               </button>
 
-              {/* Group items */}
               {!isCollapsed && (
-                <div className="space-y-0.5 mb-2">
+                <div style={{ marginTop: '2px' }}>
                   {group.items.map(item => (
                     <SidebarNavItem
                       key={item.href}
@@ -227,17 +293,59 @@ function SidebarContent({ badges, onNavClick }: { badges: BadgeCounts; onNavClic
         })}
       </nav>
 
+      {/* Super Admin Panel link — shown only for superadmin */}
+      {(role === 'superadmin' || role === 'super_admin') && (
+        <Link
+          href="/superadmin"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            margin: '0 8px 8px', padding: '8px 12px',
+            borderRadius: '8px',
+            background: 'rgba(201,168,76,0.15)',
+            border: '1px solid rgba(201,168,76,0.3)',
+            fontSize: '13px', fontWeight: 600,
+            color: '#c9a84c', textDecoration: 'none',
+            transition: 'background 150ms',
+          }}
+        >
+          <Crown size={14} />
+          Super Admin Panel
+        </Link>
+      )}
+
       {/* Footer */}
-      <div className="px-2.5 py-3 border-t border-white/[0.08]">
+      <div style={{ borderTop: '1px solid #e8e2d6', padding: '12px 8px', background: '#faf8f4', flexShrink: 0 }}>
         <a
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] text-white/40 hover:text-white/80 hover:bg-white/6 transition-all"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            height: '36px', padding: '0 12px', borderRadius: '8px',
+            fontSize: '13px', color: '#9aab9e', textDecoration: 'none',
+            transition: 'color 150ms, background 150ms',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#2d5a3d'; (e.currentTarget as HTMLElement).style.background = '#eef5f1'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#9aab9e'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
         >
           <ExternalLink size={14} />
           View Storefront
         </a>
+        <button
+          onClick={handleLogout}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            height: '36px', padding: '0 12px', borderRadius: '8px',
+            fontSize: '13px', color: '#9aab9e',
+            background: 'none', border: 'none', cursor: 'pointer', width: '100%',
+            transition: 'color 150ms, background 150ms',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#c0392b'; (e.currentTarget as HTMLElement).style.background = '#fdf0ef'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#9aab9e'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+        >
+          <LogOut size={14} />
+          Logout
+        </button>
       </div>
     </aside>
   )
@@ -247,6 +355,7 @@ function SidebarContent({ badges, onNavClick }: { badges: BadgeCounts; onNavClic
 export function AdminSidebar() {
   const { isOpen, setIsOpen } = useSidebar()
   const pathname = usePathname()
+  const [role, setRole] = useState<string | null>(null)
   const [badges, setBadges] = useState<BadgeCounts>({
     pending_orders: 0,
     low_stock: 0,
@@ -254,57 +363,57 @@ export function AdminSidebar() {
     pending_returns: 0,
   })
 
-  // Close on route change
-  useEffect(() => {
-    setIsOpen(false)
-  }, [pathname, setIsOpen])
+  useEffect(() => { setIsOpen(false) }, [pathname, setIsOpen])
 
-  // Lock body scroll when mobile drawer open
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
-  // Fetch badge counts
   useEffect(() => {
-    const fetchBadges = async () => {
+    // Fetch role
+    fetch('/api/admin/profile').then(r => r.ok ? r.json() : null).then(data => {
+      if (data?.role) setRole(data.role)
+    }).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    const fetch_badges = async () => {
       try {
         const res = await fetch('/api/admin/badge-counts', { cache: 'no-store' })
-        if (res.ok) {
-          const data = await res.json()
-          setBadges(data)
-        }
-      } catch {
-        // fail silently — badges are non-critical
-      }
+        if (res.ok) setBadges(await res.json())
+      } catch {}
     }
-
-    fetchBadges()
-    const interval = setInterval(fetchBadges, 60_000)  // refresh every 60s
+    fetch_badges()
+    const interval = setInterval(fetch_badges, 60_000)
     return () => clearInterval(interval)
   }, [])
 
   return (
     <>
-      {/* Desktop sidebar */}
+      {/* Desktop */}
       <div className="hidden lg:flex">
-        <SidebarContent badges={badges} />
+        <SidebarContent badges={badges} role={role} />
       </div>
 
       {/* Mobile drawer */}
       {isOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
-          {/* Backdrop */}
+        <div className="lg:hidden" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex' }}>
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            style={{ position: 'absolute', inset: 0, background: 'rgba(26,46,30,0.4)', backdropFilter: 'blur(4px)' }}
             onClick={() => setIsOpen(false)}
           />
-          {/* Drawer */}
-          <div className="relative flex">
-            <SidebarContent badges={badges} onNavClick={() => setIsOpen(false)} />
+          <div style={{ position: 'relative', display: 'flex' }}>
+            <SidebarContent badges={badges} role={role} onNavClick={() => setIsOpen(false)} />
             <button
               onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-[-44px] text-white bg-[#162f2a] rounded-full p-2 border border-white/20"
+              style={{
+                position: 'absolute', top: '16px', right: '-44px',
+                background: '#ffffff', border: '1px solid #e8e2d6',
+                borderRadius: '50%', padding: '8px', cursor: 'pointer', color: '#5a7060',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(26,46,30,0.12)',
+              }}
               aria-label="Close menu"
             >
               <X size={16} />

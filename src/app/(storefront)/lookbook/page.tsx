@@ -1,4 +1,4 @@
-import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+﻿import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 import Image from 'next/image'
 import Link from 'next/link'
 import { cloudinaryUrl } from '@/lib/utils/cloudinary'
@@ -87,7 +87,7 @@ export default async function LookbookPage() {
                     )}
                   </div>
                   <div className="p-4">
-                    <h2 className="font-bold text-[#1a1a1a] text-base line-clamp-2 group-hover:text-[#1b3a34] transition-colors mb-1">
+                    <h2 className="font-bold text-[#ffffff] text-base line-clamp-2 group-hover:text-[#1b3a34] transition-colors mb-1">
                       {post.title}
                     </h2>
                     {post.excerpt && (

@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get CMS Collections
+method: GET
+url: '{{baseUrl}}/api/admin/cms/collections'
+order: 7000

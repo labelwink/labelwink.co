@@ -1,0 +1,5 @@
+$kind: http-request
+name: List Banners
+method: GET
+url: '{{baseUrl}}/api/admin/cms/banners'
+order: 3000

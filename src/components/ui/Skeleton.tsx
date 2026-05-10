@@ -1,69 +1,32 @@
-import { cn } from "@/lib/utils";
+// src/components/ui/Skeleton.tsx
 
-export function Skeleton({ className }: { className?: string }) {
+export function Skeleton({ className = '' }: { className?: string }) {
   return (
-    <div className={cn("animate-pulse bg-gradient-to-r from-cream via-blush/30 to-cream bg-[length:200%_100%] rounded", className)} />
-  );
+    <div className={`animate-pulse bg-gray-200 rounded-lg ${className}`} />
+  )
 }
 
-// Product Card Skeleton (PLP)
-export function ProductCardSkeleton() {
+export function SkeletonCard() {
   return (
-    <div className="space-y-3">
-      <Skeleton className="aspect-[3/4] w-full rounded-lg" />
-      <Skeleton className="h-4 w-3/4" />
-      <Skeleton className="h-4 w-1/2" />
-    </div>
-  );
-}
-
-// PLP Grid Skeleton
-export function PLPSkeleton() {
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)}
-    </div>
-  );
-}
-
-// PDP Skeleton
-export function PDPSkeleton() {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <Skeleton className="aspect-[3/4] rounded-lg" />
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-3/4" />
-        <Skeleton className="h-6 w-1/2" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-12 w-full rounded-full" />
+    <div className="animate-pulse bg-[#FAF5E9] border border-[#E8DFC8] rounded-xl overflow-hidden">
+      <div className="aspect-[3/4] bg-[#E8DFC8]" />
+      <div className="p-3 space-y-2">
+        <div className="h-3 bg-[#E8DFC8] rounded w-3/4" />
+        <div className="h-4 bg-[#E8DFC8] rounded w-1/3" />
       </div>
     </div>
-  );
+  )
 }
 
-// Admin Table Skeleton
-export function TableSkeleton({ rows = 5 }: { rows?: number }) {
+export function SkeletonRow() {
   return (
-    <div className="space-y-2">
-      {Array.from({ length: rows }).map((_, i) => (
-        <Skeleton key={i} className="h-14 w-full rounded-lg" />
-      ))}
+    <div className="animate-pulse flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+      <div className="w-10 h-10 rounded-lg bg-gray-200 flex-shrink-0" />
+      <div className="flex-1 space-y-2 min-w-0">
+        <div className="h-3 bg-gray-200 rounded w-1/2" />
+        <div className="h-3 bg-gray-200 rounded w-1/3" />
+      </div>
+      <div className="h-6 w-16 bg-gray-200 rounded-full flex-shrink-0" />
     </div>
-  );
-}
-
-// KPI Card Skeleton (Admin Dashboard)
-export function KPISkeleton() {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="p-6 rounded-md border border-sage/20 space-y-3 bg-white">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-3 w-20" />
-        </div>
-      ))}
-    </div>
-  );
+  )
 }

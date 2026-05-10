@@ -7,10 +7,11 @@ const VALID_SORTS = ['newest', 'price_asc', 'price_desc', 'popular', 'top_rated'
 type SortOption = (typeof VALID_SORTS)[number]
 
 const PRODUCT_SELECT = `
-  id, name, slug, price, mrp, compare_at_price, images,
-  fabric_material, sleeve_type, occasion_tags, created_at, status,
-  category_id, tags,
-  product_variants (id, size, color, stock_qty, price, mrp, is_active)
+  id, name, slug, price, compare_at_price,
+  fabric, occasion, tags, created_at, status,
+  collection_id,
+  product_images (url, alt, is_cover, sort_order),
+  product_variants (id, size, color, stock_qty, price)
 `
 
 export async function GET(req: NextRequest) {
@@ -47,32 +48,31 @@ export async function GET(req: NextRequest) {
     let query = supabase
       .from('products')
       .select(PRODUCT_SELECT)
-      .eq('is_active', true)
 
     // Full-text search (only when search_vector populated)
     if (q.length >= 2) {
       query = query.textSearch('search_vector', q, { type: 'websearch', config: 'english' })
     }
 
-    // Collection filter: match on tags array (collections map to product tags)
+    // Collection filter: match on tags array
     if (collection) {
       query = query.contains('tags', [collection])
     }
 
-    // Occasion filter
+    // Occasion filter — uses occasion column (text) or tags array
     if (occasion) {
-      query = query.contains('occasion_tags', [occasion])
+      query = query.or(`occasion.ilike.%${occasion}%,tags.cs.{${occasion}}`)
     }
 
     // Price range
     if (minPrice > 0) query = query.gte('price', minPrice)
     if (maxPrice > 0) query = query.lte('price', maxPrice)
 
-    // Fabric
-    if (fabric) query = query.ilike('fabric_material', `%${fabric}%`)
+    // Fabric — uses the real 'fabric' column
+    if (fabric) query = query.ilike('fabric', `%${fabric}%`)
 
-    // Sleeve type
-    if (sleeve) query = query.eq('sleeve_type', sleeve)
+    // Sleeve type — stored in tags array
+    if (sleeve) query = query.contains('tags', [sleeve])
 
     return query
   }
@@ -81,7 +81,6 @@ export async function GET(req: NextRequest) {
   const countQuery = supabase
     .from('products')
     .select('id', { count: 'exact', head: true })
-    .eq('is_active', true)
 
   const [{ data: allProducts, error }, { count, error: countError }] = await Promise.all([
     (() => {
@@ -111,11 +110,11 @@ export async function GET(req: NextRequest) {
       let cq = countQuery
       if (q.length >= 2) cq = cq.textSearch('search_vector', q, { type: 'websearch', config: 'english' })
       if (collection) cq = cq.contains('tags', [collection])
-      if (occasion) cq = cq.contains('occasion_tags', [occasion])
+      if (occasion) cq = cq.or(`occasion.ilike.%${occasion}%,tags.cs.{${occasion}}`)
       if (minPrice > 0) cq = cq.gte('price', minPrice)
       if (maxPrice > 0) cq = cq.lte('price', maxPrice)
-      if (fabric) cq = cq.ilike('fabric_material', `%${fabric}%`)
-      if (sleeve) cq = cq.eq('sleeve_type', sleeve)
+      if (fabric) cq = cq.ilike('fabric', `%${fabric}%`)
+      if (sleeve) cq = cq.contains('tags', [sleeve])
       return cq
     })(),
   ])
@@ -131,7 +130,7 @@ export async function GET(req: NextRequest) {
   if (sizes.length > 0) {
     products = products.filter((p) =>
       (p.product_variants as any[])?.some(
-        (v) => v.is_active && v.stock_qty > 0 && sizes.includes(v.size)
+        (v) => v.stock_qty > 0 && sizes.includes(v.size)
       )
     )
   }
@@ -139,7 +138,7 @@ export async function GET(req: NextRequest) {
   if (colors.length > 0) {
     products = products.filter((p) =>
       (p.product_variants as any[])?.some(
-        (v) => v.is_active && v.stock_qty > 0 && colors.includes(v.color)
+        (v) => v.stock_qty > 0 && colors.includes(v.color)
       )
     )
   }

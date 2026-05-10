@@ -8,7 +8,7 @@ const PAGE_SIZE = 20
 
 export async function GET(req: NextRequest) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminSupabaseClient() as any
@@ -23,11 +23,9 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from('profiles')
     .select(
-      `id, full_name, email, phone, created_at, admin_note,
-       wink_points, loyalty_tier,
-       loyalty_points ( balance ),
-       orders!left ( id, total, status, created_at )`,
-      { count: 'exact' }
+        `id, full_name, email, phone, created_at, wink_points,
+         orders ( id, total_amount, status, created_at )`,
+        { count: 'exact' }
     )
     .order('created_at', { ascending: false })
 
@@ -57,7 +55,7 @@ export async function GET(req: NextRequest) {
   const customers = (data ?? []).map((c: any) => {
     const activeOrders = (c.orders ?? []).filter((o: any) => o.status !== 'cancelled')
     const orderCount   = activeOrders.length
-    const lifetimeValue = activeOrders.reduce((s: number, o: any) => s + Number(o.total || 0), 0)
+    const lifetimeValue = activeOrders.reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0)
     const lastOrderDate = activeOrders.length
       ? activeOrders.sort((a: any, b: any) => b.created_at?.localeCompare(a.created_at))[0]?.created_at
       : null
@@ -72,12 +70,12 @@ export async function GET(req: NextRequest) {
       email: c.email,
       phone: c.phone,
       created_at: c.created_at,
-      admin_note: c.admin_note,
+      admin_note: '',
       order_count: orderCount,
       lifetime_value: lifetimeValue,
       last_order_date: lastOrderDate,
       loyalty_points: loyaltyBalance,
-      loyalty_tier: c.loyalty_tier,
+      loyalty_tier: 'Bronze',
       is_new: isNew,
       is_high_value: isHighValue,
       is_inactive: isInactive,

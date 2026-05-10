@@ -1,28 +1,26 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
 
-async function getAboutData() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-  try {
-    const res = await fetch(`${baseUrl}/api/storefront/about`, { next: { revalidate: 60 } });
-    if (!res.ok) throw new Error('Failed to fetch about page');
-    return await res.json();
-  } catch (err) {
-    console.error('About fetch error:', err);
-    return null;
-  }
+async function getSettings() {
+  const supabase = await createClient();
+  const { data: settings } = await supabase.from('shop_settings').select('*').single();
+  return settings;
+}
+
+async function getAboutContent() {
+  const supabase = await createClient();
+  const { data: cms } = await supabase
+    .from('cms_content')
+    .select('content')
+    .eq('page', 'about')
+    .single();
+  return cms?.content || {};
 }
 
 export async function generateMetadata() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-  let settings = null;
-  try {
-    const res = await fetch(`${baseUrl}/api/storefront/settings`, { next: { revalidate: 300 } });
-    if (res.ok) settings = await res.json();
-  } catch (err) {}
-
-  const storeName = settings?.store_name || 'Store';
-  
+  const settings = await getSettings();
+  const storeName = settings?.store_name || 'LabelWink';
   return {
     title: `About Us | ${storeName}`,
     description: `Learn about ${storeName} — our story, values, and craftsmanship.`,
@@ -30,144 +28,190 @@ export async function generateMetadata() {
 }
 
 export default async function AboutPage() {
-  const data = await getAboutData();
-  
-  if (!data) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center bg-[#faf7f2] text-[#1a1a1a]">
-        <h1 className="text-3xl font-bold mb-4">About Us</h1>
-        <p>Content is currently being updated.</p>
-      </div>
-    );
-  }
+  const settings = await getSettings();
+  const content = await getAboutContent();
 
-  const {
-    hero_title,
-    hero_subtitle,
-    hero_image_url,
-    story_heading,
-    story_body,
-    mission_heading,
-    mission_body,
-    values,
-  } = data;
-
-  let parsedValues = [];
-  if (values) {
+  const values = (() => {
     try {
-      parsedValues = typeof values === 'string' ? JSON.parse(values) : values;
+      if (typeof content.values === 'string') return JSON.parse(content.values);
+      return content.values || [
+        { title: 'Quality First', description: 'We never compromise on materials or construction.', icon: '✨' },
+        { title: 'Ethical Craft', description: 'Fair wages and safe environments for all artisans.', icon: '🤝' },
+        { title: 'Customer Focused', description: 'Your satisfaction is at the heart of our design.', icon: '❤️' },
+      ];
     } catch {
-      parsedValues = [];
+      return [
+        { title: 'Quality First', description: 'We never compromise on materials or construction.', icon: '✨' },
+        { title: 'Ethical Craft', description: 'Fair wages and safe environments for all artisans.', icon: '🤝' },
+        { title: 'Customer Focused', description: 'Your satisfaction is at the heart of our design.', icon: '❤️' },
+      ];
     }
-  }
+  })();
+
+  const storyText = content.story_body || settings?.about_us_text ||
+    'LabelWink was born from a vision to redefine contemporary fashion by blending traditional craftsmanship with modern silhouettes. Every piece in our collection tells a story of meticulous attention to detail.';
 
   return (
-    <main className="bg-[#faf7f2] text-[#1a1a1a] min-h-screen">
-      {/* 1. HERO */}
-      <section className={`relative w-full h-[50vh] md:h-[60vh] flex items-center justify-center overflow-hidden ${!hero_image_url ? 'bg-[#1a1a1a]' : ''}`}>
-        {hero_image_url && (
-          <>
-            <Image
-              src={hero_image_url}
-              alt={hero_title || 'About Us'}
-              fill
-              priority
-              className="object-cover"
-              sizes="100vw"
-            />
-            <div className="absolute inset-0 bg-black/60" />
-          </>
+    <main style={{ minHeight: '100vh', background: '#FDF8F0' }}>
+
+      {/* Hero */}
+      <section style={{
+        position: 'relative', height: '480px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden', background: '#FDF8F0',
+      }}>
+        {(settings?.about_us_image_url) && (
+          <Image
+            src={settings.about_us_image_url}
+            alt="About LabelWink"
+            fill priority sizes="100vw"
+            style={{ objectFit: 'cover', opacity: 0.4 }}
+          />
         )}
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-          <h1 className={`text-4xl md:text-6xl font-bold mb-4 ${hero_image_url ? 'text-[#faf7f2]' : 'text-[#c9a84c]'}`}>
-            {hero_title}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(to bottom, rgba(15,15,15,0.4), rgba(15,15,15,0.8))',
+        }} />
+        <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', padding: '0 24px', maxWidth: '700px' }}>
+          <p style={{ fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#c9a84c', marginBottom: '16px' }}>
+            Our Story
+          </p>
+          <h1 style={{ fontSize: 'clamp(36px, 6vw, 64px)', fontWeight: 600, color: '#1C3829', lineHeight: 1.1, marginBottom: '16px' }}>
+            {content.hero_title || 'Elegance with Purpose'}
           </h1>
-          {hero_subtitle && (
-            <p className="text-lg md:text-2xl text-[#faf7f2]/90 italic font-light">
-              {hero_subtitle}
-            </p>
-          )}
+          <p style={{ fontSize: '16px', color: 'rgba(240,240,240,0.6)', lineHeight: 1.7 }}>
+            {content.hero_subtitle || settings?.store_tagline || 'Crafting modern ethnic wear for the contemporary woman'}
+          </p>
         </div>
       </section>
 
-      {/* 2. STORY SECTION */}
-      {story_heading && story_body && (
-        <section className="py-20 md:py-32 px-4 container mx-auto">
-          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-center">
-            <div className="space-y-6">
-              <h2 className="text-3xl md:text-5xl font-bold text-[#1a1a1a]">
-                {story_heading}
-              </h2>
-              <div className="space-y-4 text-gray-700 text-lg leading-relaxed">
-                {story_body.split('\n').map((paragraph: string, idx: number) => {
-                  const p = paragraph.trim();
-                  if (!p) return null;
-                  return <p key={idx}>{p}</p>;
-                })}
-              </div>
-            </div>
-            <div className="hidden md:flex relative aspect-[4/5] bg-[#c9a84c]/10 rounded-2xl border-4 border-[#c9a84c]/20 items-center justify-center p-12">
-               <div className="text-9xl opacity-20">✨</div>
-               <div className="absolute inset-0 border-2 border-[#c9a84c]/30 transform rotate-3 rounded-2xl"></div>
-            </div>
+      {/* Story Section */}
+      <section style={{ padding: '80px 24px', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: '60px', alignItems: 'center',
+        }}>
+          <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', aspectRatio: '4/5', background: '#FAF5E9' }}>
+            {settings?.about_us_image_url ? (
+              <Image src={settings.about_us_image_url} alt="Our Story" fill sizes="(max-width: 640px) 100vw, 50vw" style={{ objectFit: 'cover' }} />
+            ) : (
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, #FAF5E9 0%, #E8DFC8 100%)' }} />
+            )}
           </div>
-        </section>
-      )}
 
-      {/* 3. MISSION SECTION */}
-      {mission_heading && mission_body && (
-        <section className="py-20 bg-white px-4 text-center">
-          <div className="max-w-2xl mx-auto">
-            <div className="w-16 h-1 bg-[#c9a84c] mx-auto mb-8"></div>
-            <h2 className="text-3xl md:text-4xl font-bold text-[#1a1a1a] mb-6">
-              {mission_heading}
-            </h2>
-            <p className="text-xl text-gray-700 leading-relaxed font-light">
-              "{mission_body}"
+          <div>
+            <p style={{ fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#c9a84c', marginBottom: '12px' }}>
+              Who We Are
             </p>
-          </div>
-        </section>
-      )}
+            <h2 style={{ fontSize: '36px', fontWeight: 600, color: '#1C3829', lineHeight: 1.2, marginBottom: '24px' }}>
+              {content.story_heading || 'Crafted with Purpose & Passion'}
+            </h2>
+            <div style={{ borderLeft: '3px solid #c9a84c', paddingLeft: '20px', marginBottom: '32px' }}>
+              {storyText.split('\n').filter(Boolean).map((p: string, i: number) => (
+                <p key={i} style={{ fontSize: '15px', color: '#6B6B5A', lineHeight: 1.8, marginBottom: '12px' }}>{p}</p>
+              ))}
+            </div>
 
-      {/* 4. VALUES GRID */}
-      {parsedValues && parsedValues.length > 0 && (
-        <section className="py-20 px-4 container mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-            {parsedValues.map((val: any, idx: number) => (
-              <div key={idx} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center hover:shadow-md transition-shadow">
-                <div className="text-4xl mb-4 inline-block bg-[#faf7f2] p-4 rounded-full">
-                  {val.icon || '✦'}
+            {/* Stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+              {[
+                { value: '10k+', label: 'Happy Customers' },
+                { value: '50+', label: 'Unique Styles' },
+                { value: '3+', label: 'Years of Craft' },
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <p style={{ fontSize: '28px', fontWeight: 700, color: '#c9a84c', marginBottom: '4px' }}>{stat.value}</p>
+                  <p style={{ fontSize: '13px', color: '#9aab9e' }}>{stat.label}</p>
                 </div>
-                <h3 className="text-xl font-bold text-[#1a1a1a] mb-3">{val.title}</h3>
-                <p className="text-gray-600 leading-relaxed text-sm">
-                  {val.description}
-                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Values */}
+      <section style={{ padding: '80px 24px', background: '#FDF8F0' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+            <p style={{ fontSize: '12px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#c9a84c', marginBottom: '12px' }}>
+              What We Stand For
+            </p>
+            <h2 style={{ fontSize: '36px', fontWeight: 600, color: '#1C3829' }}>Our Core Philosophy</h2>
+            <p style={{ fontSize: '15px', color: '#6B6B5A', marginTop: '12px' }}>Guided by principles that define everything we create.</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+            {values.map((v: any, i: number) => (
+              <div key={i} style={{
+                background: '#FAF5E9', border: '1px solid #E8DFC8',
+                borderRadius: '12px', padding: '28px',
+                transition: 'border-color 200ms',
+              }}>
+                <div style={{
+                  width: '48px', height: '48px', borderRadius: '12px',
+                  background: 'rgba(201,168,76,0.1)', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  fontSize: '24px', marginBottom: '20px',
+                }}>
+                  {v.icon}
+                </div>
+                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#1C3829', marginBottom: '10px' }}>{v.title}</h3>
+                <p style={{ fontSize: '14px', color: '#6B6B5A', lineHeight: 1.7 }}>{v.description || v.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section style={{ padding: '80px 24px', textAlign: 'center' }}>
+        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+          <h2 style={{ fontSize: '36px', fontWeight: 600, color: '#1C3829', marginBottom: '16px' }}>
+            Ready to Explore?
+          </h2>
+          <p style={{ fontSize: '16px', color: '#6B6B5A', marginBottom: '32px', lineHeight: 1.7 }}>
+            Discover our curated collection of modern ethnic wear crafted for every occasion.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/products" style={{
+              height: '48px', padding: '0 28px', borderRadius: '8px',
+              background: '#c9a84c', color: '#FAF5E9',
+              fontWeight: 600, fontSize: '15px', textDecoration: 'none',
+              display: 'inline-flex', alignItems: 'center',
+            }}>
+              Shop Now
+            </Link>
+            <Link href="/contact" style={{
+              height: '48px', padding: '0 28px', borderRadius: '8px',
+              border: '1px solid #E8DFC8', color: '#1C3829',
+              fontWeight: 500, fontSize: '15px', textDecoration: 'none',
+              display: 'inline-flex', alignItems: 'center',
+            }}>
+              Get in Touch
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Info Strip */}
+      {settings && (
+        <section style={{ borderTop: '1px solid #E8DFC8', padding: '48px 24px' }}>
+          <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '32px', textAlign: 'center' }}>
+            {[
+              { label: 'Address', value: settings.store_address ? `${settings.store_address}` : null },
+              { label: 'Email', value: settings.store_email },
+              { label: 'Phone', value: settings.store_phone },
+              { label: 'Hours', value: 'Mon–Sat, 10am–7pm' },
+            ].filter(c => c.value).map(c => (
+              <div key={c.label}>
+                <p style={{ fontSize: '11px', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#c9a84c', marginBottom: '8px' }}>{c.label}</p>
+                <p style={{ fontSize: '14px', color: '#6B6B5A' }}>{c.value}</p>
               </div>
             ))}
           </div>
         </section>
       )}
-
-      {/* 5. CTA SECTION */}
-      <section className="py-24 px-4 bg-[#1a1a1a] text-center text-[#faf7f2]">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold mb-8 text-[#c9a84c]">Discover Your Next Favorite Piece</h2>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link 
-              href="/products" 
-              className="bg-[#c9a84c] text-[#1a1a1a] font-bold px-8 py-4 rounded-lg hover:bg-[#b8973d] transition-colors"
-            >
-              Start Shopping
-            </Link>
-            <Link 
-              href="/products" 
-              className="border-2 border-[#c9a84c] text-[#c9a84c] font-bold px-8 py-4 rounded-lg hover:bg-[#c9a84c]/10 transition-colors"
-            >
-              View Collections
-            </Link>
-          </div>
-        </div>
-      </section>
     </main>
   );
 }

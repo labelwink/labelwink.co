@@ -1,0 +1,12 @@
+$kind: http-request
+name: Login Existing
+method: POST
+url: '{{baseUrl}}/api/auth/login-existing'
+order: 4000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"phone": "9876543210", "otp": "123456"}

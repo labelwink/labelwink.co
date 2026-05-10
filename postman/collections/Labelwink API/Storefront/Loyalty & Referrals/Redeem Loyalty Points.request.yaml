@@ -1,0 +1,12 @@
+$kind: http-request
+name: Redeem Loyalty Points
+method: POST
+url: '{{baseUrl}}/api/storefront/loyalty/redeem'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"points": 100}

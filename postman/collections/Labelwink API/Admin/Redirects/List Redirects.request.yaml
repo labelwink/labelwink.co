@@ -1,0 +1,5 @@
+$kind: http-request
+name: List Redirects
+method: GET
+url: '{{baseUrl}}/api/admin/redirects'
+order: 1000

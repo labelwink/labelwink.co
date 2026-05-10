@@ -1,0 +1,8 @@
+$kind: http-request
+name: List Reviews
+method: GET
+url: '{{baseUrl}}/api/storefront/reviews'
+order: 1000
+queryParams:
+  - key: product_id
+    value: prod_id

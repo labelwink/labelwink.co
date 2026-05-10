@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Star } from 'lucide-react';
@@ -90,7 +90,7 @@ export default function WriteReviewForm({ productId, isLoggedIn, hasPurchased = 
               className="transition-transform hover:scale-110"
             >
               <Star
-                className={`w-7 h-7 transition-colors ${i <= (hover || rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-200'}`}
+                className={`w-7 h-7 transition-colors ${i <= (hover || rating) ? 'fill-yellow-400 text-yellow-400' : 'text-[#1a2e1e]'}`}
               />
             </button>
           ))}

@@ -1,0 +1,5 @@
+$kind: http-request
+name: List My Orders
+method: GET
+url: '{{baseUrl}}/api/storefront/orders'
+order: 1000

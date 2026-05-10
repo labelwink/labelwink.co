@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { LeafPattern } from '@/components/ui/LeafPattern'
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('')
@@ -26,7 +27,19 @@ export default function AdminLoginPage() {
       })
 
       if (res.ok) {
-        router.push('/admin')
+        const data = await res.json()
+        const profileRes = await fetch('/api/admin/profile')
+        const profileData = await profileRes.json()
+        
+        const redirectMap: Record<string, string> = {
+          super_admin: '/superadmin',
+          admin: '/admin',
+          employee: '/admin/orders',
+          customer: '/',
+        }
+        
+        const redirectTo = redirectMap[profileData.role || 'customer'] || '/admin'
+        router.push(redirectTo)
         router.refresh()
       } else {
         const data = await res.json()
@@ -44,7 +57,8 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1b3a34] flex items-center justify-center p-4">
+    <div className="relative min-h-screen bg-[#1C3829] flex items-center justify-center p-4">
+      <LeafPattern opacity={0.08} id="login" />
       <style>{`
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
@@ -58,7 +72,7 @@ export default function AdminLoginPage() {
         .card-shake { animation: shake 0.6s ease-in-out; }
       `}</style>
 
-      <div className={`bg-white rounded-2xl shadow-xl max-w-[400px] w-full p-8 ${shake ? 'card-shake' : ''}`}>
+      <div className={`relative z-10 bg-white rounded-2xl shadow-xl max-w-[400px] w-full p-8 ${shake ? 'card-shake' : ''}`}>
         {/* Logo */}
         <div className="text-center mb-6">
           <p
@@ -67,7 +81,7 @@ export default function AdminLoginPage() {
           >
             LABEL WINK
           </p>
-          <p className="italic text-sm text-gray-400 mt-1">Wear Wink</p>
+          <p className="italic text-sm text-[#5a7060] mt-1">Wear Wink</p>
         </div>
 
         <h1 className="text-xl font-semibold text-gray-800 text-center mt-6 mb-6">Admin Panel</h1>
@@ -110,7 +124,7 @@ export default function AdminLoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5a7060] hover:text-gray-600 transition-colors"
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -128,7 +142,7 @@ export default function AdminLoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <p className="text-center text-xs text-[#6B6B5A] mt-6">
           Protected area · Authorized access only
         </p>
       </div>

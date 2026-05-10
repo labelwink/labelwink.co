@@ -1,0 +1,12 @@
+$kind: http-request
+name: List Products
+method: GET
+url: '{{baseUrl}}/api/admin/products'
+order: 1000
+queryParams:
+  - key: page
+    value: '1'
+  - key: per_page
+    value: '20'
+  - key: search
+    value: ''

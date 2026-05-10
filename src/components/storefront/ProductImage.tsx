@@ -1,7 +1,7 @@
 "use client"
 
-import { CldImage } from 'next-cloudinary'
 import Image from 'next/image'
+import { getProductImageUrl } from '@/lib/utils/cloudinary'
 
 interface Props {
   publicId: string
@@ -11,53 +11,43 @@ interface Props {
   className?: string
   priority?: boolean
   sizes?: string
-  quality?: number | 'auto:best'
 }
 
-export function ProductImage({ publicId, alt, width, height, className, priority, sizes, quality = 'auto:best' }: Props) {
-  // Check if it's a full URL instead of a Cloudinary Public ID
-  const isFullUrl = publicId.startsWith('http')
+export function ProductImage({ publicId, alt, width, height, className, priority, sizes }: Props) {
+  const src = getProductImageUrl(publicId, 'card')
 
-  if (isFullUrl) {
-    if (!width || !height) {
-      return (
-        <div className="relative w-full h-full">
-          <Image
-            src={publicId}
-            alt={alt}
-            fill
-            sizes={sizes || '100vw'}
-            priority={priority}
-            style={{ objectFit: 'cover', objectPosition: 'center top' }}
-            className={className}
-          />
-        </div>
-      )
-    }
+  if (!width || !height) {
     return (
-      <Image
-        src={publicId}
-        alt={alt}
-        width={width}
-        height={height}
-        priority={priority}
-        className={className}
-      />
+      <div className="relative w-full h-full">
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          sizes={sizes || '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'}
+          priority={priority}
+          onError={(event) => {
+            const target = event.currentTarget as HTMLImageElement
+            target.src = '/placeholder-product.jpg'
+          }}
+          style={{ objectFit: 'cover', objectPosition: 'center top' }}
+          className={className}
+        />
+      </div>
     )
   }
 
   return (
-    <CldImage
-      src={publicId}
+    <Image
+      src={src}
       alt={alt}
       width={width}
       height={height}
-      className={className}
       priority={priority}
-      sizes={sizes || "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"}
-      format="auto"
-      quality={quality as any}
-      loading={priority ? 'eager' : 'lazy'}
+      onError={(event) => {
+        const target = event.currentTarget as HTMLImageElement
+        target.src = '/placeholder-product.jpg'
+      }}
+      className={className}
     />
   )
 }

@@ -1,129 +1,107 @@
-'use client'
+﻿'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { X, Ruler } from 'lucide-react'
+import { X } from 'lucide-react'
 
-interface SizeGuide {
-  headers: string[]
-  rows: string[][]
-  unit?: 'cm' | 'inch'
-  guide_image_url?: string
-}
-
-interface Props {
-  sizeGuide: SizeGuide | null | undefined
+interface SizeGuideModalProps {
+  sizeGuide?: any
   productName: string
 }
 
-function convertRow(row: string[], toInch: boolean): string[] {
-  return row.map((cell, i) => {
-    if (i === 0) return cell // label column (e.g. "XS")
-    const n = parseFloat(cell)
-    if (isNaN(n)) return cell
-    return toInch ? (n * 0.394).toFixed(1) : cell
-  })
-}
+const SIZE_CHART = [
+  { size: 'XXS', chest: '30"', waist: '24"', hips: '32"', length: '50"' },
+  { size: 'XS', chest: '32"', waist: '26"', hips: '34"', length: '52"' },
+  { size: 'S', chest: '34"', waist: '28"', hips: '36"', length: '53"' },
+  { size: 'M', chest: '36"', waist: '30"', hips: '38"', length: '54"' },
+  { size: 'L', chest: '38"', waist: '32"', hips: '40"', length: '55"' },
+  { size: 'XL', chest: '40"', waist: '34"', hips: '42"', length: '56"' },
+  { size: '2XL', chest: '42"', waist: '36"', hips: '44"', length: '57"' },
+  { size: '3XL', chest: '44"', waist: '38"', hips: '46"', length: '58"' },
+  { size: '4XL', chest: '46"', waist: '40"', hips: '48"', length: '59"' },
+  { size: '5XL', chest: '48"', waist: '42"', hips: '50"', length: '60"' },
+  { size: '6XL', chest: '50"', waist: '44"', hips: '52"', length: '61"' },
+]
 
-export function SizeGuideModal({ sizeGuide, productName }: Props) {
-  const [open, setOpen] = useState(false)
-  const [unit, setUnit] = useState<'cm' | 'inch'>(sizeGuide?.unit ?? 'cm')
+export function SizeGuideModal({ sizeGuide, productName }: SizeGuideModalProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [settings, setSettings] = useState<any>(null)
 
-  const displayRows = sizeGuide?.rows?.map(row =>
-    unit === 'inch' && (sizeGuide.unit ?? 'cm') === 'cm'
-      ? convertRow(row, true)
-      : unit === 'cm' && sizeGuide.unit === 'inch'
-      ? row.map((cell, i) => {
-          if (i === 0) return cell
-          const n = parseFloat(cell)
-          return isNaN(n) ? cell : (n / 0.394).toFixed(1)
-        })
-      : row
-  )
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/storefront/settings')
+        if (res.ok) {
+          const data = await res.json()
+          setSettings(data)
+        }
+      } catch { /* noop */ }
+    }
+    fetchSettings()
+  }, [])
 
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-1 text-xs text-[#c9a84c] underline underline-offset-2 hover:text-[#c9a84c]/80 transition-colors"
+        onClick={() => setIsOpen(true)}
+        className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground hover:text-charcoal transition-colors"
       >
-        <Ruler size={12} />
         Size Guide
       </button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
-          onClick={e => { if (e.target === e.currentTarget) setOpen(false) }}
-        >
-          <div className="bg-[#1a1a1a] border border-[#c9a84c]/20 rounded-2xl max-w-lg w-full mx-4 p-6 max-h-[90vh] overflow-y-auto">
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
             {/* Header */}
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-semibold text-[#faf7f2] text-base">Size Guide — {productName}</h3>
-              <button onClick={() => setOpen(false)} className="text-[#faf7f2]/50 hover:text-[#faf7f2] transition-colors">
-                <X size={18} />
+            <div className="bg-[#faf8f4] text-white p-6 flex items-center justify-between">
+              <h2 className="text-xl font-bold">Size Guide</h2>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-2 hover:bg-white rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {!sizeGuide?.rows?.length ? (
-              <p className="text-[#faf7f2]/50 text-sm italic">Size guide not available for this product.</p>
-            ) : (
-              <>
-                {/* Unit toggle */}
-                <div className="flex gap-0 mb-5 self-start border border-[#c9a84c]/30 rounded-full overflow-hidden w-fit">
-                  {(['cm', 'inch'] as const).map(u => (
-                    <button
-                      key={u}
-                      onClick={() => setUnit(u)}
-                      className={`px-4 py-1.5 text-xs font-semibold transition-colors ${
-                        unit === u ? 'bg-[#c9a84c] text-[#1a1a1a]' : 'text-[#faf7f2]/60 hover:text-[#faf7f2]'
-                      }`}
-                    >
-                      {u}
-                    </button>
-                  ))}
+            {/* Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+              {settings?.size_guide_image_url ? (
+                <div className="flex justify-center">
+                  <Image
+                    src={settings.size_guide_image_url}
+                    alt="Size Guide"
+                    width={800}
+                    height={600}
+                    className="max-w-full h-auto rounded-lg"
+                  />
                 </div>
-
-                {/* Table */}
-                <div className="overflow-x-auto rounded-lg border border-[#c9a84c]/15">
-                  <table className="w-full text-sm text-[#faf7f2]">
-                    <thead>
-                      <tr className="bg-[#c9a84c]/15">
-                        {sizeGuide.headers.map((h, i) => (
-                          <th key={i} className="px-4 py-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-[#c9a84c]">
-                            {h}{i > 0 ? ` (${unit})` : ''}
-                          </th>
-                        ))}
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-50 text-gray-700 uppercase text-xs">
+                      <tr>
+                        <th className="px-4 py-3">Size</th>
+                        <th className="px-4 py-3">Chest</th>
+                        <th className="px-4 py-3">Waist</th>
+                        <th className="px-4 py-3">Hips</th>
+                        <th className="px-4 py-3">Length</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {displayRows!.map((row, ri) => (
-                        <tr key={ri} className={ri % 2 === 1 ? 'bg-white/5' : ''}>
-                          {row.map((cell, ci) => (
-                            <td key={ci} className={`px-4 py-2.5 text-xs ${ci === 0 ? 'font-bold text-[#c9a84c]' : 'text-[#faf7f2]/70'}`}>
-                              {cell}
-                            </td>
-                          ))}
+                    <tbody className="divide-y divide-gray-200">
+                      {SIZE_CHART.map((row) => (
+                        <tr key={row.size} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-medium">{row.size}</td>
+                          <td className="px-4 py-3">{row.chest}</td>
+                          <td className="px-4 py-3">{row.waist}</td>
+                          <td className="px-4 py-3">{row.hips}</td>
+                          <td className="px-4 py-3">{row.length}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-
-                {/* Guide image */}
-                {sizeGuide.guide_image_url && (
-                  <div className="mt-4 relative w-full aspect-video rounded-lg overflow-hidden border border-[#c9a84c]/15">
-                    <Image src={sizeGuide.guide_image_url} alt="Size guide" fill className="object-contain" />
-                  </div>
-                )}
-
-                {/* Tip */}
-                <p className="mt-4 text-[11px] text-[#faf7f2]/40 flex gap-1.5 items-start">
-                  <span className="text-[#c9a84c] mt-px">💡</span>
-                  Measure at the fullest point while standing straight. If between sizes, size up for comfort.
-                </p>
-              </>
-            )}
+              )}
+            </div>
           </div>
         </div>
       )}

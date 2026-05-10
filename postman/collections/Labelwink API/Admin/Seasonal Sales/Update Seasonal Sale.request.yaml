@@ -1,0 +1,12 @@
+$kind: http-request
+name: Update Seasonal Sale
+method: POST
+url: '{{baseUrl}}/api/admin/seasonal-sales/{{saleId}}'
+order: 4000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"discount_percent": 25}

@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Sections
+method: GET
+url: '{{baseUrl}}/api/admin/cms/sections'
+order: 15000

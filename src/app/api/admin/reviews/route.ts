@@ -8,7 +8,7 @@ const PAGE_SIZE = 20
 
 export async function GET(req: NextRequest) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminSupabaseClient() as any
   const sp = new URL(req.url).searchParams
@@ -18,11 +18,9 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from('reviews')
     .select(
-      `id, rating, title, body, status, photos,
-       is_verified_purchase, admin_reply, admin_replied_at,
-       rejection_reason, created_at, user_id,
+      `id, rating, comment, status, created_at, updated_at, user_id,
        products ( id, name, slug ),
-       profiles!reviews_user_id_profiles_fkey ( id, full_name, email )`,
+       profiles ( id, full_name, email )`,
       { count: 'exact' }
     )
     .order('created_at', { ascending: false })
@@ -33,6 +31,12 @@ export async function GET(req: NextRequest) {
   const { data, count, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Map: expose a 'title' field for UI compatibility (derived from comment)
+  const reviews = (data ?? []).map((r: any) => ({
+    ...r,
+    title: r.comment?.slice(0, 50) || 'No comment',
+  }))
+
   // Pending count for badge (cheap query)
   const { count: pendingCount } = await supabase
     .from('reviews')
@@ -40,7 +44,7 @@ export async function GET(req: NextRequest) {
     .eq('status', 'pending')
 
   return NextResponse.json({
-    reviews: data ?? [],
+    reviews,
     total: count ?? 0,
     pending_count: pendingCount ?? 0,
     page,

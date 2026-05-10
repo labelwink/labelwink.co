@@ -2,29 +2,40 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { verifyAdminToken } from '@/lib/adminAuth'
 
+// ── Consistent cookie name — must match auth/route.ts ─────────────────────
+export const ADMIN_COOKIE_NAME = 'admin_session'
+
+export interface AdminPayload {
+  id: string
+  email: string
+  role: 'admin' | 'super_admin'
+  iat?: number
+  exp?: number
+}
+
 /**
  * Call at the top of every admin API route handler.
- * Returns a 401 NextResponse if the request is not authenticated,
- * or null if the session is valid (caller should proceed normally).
+ *
+ * Returns an AdminPayload object if the session is valid.
+ * Returns a 401 NextResponse if not authenticated.
  *
  * Usage:
- *   const guard = await requireAdmin()
- *   if (guard) return guard
+ *   const authResult = await requireAdmin()
+ *   if (authResult instanceof NextResponse) return authResult
+ *   const { id, role } = authResult
  */
-export async function requireAdmin(): Promise<NextResponse | null> {
+export async function requireAdmin(): Promise<NextResponse | AdminPayload> {
   const cookieStore = await cookies()
-  const token = cookieStore.get('admin_session')?.value
-  // T4 – debug: confirm whether the cookie reached the server
-  console.log('Token from cookie:', token ? 'present' : 'missing')
+  const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value
 
   if (!token) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const payload = await verifyAdminToken(token)
-  if (!payload) {
+  if (!payload || typeof payload !== 'object') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  return null
+  return payload as AdminPayload
 }

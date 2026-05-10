@@ -7,7 +7,7 @@ export const runtime = 'nodejs'
 
 export async function POST(req: NextRequest) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   const sb = createAdminSupabaseClient()
   

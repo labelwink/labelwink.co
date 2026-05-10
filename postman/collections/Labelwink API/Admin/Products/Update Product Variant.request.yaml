@@ -1,0 +1,12 @@
+$kind: http-request
+name: Update Product Variant
+method: POST
+url: '{{baseUrl}}/api/admin/products/{{productId}}/variants/{{size}}'
+order: 6000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"stock_qty": 50, "price": 999}

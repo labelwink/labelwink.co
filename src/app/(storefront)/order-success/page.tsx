@@ -1,6 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default async function OrderSuccessPage({ searchParams }: { searchParams: Promise<{ order_id?: string, invoice?: string }> }) {
   const { order_id, invoice } = await searchParams;
@@ -74,8 +75,13 @@ export default async function OrderSuccessPage({ searchParams }: { searchParams:
             <div key={item.id} className="flex gap-4 items-center">
               <div className="w-16 h-16 bg-sage/10 rounded-md overflow-hidden flex-shrink-0">
                 {item.product_image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.product_image} alt={item.product_name} className="w-full h-full object-cover" />
+                <Image 
+                  src={item.product_image} 
+                  alt={item.product_name} 
+                  fill
+                  sizes="64px"
+                  className="object-cover" 
+                />
                 ) : (
                   <div className="w-full h-full bg-sage/20" />
                 )}
@@ -137,13 +143,13 @@ export default async function OrderSuccessPage({ searchParams }: { searchParams:
       <div className="flex flex-col sm:flex-row gap-4">
         <Link 
           href={`/account/orders/${order.id}`}
-          className="flex-1 bg-[#1a1a1a] text-[#faf7f2] py-4 rounded-xl text-sm font-bold uppercase tracking-widest text-center hover:bg-black transition-colors"
+          className="flex-1 bg-white text-[#faf7f2] py-4 rounded-xl text-sm font-bold uppercase tracking-widest text-center hover:bg-black transition-colors"
         >
           Track My Order
         </Link>
         <Link 
           href="/collections/all"
-          className="flex-1 border-2 border-[#1a1a1a] text-[#1a1a1a] py-4 rounded-xl text-sm font-bold uppercase tracking-widest text-center hover:bg-sage/5 transition-colors"
+          className="flex-1 border-2 border-[#ffffff] text-[#ffffff] py-4 rounded-xl text-sm font-bold uppercase tracking-widest text-center hover:bg-sage/5 transition-colors"
         >
           Continue Shopping
         </Link>

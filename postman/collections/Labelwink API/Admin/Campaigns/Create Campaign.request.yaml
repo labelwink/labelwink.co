@@ -1,0 +1,12 @@
+$kind: http-request
+name: Create Campaign
+method: POST
+url: '{{baseUrl}}/api/admin/campaigns'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"name": "Summer Sale", "subject": "Big Sale!", "template_id": "", "segment": "all"}

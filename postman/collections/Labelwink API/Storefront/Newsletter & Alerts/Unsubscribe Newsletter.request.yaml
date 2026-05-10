@@ -1,0 +1,12 @@
+$kind: http-request
+name: Unsubscribe Newsletter
+method: POST
+url: '{{baseUrl}}/api/storefront/unsubscribe'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"email": "user@example.com", "token": ""}

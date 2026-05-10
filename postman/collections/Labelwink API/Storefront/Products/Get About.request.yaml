@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get About
+method: GET
+url: '{{baseUrl}}/api/storefront/about'
+order: 7000

@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Policy
+method: GET
+url: '{{baseUrl}}/api/admin/policies/{{policy}}'
+order: 1000

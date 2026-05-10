@@ -1,0 +1,56 @@
+name: Labelwink
+values:
+  - key: baseUrl
+    value: 'http://localhost:3000'
+    enabled: true
+  - key: productId
+    value: ''
+    enabled: true
+  - key: orderId
+    value: ''
+    enabled: true
+  - key: customerId
+    value: ''
+    enabled: true
+  - key: collectionId
+    value: ''
+    enabled: true
+  - key: discountId
+    value: ''
+    enabled: true
+  - key: variantId
+    value: ''
+    enabled: true
+  - key: returnId
+    value: ''
+    enabled: true
+  - key: reviewId
+    value: ''
+    enabled: true
+  - key: campaignId
+    value: ''
+    enabled: true
+  - key: bannerId
+    value: ''
+    enabled: true
+  - key: saleId
+    value: ''
+    enabled: true
+  - key: redirectId
+    value: ''
+    enabled: true
+  - key: addressId
+    value: ''
+    enabled: true
+  - key: slug
+    value: 'sample-product'
+    enabled: true
+  - key: policy
+    value: 'privacy-policy'
+    enabled: true
+  - key: page
+    value: 'home'
+    enabled: true
+  - key: size
+    value: 'M'
+    enabled: true

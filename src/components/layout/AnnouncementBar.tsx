@@ -48,8 +48,8 @@ export function AnnouncementBar({ items: initialItems, speed = 3000 }: Announcem
   if (!items || items.length === 0) return null;
 
   return (
-    <div className="bg-charcoal text-cream py-2 px-4 relative overflow-hidden">
-      <div className="container mx-auto flex items-center justify-center text-[10px] md:text-xs font-medium tracking-[0.2em] uppercase">
+    <div style={{ backgroundColor: '#1a7a7a', color: '#ffffff', position: 'relative', overflow: 'hidden' }} className="py-2 px-4">
+      <div className="container mx-auto flex items-center justify-center text-[10px] md:text-xs font-medium tracking-[0.2em] uppercase" style={{ color: '#ffffff' }}>
         <div className="transition-all duration-500 ease-in-out text-center">
           {items[currentIndex].link ? (
             <a href={items[currentIndex].link} className="hover:underline">
@@ -65,13 +65,17 @@ export function AnnouncementBar({ items: initialItems, speed = 3000 }: Announcem
         <>
           <button 
             onClick={() => setCurrentIndex((prev) => (prev - 1 + items.length) % items.length)}
-            className="absolute left-2 top-1/2 -translate-y-1/2 p-1 hover:text-white/70 transition-colors"
+            style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', padding: '4px', transition: 'color 150ms' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#ffffff')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
           >
             <ChevronLeft size={14} />
           </button>
           <button 
             onClick={() => setCurrentIndex((prev) => (prev + 1) % items.length)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:text-white/70 transition-colors"
+            style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.6)', padding: '4px', transition: 'color 150ms' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#ffffff')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
           >
             <ChevronRight size={14} />
           </button>

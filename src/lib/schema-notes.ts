@@ -1,4 +1,4 @@
-/**
+﻿/**
  * LabelWink — Schema Notes
  * ─────────────────────────────────────────────────────────────────────────────
  * A living record of every SQL migration applied to the Supabase project.
@@ -322,5 +322,68 @@ export const SCHEMA_NOTES = [
 
       NOTIFY pgrst, 'reload schema' — called at end
     `,
+
+    /*
+    -- Full SQL record: ──────────────────────────────────────────────────────
+
+    CREATE TABLE IF NOT EXISTS wishlists (
+      id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+      product_id uuid REFERENCES products(id) ON DELETE CASCADE NOT NULL,
+      created_at timestamptz DEFAULT now(),
+      UNIQUE (user_id, product_id)
+    );
+    ALTER TABLE wishlists ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "user_own_wishlist" ON wishlists;
+    DROP POLICY IF EXISTS "admin_all_wishlist" ON wishlists;
+    CREATE POLICY "user_own_wishlist" ON wishlists
+      USING (auth.uid() = user_id)
+      WITH CHECK (auth.uid() = user_id);
+    CREATE POLICY "admin_all_wishlist" ON wishlists FOR ALL USING (true);
+
+    CREATE TABLE IF NOT EXISTS stock_alerts (
+      id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+      email text NOT NULL,
+      product_id uuid REFERENCES products(id) ON DELETE CASCADE NOT NULL,
+      variant_id uuid REFERENCES product_variants(id) ON DELETE CASCADE NOT NULL,
+      size text NOT NULL,
+      is_notified boolean DEFAULT false,
+      notified_at timestamptz,
+      created_at timestamptz DEFAULT now(),
+      UNIQUE (email, variant_id)
+    );
+    ALTER TABLE stock_alerts ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "user_own_alerts" ON stock_alerts;
+    DROP POLICY IF EXISTS "admin_all_alerts" ON stock_alerts;
+    CREATE POLICY "user_own_alerts" ON stock_alerts
+      USING (auth.uid() = user_id)
+      WITH CHECK (auth.uid() = user_id);
+    CREATE POLICY "admin_all_alerts" ON stock_alerts FOR ALL USING (true);
+
+    CREATE TABLE IF NOT EXISTS recently_viewed (
+      id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+      user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+      product_id uuid REFERENCES products(id) ON DELETE CASCADE NOT NULL,
+      viewed_at timestamptz DEFAULT now(),
+      UNIQUE (user_id, product_id)
+    );
+    ALTER TABLE recently_viewed ENABLE ROW LEVEL SECURITY;
+    DROP POLICY IF EXISTS "user_own_viewed" ON recently_viewed;
+    CREATE POLICY "user_own_viewed" ON recently_viewed
+      USING (auth.uid() = user_id)
+      WITH CHECK (auth.uid() = user_id);
+    CREATE INDEX IF NOT EXISTS idx_recently_viewed_user
+      ON recently_viewed (user_id, viewed_at DESC);
+
+    ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS pwa_name text DEFAULT 'LabelWink';
+    ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS pwa_short_name text DEFAULT 'LabelWink';
+    ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS pwa_theme_color text DEFAULT '#ffffff';
+    ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS pwa_background_color text DEFAULT '#ffffff';
+    ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS whatsapp_number text;
+    ALTER TABLE shop_settings ADD COLUMN IF NOT EXISTS size_guide_image_url text;
+
+    NOTIFY pgrst, 'reload schema';
+    */
   },
 ] as const

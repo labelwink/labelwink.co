@@ -67,7 +67,7 @@ export default function PoliciesPage() {
     })
     if (res.ok) {
       setContentMap(prev => ({ ...prev, [activeKey]: { ...prev[activeKey], content: currentContent, last_updated: new Date().toISOString().slice(0, 10) } }))
-      showToast('Policy saved âœ“', 'success')
+      showToast('Policy saved ?', 'success')
     } else {
       showToast('Save failed', 'error')
     }
@@ -91,14 +91,14 @@ export default function PoliciesPage() {
         [contenteditable] a { color: #1b3a34; text-decoration: underline; }
       `}</style>
 
-      <h1 className="text-2xl font-bold text-[#1a1a1a]">Policy Editor</h1>
+      <h1 className="text-2xl font-bold text-[#1b3a34]">Policy Editor</h1>
 
       {/* Tab bar */}
       <div className="flex gap-1 overflow-x-auto border-b border-[#e5e7eb]">
         {POLICIES.map(p => (
           <button key={p.key} onClick={() => handleTabChange(p.key)}
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors ${
-              activeKey === p.key ? 'bg-[#1b3a34] text-white rounded-t-lg' : 'text-[#6b7280] hover:text-[#1a1a1a]'
+              activeKey === p.key ? 'bg-[#1b3a34] text-white rounded-t-lg' : 'text-[#6b7280] hover:text-[#ffffff]'
             }`}
           >{p.label}</button>
         ))}
@@ -131,10 +131,10 @@ export default function PoliciesPage() {
               <button onMouseDown={e => { e.preventDefault(); format('formatBlock', 'h3') }}
                 className="px-3 py-1 text-sm font-semibold border border-[#e5e7eb] rounded hover:bg-gray-200 bg-white">H3</button>
               <button onMouseDown={e => { e.preventDefault(); format('formatBlock', 'p') }}
-                className="px-3 py-1 text-sm border border-[#e5e7eb] rounded hover:bg-gray-200 bg-white">Â¶ Para</button>
+                className="px-3 py-1 text-sm border border-[#e5e7eb] rounded hover:bg-gray-200 bg-white">¶ Para</button>
               <div className="w-px bg-gray-300 mx-1" />
               <button onMouseDown={e => { e.preventDefault(); format('insertUnorderedList') }}
-                className="px-3 py-1 text-sm border border-[#e5e7eb] rounded hover:bg-gray-200 bg-white">â€¢ List</button>
+                className="px-3 py-1 text-sm border border-[#e5e7eb] rounded hover:bg-gray-200 bg-white">• List</button>
               <button onMouseDown={e => { e.preventDefault(); format('insertOrderedList') }}
                 className="px-3 py-1 text-sm border border-[#e5e7eb] rounded hover:bg-gray-200 bg-white">1. List</button>
             </div>
@@ -159,7 +159,7 @@ export default function PoliciesPage() {
         </div>
       )}
 
-      {loading && <div className="text-center py-10 text-[#6b7280]">Loadingâ€¦</div>}
+      {loading && <div className="text-center py-10 text-[#6b7280]">Loading…</div>}
     </div>
   )
 }

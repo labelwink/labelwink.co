@@ -1,11 +1,10 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/admin/Toast'
 import { Loader2, X, Crown, Upload, Star } from 'lucide-react'
 
-const SIZES      = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size']
 const CATEGORIES = ['Kurtis', 'Co-ord Sets', 'Festive', 'Casual', 'Dresses', 'Tops', 'Bottoms', 'Sets', 'Accessories']
 const GENDERS    = ['Women', 'Men', 'Unisex', 'Girls', 'Boys']
 const FITS       = ['Regular', 'Slim', 'Loose', 'Oversized', 'Flared']
@@ -21,6 +20,28 @@ export default function ProductForm({ product }: { product?: any }) {
   const { showToast, ToastComponent } = useToast()
   const [tab, setTab] = useState(0)
   const [saving, setSaving] = useState(false)
+
+  // Dynamic attributes
+  const [attrOptions, setAttrOptions] = useState<{
+    sizes: {value:string,label:string}[],
+    colors: {value:string,label:string}[],
+    fabrics: {value:string,label:string}[],
+    sleeves: {value:string,label:string}[],
+    occasions: {value:string,label:string}[],
+    fits: {value:string,label:string}[]
+  }>({ sizes:[],colors:[],fabrics:[],
+       sleeves:[],occasions:[],fits:[] })
+  const [attrLoading, setAttrLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/admin/master-data')
+      .then(r => r.json())
+      .then(data => {
+        setAttrOptions(data)
+        setAttrLoading(false)
+      })
+      .catch(console.error)
+  }, [])
 
   // Basic Info
   const [name, setName] = useState(product?.name || '')
@@ -46,16 +67,27 @@ export default function ProductForm({ product }: { product?: any }) {
   const discount = mrp && price ? Math.round(((Number(mrp) - Number(price)) / Number(mrp)) * 100) : 0
 
   // Variants
-  const [enabledSizes, setEnabledSizes] = useState<string[]>(
-    product?.product_variants?.map((v: any) => v.size) || []
-  )
-  const [stockMap, setStockMap] = useState<Record<string, number>>(
-    Object.fromEntries((product?.product_variants || []).map((v: any) => [v.size, v.stock_qty]))
-  )
-  const [skuMap, setSkuMap] = useState<Record<string, string>>(
-    Object.fromEntries((product?.product_variants || []).map((v: any) => [v.size, v.sku || '']))
-  )
-  const [lowStockThreshold, setLowStockThreshold] = useState(5)
+  const [variants, setVariants] = useState<Array<{
+    id: string
+    size: string
+    color: string
+    fabric: string
+    sku: string
+    price: number
+    compare_at_price: number
+    stock: number
+    is_active: boolean
+  }>>(product?.product_variants?.map((v: any) => ({
+    id: v.id || crypto.randomUUID(),
+    size: v.size || '',
+    color: v.color || '',
+    fabric: v.fabric || '',
+    sku: v.sku || '',
+    price: v.price || 0,
+    compare_at_price: v.compare_at_price || 0,
+    stock: v.stock_qty || 0,
+    is_active: v.is_active ?? true
+  })) || [])
 
   // Specs
   const [specs, setSpecs] = useState<Record<string, string>>(product?.specifications || {})
@@ -83,6 +115,46 @@ export default function ProductForm({ product }: { product?: any }) {
     if (!metaTitle && name) setMetaTitle(`${name} | Label Wink`)
     if (!metaDesc && shortDesc) setMetaDesc(shortDesc)
   }, [name, shortDesc, slugEdited, metaTitle, metaDesc])
+
+  // Variant management helpers
+  const addVariant = () => {
+    setVariants([...variants, {
+      id: crypto.randomUUID(),
+      size: '',
+      color: '',
+      fabric: '',
+      sku: '',
+      price: Number(price) || 0,
+      compare_at_price: Number(mrp) || 0,
+      stock: 0,
+      is_active: true
+    }])
+  }
+
+  const updateVariant = (idx: number, field: string, value: any) => {
+    const updated = [...variants]
+    updated[idx] = { ...updated[idx], [field]: value }
+    setVariants(updated)
+  }
+
+  const removeVariant = (idx: number) => {
+    setVariants(variants.filter((_, i) => i !== idx))
+  }
+
+  const generateAllSizeVariants = () => {
+    const newVariants = attrOptions.sizes.map(size => ({
+      id: crypto.randomUUID(),
+      size: size.value,
+      color: colour,
+      fabric: fabric,
+      sku: `${slugify(name)}-${size.value}`.toUpperCase(),
+      price: Number(price) || 0,
+      compare_at_price: Number(mrp) || 0,
+      stock: 0,
+      is_active: true
+    }))
+    setVariants(newVariants)
+  }
 
   const handleFiles = async (files: FileList | null) => {
     if (!files) return
@@ -118,13 +190,6 @@ export default function ProductForm({ product }: { product?: any }) {
     if (!slug.trim()) { showToast('Slug is required', 'error'); setTab(5); return }
 
     setSaving(true)
-    const variants = enabledSizes.map(size => ({
-      size,
-      stock_qty: stockMap[size] || 0,
-      sku: skuMap[size] || '',
-      low_stock_threshold: lowStockThreshold,
-    }))
-
     const body = {
       name, slug, category, short_description: shortDesc, description,
       tags, occasion: occasions, mrp: Number(mrp), price: Number(price),
@@ -139,13 +204,23 @@ export default function ProductForm({ product }: { product?: any }) {
         sort_order: i,
       })),
       specifications: specs,
-      visible, meta_title: metaTitle, meta_description: metaDesc, variants,
+      visible, meta_title: metaTitle, meta_description: metaDesc,
+      variants: variants.map(v => ({
+        id: v.id,
+        size: v.size,
+        color: v.color,
+        fabric: v.fabric,
+        sku: v.sku,
+        price: v.price,
+        compare_at_price: v.compare_at_price,
+        stock_qty: v.stock,
+        is_active: v.is_active
+      }))
     }
 
     try {
       const url = product ? `/api/admin/products/${product.id}` : '/api/admin/products'
       const method = product ? 'PATCH' : 'POST'
-      console.log('Submitting product data:', JSON.stringify(body, null, 2))
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), credentials: 'include' })
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
@@ -173,7 +248,7 @@ export default function ProductForm({ product }: { product?: any }) {
               key={t}
               onClick={() => setTab(i)}
               className={`px-5 py-3 text-sm font-medium whitespace-nowrap flex-shrink-0 transition-colors ${
-                tab === i ? 'border-b-2 border-[#1b3a34] text-[#1b3a34]' : 'text-[#6b7280] hover:text-[#1a1a1a]'
+                tab === i ? 'border-b-2 border-[#1b3a34] text-[#1b3a34]' : 'text-[#6b7280] hover:text-[#ffffff]'
               }`}
             >
               {t}
@@ -186,14 +261,14 @@ export default function ProductForm({ product }: { product?: any }) {
           {tab === 0 && (
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Product Name *</label>
+                <label className="block text-sm font-medium text-[#ffffff] mb-1">Product Name *</label>
                 <input value={name} onChange={e => setName(e.target.value)} maxLength={100}
                   className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                   placeholder="e.g. Floral Kurta Set" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Category *</label>
+                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Category *</label>
                   <select value={category} onChange={e => setCategory(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] bg-white">
                     <option value="">Select category</option>
@@ -201,27 +276,27 @@ export default function ProductForm({ product }: { product?: any }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Collection</label>
+                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Collection</label>
                   <input value={collection} onChange={e => setCollection(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                     placeholder="e.g. Summer Bloom 2025" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Short Description</label>
+                <label className="block text-sm font-medium text-[#ffffff] mb-1">Short Description</label>
                 <textarea value={shortDesc} onChange={e => setShortDesc(e.target.value)} maxLength={160} rows={2}
                   className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] resize-none"
                   placeholder="Brief description shown on product cards" />
                 <p className="text-xs text-[#6b7280] mt-1">{shortDesc.length}/160</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Full Description</label>
+                <label className="block text-sm font-medium text-[#ffffff] mb-1">Full Description</label>
                 <textarea value={description} onChange={e => setDescription(e.target.value)} rows={5}
                   className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] resize-none"
                   placeholder="Detailed product description" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Tags</label>
+                <label className="block text-sm font-medium text-[#ffffff] mb-1">Tags</label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {tags.map(tag => (
                     <span key={tag} className="flex items-center gap-1 bg-[#1b3a34]/10 text-[#1b3a34] text-xs px-3 py-1 rounded-full">
@@ -237,19 +312,19 @@ export default function ProductForm({ product }: { product?: any }) {
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Colour</label>
+                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Colour</label>
                   <input value={colour} onChange={e => setColour(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                     placeholder="e.g. Rust Orange" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Fabric</label>
+                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Fabric</label>
                   <input value={fabric} onChange={e => setFabric(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                     placeholder="e.g. Cotton Blend" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Fit</label>
+                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Fit</label>
                   <select value={fit} onChange={e => setFit(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] bg-white">
                     <option value="">Select fit</option>
@@ -257,7 +332,7 @@ export default function ProductForm({ product }: { product?: any }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Gender</label>
+                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Gender</label>
                   <select value={gender} onChange={e => setGender(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] bg-white">
                     <option value="">Select</option>
@@ -267,7 +342,7 @@ export default function ProductForm({ product }: { product?: any }) {
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Season</label>
+                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Season</label>
                   <select value={season} onChange={e => setSeason(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] bg-white">
                     <option value="">Select</option>
@@ -275,20 +350,20 @@ export default function ProductForm({ product }: { product?: any }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">HSN Code</label>
+                  <label className="block text-sm font-medium text-[#ffffff] mb-1">HSN Code</label>
                   <input value={hsnCode} onChange={e => setHsnCode(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                     placeholder="e.g. 6211" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Weight (grams)</label>
+                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Weight (grams)</label>
                   <input type="number" min="0" value={weight} onChange={e => setWeight(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                     placeholder="e.g. 350" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1a1a1a] mb-2">Occasion</label>
+                <label className="block text-sm font-medium text-[#ffffff] mb-2">Occasion</label>
                 <div className="flex flex-wrap gap-3">
                   {['Casual', 'Festive', 'Party', 'Office', 'Wedding'].map(o => (
                     <label key={o} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -308,12 +383,12 @@ export default function ProductForm({ product }: { product?: any }) {
             <div className="space-y-5 max-w-lg">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">MRP (₹) *</label>
+                  <label className="block text-sm font-medium text-[#ffffff] mb-1">MRP (₹) *</label>
                   <input type="number" value={mrp} onChange={e => setMrp(e.target.value)} min="0"
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Selling Price (₹) *</label>
+                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Selling Price (₹) *</label>
                   <input type="number" value={price} onChange={e => setPrice(e.target.value)} min="0"
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
                 </div>
@@ -332,58 +407,105 @@ export default function ProductForm({ product }: { product?: any }) {
                 >
                   <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${firstOrderDiscount ? 'translate-x-6' : ''}`} />
                 </button>
-                <label className="text-sm font-medium text-[#1a1a1a]">First Order Discount</label>
+                <label className="text-sm font-medium text-[#ffffff]">First Order Discount</label>
               </div>
             </div>
           )}
 
-          {/* TAB 2: Variants */}
+          {/* TAB 2: Variants & Stock */}
           {tab === 2 && (
             <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-[#1a1a1a] mb-3">Available Sizes</label>
-                <div className="flex gap-2 flex-wrap">
-                  {SIZES.map(size => (
-                    <button key={size} type="button"
-                      onClick={() => setEnabledSizes(prev => prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size])}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                        enabledSizes.includes(size) ? 'bg-[#1b3a34] text-white border-[#1b3a34]' : 'bg-white text-gray-600 border-gray-300 hover:border-[#1b3a34]'
-                      }`}
-                    >{size}</button>
-                  ))}
-                </div>
-              </div>
-
-              {enabledSizes.length > 0 && (
-                <div className="space-y-3">
-                  {enabledSizes.map(size => (
-                    <div key={size} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl border border-[#e5e7eb]">
-                      <span className="w-12 text-sm font-bold text-[#1b3a34]">{size}</span>
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs text-[#6b7280]">Qty:</label>
-                        <input type="number" min="0" value={stockMap[size] ?? 0}
-                          onChange={e => setStockMap(p => ({ ...p, [size]: Number(e.target.value) }))}
-                          className="w-24 border border-[#e5e7eb] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs text-[#6b7280]">SKU:</label>
-                        <input value={skuMap[size] || ''} onChange={e => setSkuMap(p => ({ ...p, [size]: e.target.value }))}
-                          className="w-36 border border-[#e5e7eb] rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
-                          placeholder="e.g. LW-XS-001" />
-                      </div>
+              {attrLoading ? (
+                <div className="text-center py-8 text-[#9aab9e]">Loading attributes...</div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-[#ffffff]">Product Variants</h3>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={generateAllSizeVariants}
+                        className="px-4 py-2 bg-[#1b3a34] text-white rounded-lg text-sm font-medium hover:bg-[#2a4a42] transition-colors">
+                        Generate All Sizes
+                      </button>
+                      <button type="button" onClick={addVariant}
+                        className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-[#f5f2ec] transition-colors">
+                        Add Variant
+                      </button>
                     </div>
-                  ))}
-                  <p className="text-sm text-[#6b7280]">
-                    Total stock: <strong className="text-[#1a1a1a]">{enabledSizes.reduce((s, sz) => s + (stockMap[sz] || 0), 0)}</strong>
-                  </p>
-                </div>
-              )}
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Low Stock Threshold</label>
-                <input type="number" min="1" value={lowStockThreshold} onChange={e => setLowStockThreshold(Number(e.target.value))}
-                  className="w-32 border border-[#e5e7eb] rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
-              </div>
+                  {variants.length === 0 ? (
+                    <p className="text-[#9aab9e] text-center py-8">No variants added yet. Click "Generate All Sizes" or "Add Variant" to start.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {variants.map((variant, idx) => (
+                        <div key={variant.id} className="p-4 bg-gray-50 rounded-xl border border-[#e5e7eb]">
+                          <div className="flex justify-between items-start mb-3">
+                            <span className="text-sm font-medium text-[#ffffff]">Variant {idx + 1}</span>
+                            <button type="button" onClick={() => removeVariant(idx)}
+                              className="text-red-500 hover:text-red-700 text-sm">Remove</button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div>
+                              <label className="block text-xs font-medium text-[#6b7280] mb-1">Size</label>
+                              <select value={variant.size} onChange={e => updateVariant(idx, 'size', e.target.value)}
+                                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]">
+                                <option value="">Select Size</option>
+                                {attrOptions.sizes.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-[#6b7280] mb-1">Color</label>
+                              <select value={variant.color} onChange={e => updateVariant(idx, 'color', e.target.value)}
+                                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]">
+                                <option value="">Select Color</option>
+                                {attrOptions.colors.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-[#6b7280] mb-1">Fabric</label>
+                              <select value={variant.fabric} onChange={e => updateVariant(idx, 'fabric', e.target.value)}
+                                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]">
+                                <option value="">Select Fabric</option>
+                                {attrOptions.fabrics.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-[#6b7280] mb-1">SKU</label>
+                              <input value={variant.sku} onChange={e => updateVariant(idx, 'sku', e.target.value)}
+                                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
+                                placeholder="e.g. LW-XS-001" />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-[#6b7280] mb-1">Price</label>
+                              <input type="number" min="0" value={variant.price} onChange={e => updateVariant(idx, 'price', Number(e.target.value))}
+                                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-[#6b7280] mb-1">Compare at Price</label>
+                              <input type="number" min="0" value={variant.compare_at_price} onChange={e => updateVariant(idx, 'compare_at_price', Number(e.target.value))}
+                                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-[#6b7280] mb-1">Stock</label>
+                              <input type="number" min="0" value={variant.stock} onChange={e => updateVariant(idx, 'stock', Number(e.target.value))}
+                                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input type="checkbox" checked={variant.is_active} onChange={e => updateVariant(idx, 'is_active', e.target.checked)}
+                                className="text-[#1b3a34] focus:ring-[#1b3a34]" />
+                              <label className="text-xs font-medium text-[#6b7280]">Active</label>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <p className="text-sm text-[#6b7280]">
+                        Total variants: <strong className="text-[#ffffff]">{variants.length}</strong> |
+                        Total stock: <strong className="text-[#ffffff]">{variants.reduce((s, v) => s + v.stock, 0)}</strong>
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 
@@ -395,7 +517,7 @@ export default function ProductForm({ product }: { product?: any }) {
                 'Bottom Length (inches)', 'Pant Type', 'Wash Care', 'Additional Notes'
               ].map(field => (
                 <div key={field}>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-1">{field}</label>
+                  <label className="block text-sm font-medium text-[#ffffff] mb-1">{field}</label>
                   {field.includes('Care') || field.includes('Notes') ? (
                     <textarea value={specs[field] || ''} onChange={e => setSpecs(p => ({ ...p, [field]: e.target.value }))} rows={2}
                       className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] resize-none" />
@@ -407,7 +529,7 @@ export default function ProductForm({ product }: { product?: any }) {
               ))}
               {['Lining', 'Pockets', 'Feeding Friendly'].map(field => (
                 <div key={field}>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-2">{field}</label>
+                  <label className="block text-sm font-medium text-[#ffffff] mb-2">{field}</label>
                   <div className="flex gap-3">
                     {(field === 'Feeding Friendly' ? ['Yes', 'No', 'N/A'] : ['Yes', 'No']).map(opt => (
                       <label key={opt} className="flex items-center gap-1.5 text-sm cursor-pointer">
@@ -432,8 +554,8 @@ export default function ProductForm({ product }: { product?: any }) {
                 onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files) }}
                 className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center cursor-pointer hover:border-[#1b3a34] hover:bg-green-50/30 transition-colors"
               >
-                <Upload size={32} className="mx-auto mb-3 text-gray-400" />
-                <p className="text-sm font-medium text-[#1a1a1a]">Drop product images here or click to upload</p>
+                <Upload size={32} className="mx-auto mb-3 text-[#5a7060]" />
+                <p className="text-sm font-medium text-[#ffffff]">Drop product images here or click to upload</p>
                 <p className="text-xs text-[#6b7280] mt-1">Supports JPG, PNG, WebP — Max 8 images, 5MB each</p>
                 <input ref={fileRef} type="file" multiple accept="image/*" className="hidden" onChange={e => handleFiles(e.target.files)} />
               </div>
@@ -506,18 +628,18 @@ export default function ProductForm({ product }: { product?: any }) {
           {tab === 5 && (
             <div className="space-y-5 max-w-2xl">
               <div>
-                <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Meta Title</label>
+                <label className="block text-sm font-medium text-[#ffffff] mb-1">Meta Title</label>
                 <input value={metaTitle} onChange={e => setMetaTitle(e.target.value)}
                   className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1a1a1a] mb-1">Meta Description</label>
+                <label className="block text-sm font-medium text-[#ffffff] mb-1">Meta Description</label>
                 <textarea value={metaDesc} onChange={e => setMetaDesc(e.target.value)} maxLength={160} rows={3}
                   className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] resize-none" />
                 <p className="text-xs text-[#6b7280] mt-1">{metaDesc.length}/160</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#1a1a1a] mb-1">URL Slug</label>
+                <label className="block text-sm font-medium text-[#ffffff] mb-1">URL Slug</label>
                 <input value={slug} onChange={e => { setSlug(e.target.value); setSlugEdited(true) }}
                   className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
                 <p className="text-xs text-[#6b7280] mt-1">labelwink.co/products/{slug || '…'}</p>

@@ -1,0 +1,12 @@
+$kind: http-request
+name: Update Banner
+method: POST
+url: '{{baseUrl}}/api/admin/cms/banners/{{bannerId}}'
+order: 6000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"title": "Updated Banner"}

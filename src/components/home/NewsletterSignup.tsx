@@ -42,8 +42,7 @@ export function NewsletterSignup({ threshold = 999 }: NewsletterSignupProps) {
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-heading text-charcoal mb-4">Join the Wink Club</h2>
           <p className="text-charcoal/70 mb-8 italic">
-            Subscribe to receive updates, access to exclusive deals, and more. 
-            Plus, get free shipping on orders over ₹{threshold}.
+            Subscribe to receive updates, access to exclusive deals, and more.
           </p>
 
           {status === 'success' ? (

@@ -28,14 +28,6 @@ export interface Product {
   meta_title: string | null
   meta_description: string | null
   og_image_url: string | null
-  // ── Phase 4: Search & PDP ──────────────────────────────────
-  sleeve_type: 'sleeveless' | 'half_sleeve' | 'full_sleeve' | '3/4_sleeve' | null
-  fit_type: 'regular' | 'slim' | 'oversized' | 'relaxed' | null
-  fabric_material: string | null
-  care_instructions: string | null
-  occasion_tags: string[] | null
-  size_guide: SizeGuide | null
-  additional_info: Record<string, string> | null
   search_vector?: string | null
   // ──────────────────────────────────────────────────────────
   created_at: string

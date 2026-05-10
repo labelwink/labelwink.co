@@ -12,13 +12,13 @@ export default function ReportsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-[#1a1a1a]">Reports & Analytics</h1>
-        <p className="text-muted-foreground mt-1 text-[#1a1a1a]/70">
+        <h1 className="text-3xl font-bold tracking-tight text-[#1b3a34]">Reports &amp; Analytics</h1>
+        <p className="text-muted-foreground mt-1 text-[#6b7280]">
           Generate compliance reports, sales insights, and manage inventory.
         </p>
       </div>
 
-      <div className="flex space-x-1 border-b border-[#1a1a1a]/10">
+      <div className="flex space-x-1 border-b border-[#ffffff]/10">
         {[
           { id: 'gst', label: 'GST Report', icon: FileText },
           { id: 'sales', label: 'Sales Insights', icon: TrendingUp },
@@ -30,7 +30,7 @@ export default function ReportsPage() {
             className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-colors ${
               activeTab === t.id
                 ? 'border-[#c9a84c] text-[#c9a84c] font-medium'
-                : 'border-transparent text-[#1a1a1a]/60 hover:text-[#1a1a1a] hover:bg-[#1a1a1a]/5'
+                : 'border-transparent text-[#6b7280] hover:text-[#1b3a34] hover:bg-gray-50'
             }`}
           >
             <t.icon className="h-4 w-4" />
@@ -80,51 +80,51 @@ function GstReport() {
       <div className="flex justify-between items-end">
         <div className="flex space-x-4 items-end">
           <div>
-            <label className="block text-sm font-medium text-[#1a1a1a]/70 mb-1">Month</label>
-            <select value={month} onChange={e => setMonth(Number(e.target.value))} className="border border-[#1a1a1a]/20 rounded-md px-3 py-2 bg-[#faf7f2] focus:outline-none focus:border-[#c9a84c]">
+            <label className="block text-sm font-medium text-[#6b7280] mb-1">Month</label>
+            <select value={month} onChange={e => setMonth(Number(e.target.value))} className="border border-[#ffffff]/20 rounded-md px-3 py-2 bg-[#faf7f2] focus:outline-none focus:border-[#c9a84c]">
               {Array.from({ length: 12 }).map((_, i) => (
                 <option key={i+1} value={i+1}>{new Date(0, i).toLocaleString('default', { month: 'long' })}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1a1a1a]/70 mb-1">Year</label>
-            <select value={year} onChange={e => setYear(Number(e.target.value))} className="border border-[#1a1a1a]/20 rounded-md px-3 py-2 bg-[#faf7f2] focus:outline-none focus:border-[#c9a84c]">
+            <label className="block text-sm font-medium text-[#6b7280] mb-1">Year</label>
+            <select value={year} onChange={e => setYear(Number(e.target.value))} className="border border-[#ffffff]/20 rounded-md px-3 py-2 bg-[#faf7f2] focus:outline-none focus:border-[#c9a84c]">
               {[2024, 2025, 2026, 2027].map(y => (
                 <option key={y} value={y}>{y}</option>
               ))}
             </select>
           </div>
-          <button onClick={fetchGst} className="bg-[#1a1a1a] text-white px-4 py-2 rounded-md hover:bg-[#1a1a1a]/90 transition-colors">
+          <button onClick={fetchGst} className="bg-[#1b3a34] text-white px-4 py-2 rounded-md hover:bg-[#16312b] transition-colors">
             Generate
           </button>
         </div>
-        <button onClick={handleExport} className="flex items-center space-x-2 bg-white border border-[#1a1a1a]/20 px-4 py-2 rounded-md hover:bg-[#faf7f2] transition-colors">
+        <button onClick={handleExport} className="flex items-center space-x-2 bg-white border border-[#e5e7eb] px-4 py-2 rounded-md hover:bg-[#faf7f2] transition-colors text-[#1b3a34]">
           <Download className="h-4 w-4" />
           <span>Download CSV</span>
         </button>
       </div>
 
       {loading ? (
-        <div className="h-40 flex items-center justify-center text-[#1a1a1a]/50">Loading GST data...</div>
+        <div className="h-40 flex items-center justify-center text-[#6b7280]">Loading GST data...</div>
       ) : data?.summary ? (
         <>
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="bg-white p-6 rounded-xl border border-[#1a1a1a]/10 shadow-sm">
-              <p className="text-sm font-medium text-[#1a1a1a]/60">Total Invoices</p>
-              <h3 className="text-2xl font-bold text-[#1a1a1a] mt-1">{data.summary.total_invoices}</h3>
-              <p className="text-xs text-[#1a1a1a]/50 mt-1">{data.summary.exempt_count} exempt</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white p-6 rounded-xl border border-[#ffffff]/10 shadow-sm">
+              <p className="text-sm font-medium text-[#6b7280]">Total Invoices</p>
+              <h3 className="text-2xl font-bold text-[#1b3a34] mt-1">{data.summary.total_invoices}</h3>
+              <p className="text-xs text-[#9ca3af] mt-1">{data.summary.exempt_count} exempt</p>
             </div>
-            <div className="bg-white p-6 rounded-xl border border-[#1a1a1a]/10 shadow-sm">
-              <p className="text-sm font-medium text-[#1a1a1a]/60">Total Taxable</p>
-              <h3 className="text-2xl font-bold text-[#1a1a1a] mt-1">{formatIndianCurrency(data.summary.total_taxable)}</h3>
+            <div className="bg-white p-6 rounded-xl border border-[#ffffff]/10 shadow-sm">
+              <p className="text-sm font-medium text-[#6b7280]">Total Taxable</p>
+              <h3 className="text-2xl font-bold text-[#1b3a34] mt-1">{formatIndianCurrency(data.summary.total_taxable)}</h3>
             </div>
-            <div className="bg-white p-6 rounded-xl border border-[#1a1a1a]/10 shadow-sm">
-              <p className="text-sm font-medium text-[#1a1a1a]/60">Total GST Collected</p>
+            <div className="bg-white p-6 rounded-xl border border-[#ffffff]/10 shadow-sm">
+              <p className="text-sm font-medium text-[#6b7280]">Total GST Collected</p>
               <h3 className="text-2xl font-bold text-[#c9a84c] mt-1">{formatIndianCurrency(data.summary.total_gst)}</h3>
             </div>
-            <div className="bg-white p-6 rounded-xl border border-[#1a1a1a]/10 shadow-sm">
-              <p className="text-sm font-medium text-[#1a1a1a]/60">GST Split</p>
+            <div className="bg-white p-6 rounded-xl border border-[#ffffff]/10 shadow-sm">
+              <p className="text-sm font-medium text-[#6b7280]">GST Split</p>
               <div className="mt-2 space-y-1 text-sm">
                 <div className="flex justify-between"><span>CGST:</span> <span>{formatIndianCurrency(data.summary.total_cgst)}</span></div>
                 <div className="flex justify-between"><span>SGST:</span> <span>{formatIndianCurrency(data.summary.total_sgst)}</span></div>
@@ -133,10 +133,10 @@ function GstReport() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#1a1a1a]/10 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-[#ffffff]/10 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-[#faf7f2] border-b border-[#1a1a1a]/10 text-[#1a1a1a]/70 font-medium">
+                <thead className="bg-[#faf7f2] border-b border-[#e5e7eb] text-[#6b7280] font-medium">
                   <tr>
                     <th className="px-4 py-3">Invoice #</th>
                     <th className="px-4 py-3">Date</th>
@@ -149,7 +149,7 @@ function GstReport() {
                     <th className="px-4 py-3 text-right">Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1a1a1a]/5">
+                <tbody className="divide-y divide-[#ffffff]/5">
                   {data.invoices.map((inv: any) => (
                     <tr key={inv.invoice_number} className="hover:bg-[#faf7f2]/50">
                       <td className="px-4 py-3 font-medium">{inv.invoice_number}</td>
@@ -170,7 +170,7 @@ function GstReport() {
                   ))}
                   {data.invoices.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="px-4 py-8 text-center text-[#1a1a1a]/50">No invoices found for this period.</td>
+                      <td colSpan={9} className="px-4 py-8 text-center text-[#9ca3af]">No invoices found for this period.</td>
                     </tr>
                   )}
                 </tbody>
@@ -220,72 +220,72 @@ function SalesReport() {
     <div className="space-y-6">
       <div className="flex justify-between items-end">
         <div>
-          <label className="block text-sm font-medium text-[#1a1a1a]/70 mb-1">Period</label>
-          <select value={period} onChange={e => setPeriod(e.target.value as any)} className="border border-[#1a1a1a]/20 rounded-md px-3 py-2 bg-[#faf7f2] focus:outline-none focus:border-[#c9a84c]">
+          <label className="block text-sm font-medium text-[#6b7280] mb-1">Period</label>
+          <select value={period} onChange={e => setPeriod(e.target.value as any)} className="border border-[#ffffff]/20 rounded-md px-3 py-2 bg-[#faf7f2] focus:outline-none focus:border-[#c9a84c]">
             <option value="month">Last 30 Days</option>
             <option value="quarter">Last 90 Days</option>
             <option value="year">Last 365 Days</option>
           </select>
         </div>
-        <button onClick={handleExport} className="flex items-center space-x-2 bg-white border border-[#1a1a1a]/20 px-4 py-2 rounded-md hover:bg-[#faf7f2] transition-colors">
+        <button onClick={handleExport} className="flex items-center space-x-2 bg-white border border-[#e5e7eb] px-4 py-2 rounded-md hover:bg-[#faf7f2] transition-colors text-[#1b3a34]">
           <Download className="h-4 w-4" />
           <span>Download CSV</span>
         </button>
       </div>
 
       {loading ? (
-        <div className="h-40 flex items-center justify-center text-[#1a1a1a]/50">Loading sales data...</div>
+        <div className="h-40 flex items-center justify-center text-[#6b7280]">Loading sales data...</div>
       ) : data ? (
         <div className="grid gap-6 md:grid-cols-2">
           
           {/* Revenue by Collection */}
-          <div className="bg-white p-6 rounded-xl border border-[#1a1a1a]/10 shadow-sm md:col-span-2">
-            <h3 className="font-semibold text-[#1a1a1a] mb-4">Revenue by Collection</h3>
+          <div className="bg-white p-6 rounded-xl border border-[#ffffff]/10 shadow-sm md:col-span-2">
+            <h3 className="font-semibold text-[#1b3a34] mb-4">Revenue by Collection</h3>
             <div className="space-y-3">
               {data.revenue_by_collection.length > 0 ? data.revenue_by_collection.map((c: any, i: number) => {
                 const maxRev = Math.max(...data.revenue_by_collection.map((x: any) => x.revenue))
                 const pct = maxRev > 0 ? (c.revenue / maxRev) * 100 : 0
                 return (
                   <div key={i} className="flex items-center space-x-4">
-                    <div className="w-32 text-sm text-[#1a1a1a]/80 truncate">{c.name}</div>
+                    <div className="w-32 text-sm text-[#4b5563] truncate">{c.name}</div>
                     <div className="flex-1 bg-[#faf7f2] h-6 rounded-md overflow-hidden relative">
                       <div className="absolute top-0 left-0 h-full bg-[#c9a84c] rounded-md transition-all duration-1000" style={{ width: `${pct}%` }}></div>
                     </div>
                     <div className="w-24 text-right text-sm font-medium">{formatIndianCurrency(c.revenue)}</div>
                   </div>
                 )
-              }) : <div className="text-sm text-[#1a1a1a]/50">No collection data for this period.</div>}
+              }) : <div className="text-sm text-[#9ca3af]">No collection data for this period.</div>}
             </div>
           </div>
 
           {/* Top Products */}
-          <div className="bg-white p-6 rounded-xl border border-[#1a1a1a]/10 shadow-sm">
-            <h3 className="font-semibold text-[#1a1a1a] mb-4">Top Products</h3>
+          <div className="bg-white p-6 rounded-xl border border-[#ffffff]/10 shadow-sm">
+            <h3 className="font-semibold text-[#1b3a34] mb-4">Top Products</h3>
             <div className="space-y-3">
               {data.top_products.slice(0, 5).map((p: any, i: number) => (
-                <div key={i} className="flex justify-between items-center text-sm border-b border-[#1a1a1a]/5 pb-2 last:border-0">
+                <div key={i} className="flex justify-between items-center text-sm border-b border-[#ffffff]/5 pb-2 last:border-0">
                   <div className="flex items-center space-x-2 truncate pr-4">
-                    <span className="text-[#1a1a1a]/40 font-mono w-4">{i + 1}.</span>
+                    <span className="text-[#6b7280] font-mono w-4">{i + 1}.</span>
                     <span className="truncate">{p.name}</span>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="font-medium text-[#1a1a1a]">{formatIndianCurrency(p.revenue)}</div>
-                    <div className="text-xs text-[#1a1a1a]/50">{p.units_sold} units</div>
+                    <div className="font-medium text-[#1b3a34]">{formatIndianCurrency(p.revenue)}</div>
+                    <div className="text-xs text-[#6b7280]">{p.units_sold} units</div>
                   </div>
                 </div>
               ))}
-              {data.top_products.length === 0 && <div className="text-sm text-[#1a1a1a]/50">No product sales yet.</div>}
+              {data.top_products.length === 0 && <div className="text-sm text-[#9ca3af]">No product sales yet.</div>}
             </div>
           </div>
 
           {/* Highlights */}
           <div className="space-y-6">
-            <div className="bg-white p-6 rounded-xl border border-[#1a1a1a]/10 shadow-sm flex items-center space-x-4">
+            <div className="bg-white p-6 rounded-xl border border-[#ffffff]/10 shadow-sm flex items-center space-x-4">
               <div className="p-3 bg-amber-50 text-amber-600 rounded-full">
                 <AlertTriangle className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-sm font-medium text-[#1a1a1a]/60">Returns & Cancellations</p>
+                <p className="text-sm font-medium text-[#6b7280]">Returns &amp; Cancellations</p>
                 <div className="flex space-x-4 mt-1 text-sm">
                   <div><span className="font-semibold">{data.returns_cancellations.cancelled_count}</span> Cancelled ({formatIndianCurrency(data.returns_cancellations.cancelled_value)})</div>
                   <div><span className="font-semibold">{data.returns_cancellations.return_count}</span> Returns ({formatIndianCurrency(data.returns_cancellations.return_value)})</div>
@@ -293,24 +293,24 @@ function SalesReport() {
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl border border-[#1a1a1a]/10 shadow-sm">
-              <h3 className="font-semibold text-[#1a1a1a] mb-1">Coupon Performance</h3>
-              <div className="mt-4 text-sm divide-y divide-[#1a1a1a]/5">
+            <div className="bg-white p-6 rounded-xl border border-[#ffffff]/10 shadow-sm">
+              <h3 className="font-semibold text-[#1b3a34] mb-1">Coupon Performance</h3>
+              <div className="mt-4 text-sm divide-y divide-[#ffffff]/5">
                 {data.coupon_performance.length > 0 ? data.coupon_performance.map((c: any, i: number) => (
                   <div key={i} className="py-2 flex justify-between items-center">
                     <div className="font-mono bg-[#faf7f2] px-2 py-1 rounded text-xs">{c.coupon_code}</div>
                     <div className="text-right">
                       <div><span className="font-medium">{c.uses}</span> uses</div>
-                      <div className="text-[#1a1a1a]/60 text-xs">-{formatIndianCurrency(c.total_discount)}</div>
+                      <div className="text-[#6b7280] text-xs">-{formatIndianCurrency(c.total_discount)}</div>
                     </div>
                   </div>
-                )) : <div className="text-[#1a1a1a]/50 py-2">No coupons used in this period.</div>}
+                )) : <div className="text-[#9ca3af] py-2">No coupons used in this period.</div>}
               </div>
             </div>
 
             <div className="bg-[#faf7f2] p-4 rounded-xl border border-[#c9a84c]/30 flex items-center space-x-3">
               <span className="text-2xl">📅</span>
-              <p className="text-sm text-[#1a1a1a]">
+              <p className="text-sm text-[#4b5563]">
                 Your busiest sales day historically is <strong>{bestDay}</strong>. Consider running campaigns around this day!
               </p>
             </div>
@@ -386,29 +386,29 @@ function StockReport() {
             <button
               key={t.id}
               onClick={() => setStatus(t.id as any)}
-              className={`px-4 py-2 rounded-md text-sm transition-colors ${status === t.id ? 'bg-[#1a1a1a] text-white' : 'bg-[#faf7f2] border border-[#1a1a1a]/10 hover:bg-[#1a1a1a]/5 text-[#1a1a1a]/70'}`}
+              className={`px-4 py-2 rounded-md text-sm transition-colors ${status === t.id ? 'bg-white text-white' : 'bg-[#faf7f2] border border-[#ffffff]/10 hover:bg-white/5 text-[#ffffff]/70'}`}
             >
               {t.label}
             </button>
           ))}
         </div>
-        <button onClick={handleExport} className="flex items-center space-x-2 bg-white border border-[#1a1a1a]/20 px-4 py-2 rounded-md hover:bg-[#faf7f2] transition-colors">
+        <button onClick={handleExport} className="flex items-center space-x-2 bg-white border border-[#e5e7eb] px-4 py-2 rounded-md hover:bg-[#faf7f2] transition-colors text-[#1b3a34]">
           <Download className="h-4 w-4" />
           <span>Download CSV</span>
         </button>
       </div>
 
       {loading ? (
-        <div className="h-40 flex items-center justify-center text-[#1a1a1a]/50">Loading stock data...</div>
+        <div className="h-40 flex items-center justify-center text-[#6b7280]">Loading stock data...</div>
       ) : data ? (
         <>
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="bg-white p-4 rounded-xl border border-[#1a1a1a]/10 shadow-sm flex items-center justify-between">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-xl border border-[#ffffff]/10 shadow-sm flex items-center justify-between">
               <div>
-                <p className="text-xs text-[#1a1a1a]/60">Total SKUs</p>
+                <p className="text-xs text-[#6b7280]">Total SKUs</p>
                 <p className="text-xl font-bold mt-1">{data.summary.total_skus}</p>
               </div>
-              <Package className="h-8 w-8 text-[#1a1a1a]/20" />
+              <Package className="h-8 w-8 text-[#ffffff]/20" />
             </div>
             <div className="bg-red-50 p-4 rounded-xl border border-red-100 shadow-sm flex items-center justify-between">
               <div>
@@ -424,23 +424,23 @@ function StockReport() {
               </div>
               <AlertTriangle className="h-8 w-8 text-amber-200" />
             </div>
-            <div className="bg-white p-4 rounded-xl border border-[#1a1a1a]/10 shadow-sm flex items-center justify-between">
+            <div className="bg-white p-4 rounded-xl border border-[#ffffff]/10 shadow-sm flex items-center justify-between">
               <div>
-                <p className="text-xs text-[#1a1a1a]/60">Total Stock Value</p>
+                <p className="text-xs text-[#6b7280]">Total Stock Value</p>
                 <p className="text-xl font-bold text-[#c9a84c] mt-1">{formatIndianCurrency(data.summary.total_stock_value)}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-[#c9a84c]/20" />
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#1a1a1a]/10 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl border border-[#ffffff]/10 shadow-sm overflow-hidden">
             <div className="p-3 bg-red-50 border-b border-red-100 text-sm text-red-800 flex justify-between items-center">
               <span>Restock Reminder: {data.summary.out_of_stock} SKUs require immediate attention.</span>
               <span className="text-xs opacity-70">Last updated: {new Date().toLocaleTimeString()}</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-[#faf7f2] border-b border-[#1a1a1a]/10 text-[#1a1a1a]/70 font-medium">
+                <thead className="bg-[#faf7f2] border-b border-[#e5e7eb] text-[#6b7280] font-medium">
                   <tr>
                     <th className="px-4 py-3">Product</th>
                     <th className="px-4 py-3">Variant (Size/Color)</th>
@@ -451,11 +451,11 @@ function StockReport() {
                     <th className="px-4 py-3 text-right">Value</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1a1a1a]/5">
+                <tbody className="divide-y divide-[#ffffff]/5">
                   {data.variants.map((v: any) => (
                     <tr key={v.variant_id} className="hover:bg-[#faf7f2]/50">
                       <td className="px-4 py-3 font-medium truncate max-w-[200px]">{v.product_name}</td>
-                      <td className="px-4 py-3 text-[#1a1a1a]/70">{v.size} {v.color ? `/ ${v.color}` : ''}</td>
+                      <td className="px-4 py-3 text-[#4b5563]">{v.size} {v.color ? `/ ${v.color}` : ''}</td>
                       <td className="px-4 py-3 font-mono text-xs">{v.sku}</td>
                       <td className="px-4 py-3 text-center">
                         {v.status === 'out' ? (
@@ -466,7 +466,7 @@ function StockReport() {
                           <span className="inline-flex items-center space-x-1 text-green-600 bg-green-50 px-2 py-0.5 rounded text-xs font-medium border border-green-100"><CheckCircle className="h-3 w-3" /><span>OK</span></span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right text-[#1a1a1a]/50">{v.low_stock_threshold}</td>
+                      <td className="px-4 py-3 text-right text-[#6b7280]">{v.low_stock_threshold}</td>
                       <td className="px-4 py-3 text-right">
                         {editingId === v.variant_id ? (
                           <input
@@ -495,7 +495,7 @@ function StockReport() {
                   ))}
                   {data.variants.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-[#1a1a1a]/50">No products found.</td>
+                      <td colSpan={7} className="px-4 py-8 text-center text-[#9ca3af]">No products found.</td>
                     </tr>
                   )}
                 </tbody>

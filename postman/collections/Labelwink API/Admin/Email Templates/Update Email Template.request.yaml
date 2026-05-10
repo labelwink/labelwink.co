@@ -1,0 +1,12 @@
+$kind: http-request
+name: Update Email Template
+method: PATCH
+url: '{{baseUrl}}/api/admin/email-templates'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"template_id": "welcome", "subject": "Welcome!", "body": ""}

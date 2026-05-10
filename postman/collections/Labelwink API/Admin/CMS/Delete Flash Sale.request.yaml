@@ -1,0 +1,5 @@
+$kind: http-request
+name: Delete Flash Sale
+method: DELETE
+url: '{{baseUrl}}/api/admin/cms/flash-sale'
+order: 12000

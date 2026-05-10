@@ -1,0 +1,12 @@
+$kind: http-request
+name: Bulk Order Action
+method: POST
+url: '{{baseUrl}}/api/admin/orders/bulk'
+order: 6000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"order_ids": ["id1", "id2"], "action": "mark_shipped"}

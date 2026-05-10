@@ -1,0 +1,12 @@
+$kind: http-request
+name: Validate Coupon
+method: POST
+url: '{{baseUrl}}/api/storefront/validate-coupon'
+order: 5000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"code": "SAVE10", "subtotal": 1000}

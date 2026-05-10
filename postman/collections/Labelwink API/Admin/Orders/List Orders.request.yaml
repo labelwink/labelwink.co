@@ -1,0 +1,12 @@
+$kind: http-request
+name: List Orders
+method: GET
+url: '{{baseUrl}}/api/admin/orders'
+order: 1000
+queryParams:
+  - key: page
+    value: '1'
+  - key: per_page
+    value: '20'
+  - key: status
+    value: ''

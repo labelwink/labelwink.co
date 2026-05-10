@@ -1,0 +1,12 @@
+$kind: http-request
+name: Confirm Order
+method: POST
+url: '{{baseUrl}}/api/storefront/checkout/confirm'
+order: 4000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"razorpay_payment_id": "pay_id", "razorpay_order_id": "order_id", "razorpay_signature": "sig", "address_id": "addr_id", "shipping_method": "standard", "coupon_code": "", "use_loyalty_points": false, "cart_items": [{"product_id": "prod_id", "quantity": 1, "size": "M"}]}

@@ -9,46 +9,33 @@ import { useCartStore } from '@/store/useCartStore'
 
 interface Variant {
   id: string; size: string; color: string | null; stock_qty: number
-  price: number; mrp: number | null; is_active: boolean
+  price: number; compare_at_price: number | null; is_active: boolean
 }
 
 interface Product {
   id: string; name: string; slug: string; price: number
-  mrp: number | null; compare_at_price: number | null
-  images: any; created_at: string
-  fabric_material: string | null; sleeve_type: string | null
-  occasion_tags: string[] | null; product_variants: Variant[]
-}
-
-function getImageUrl(images: any, index = 0): string {
-  if (!images) return ''
-  if (Array.isArray(images)) {
-    const img = images[index] ?? images[0]
-    return img?.url ?? img?.src ?? ''
-  }
-  if (typeof images === 'object') return images.url ?? images.src ?? ''
-  return String(images)
-}
-
-const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-function cloudUrl(publicId: string) {
-  return `https://res.cloudinary.com/${CLOUD}/image/upload/f_auto,q_auto,w_400/${publicId}`
+  compare_at_price: number | null
+  product_images: any[]; created_at: string
+  fabric: string | null
+  occasion: string | null
+  product_variants: Variant[]
 }
 
 export function ProductCatalogCard({ product, listView = false }: { product: Product; listView?: boolean }) {
   const addItem = useCartStore(s => s.addItem)
-
   const [hovered, setHovered] = useState(false)
   const [quickOpen, setQuickOpen] = useState(false)
   const [addedSize, setAddedSize] = useState('')
   const [justAdded, setJustAdded] = useState(false)
 
   // Images
-  const img1 = getImageUrl(product.images, 0)
-  const img2 = getImageUrl(product.images, 1)
+  const coverImg = product.product_images?.find((i: any) => i.is_cover || i.is_primary) || product.product_images?.[0]
+  const secondImg = product.product_images?.[1]
+  const img1 = coverImg?.url ?? ''
+  const img2 = secondImg?.url ?? ''
 
   // Price
-  const mrp = product.mrp ?? product.compare_at_price
+  const mrp = product.compare_at_price
   const price = product.price
   const discount = mrp && mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0
 
@@ -59,7 +46,6 @@ export function ProductCatalogCard({ product, listView = false }: { product: Pro
   const totalStock = activeVariants.reduce((s, v) => s + v.stock_qty, 0)
   const lowStock = inStockVariants.find(v => v.stock_qty > 0 && v.stock_qty <= 5)
 
-  // Badges
   const isNew = Date.now() - new Date(product.created_at).getTime() < 30 * 86400_000
   const isSale = discount > 0
   const isOOS = totalStock === 0
@@ -85,30 +71,34 @@ export function ProductCatalogCard({ product, listView = false }: { product: Pro
 
   if (listView) {
     return (
-      <div className="flex gap-4 bg-white rounded-xl p-3 border border-[#c9a84c]/10 hover:border-[#c9a84c]/30 transition-colors">
-        <Link href={`/products/${product.slug}`} className="relative w-28 flex-shrink-0 aspect-[3/4] overflow-hidden rounded-lg bg-[#faf7f2]">
+      <div style={{ display: 'flex', gap: '16px', background: '#ffffff', borderRadius: '10px', padding: '12px', border: '1px solid #E8DFC8' }}>
+        <Link href={`/products/${product.slug}`} style={{ position: 'relative', width: '112px', flexShrink: 0, aspectRatio: '3/4', overflow: 'hidden', borderRadius: '8px', background: '#f5f2ec', display: 'block' }}>
           {img1 && <Image src={img1} alt={product.name} fill className="object-cover" sizes="112px" />}
         </Link>
-        <div className="flex-1 flex flex-col justify-between py-1">
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '4px 0' }}>
           <div>
-            <div className="flex gap-1.5 mb-1">
-              {isNew && <span className="text-[10px] bg-[#c9a84c] text-white px-1.5 py-0.5 rounded font-semibold">NEW</span>}
-              {isSale && <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded font-semibold">SALE</span>}
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+              {isNew && <span style={{ fontSize: '10px', background: '#c9a84c', color: '#faf8f4', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>NEW</span>}
+              {isSale && <span style={{ fontSize: '10px', background: 'rgba(248,113,113,0.2)', color: '#f87171', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>SALE</span>}
             </div>
-            <Link href={`/products/${product.slug}`} className="text-sm font-medium text-[#1a1a1a] line-clamp-2 hover:text-[#c9a84c] transition-colors">{product.name}</Link>
-            {product.fabric_material && <p className="text-xs text-[#1a1a1a]/40 mt-0.5">{product.fabric_material}</p>}
+            <Link href={`/products/${product.slug}`} style={{ fontSize: '14px', fontWeight: 500, color: '#1a2e1e', textDecoration: 'none', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden' }}>
+              {product.name}
+            </Link>
+            {product.fabric && <p style={{ fontSize: '12px', color: '#9aab9e', marginTop: '4px' }}>{product.fabric}</p>}
           </div>
           <div>
-            <div className="flex flex-wrap gap-1 mb-2">
-              {sizes.slice(0, 6).map(sz => <span key={sz} className="text-[10px] border border-[#c9a84c]/30 rounded px-1.5 py-0.5 text-[#1a1a1a]/60">{sz}</span>)}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+              {sizes.slice(0, 6).map(sz => (
+                <span key={sz} style={{ fontSize: '10px', border: '1px solid #E8DFC8', borderRadius: '4px', padding: '2px 6px', color: '#9aab9e' }}>{sz}</span>
+              ))}
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-[#1a1a1a]">₹{price.toLocaleString('en-IN')}</span>
-                {mrp && mrp > price && <span className="text-xs text-[#1a1a1a]/40 line-through">₹{mrp.toLocaleString('en-IN')}</span>}
-                {discount > 0 && <span className="text-[10px] text-green-700 bg-green-50 px-1.5 py-0.5 rounded font-semibold">{discount}% off</span>}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontWeight: 700, color: '#1a2e1e' }}>₹{price.toLocaleString('en-IN')}</span>
+                {mrp && mrp > price && <span style={{ fontSize: '12px', color: '#9aab9e', textDecoration: 'line-through' }}>₹{mrp.toLocaleString('en-IN')}</span>}
+                {discount > 0 && <span style={{ fontSize: '10px', color: '#4ade80', fontWeight: 600 }}>{discount}% off</span>}
               </div>
-              <WishlistButton productId={product.id} className="p-1.5 rounded-full bg-[#faf7f2] text-[#1a1a1a]/50 hover:text-red-500 transition-colors" />
+              <WishlistButton productId={product.id} className="p-1.5 rounded-full bg-[#f5f2ec] text-[#9aab9e] hover:text-red-400 transition-colors" />
             </div>
           </div>
         </div>
@@ -118,71 +108,81 @@ export function ProductCatalogCard({ product, listView = false }: { product: Pro
 
   return (
     <div
-      className="group relative flex flex-col gap-2.5"
+      style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '10px' }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Image */}
-      <div className="relative aspect-[3/4] overflow-hidden rounded-sm bg-[#faf7f2]">
-        <Link href={`/products/${product.slug}`} className="absolute inset-0 block">
+      {/* Image area */}
+      <div style={{ position: 'relative', aspectRatio: '3/4', overflow: 'hidden', borderRadius: '8px', background: '#ffffff' }}>
+        <Link href={`/products/${product.slug}`} style={{ position: 'absolute', inset: 0, display: 'block' }}>
           {img1 && (
             <Image
               src={img1} alt={product.name} fill sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, 25vw"
-              className={`object-cover transition-opacity duration-500 ${img2 && hovered ? 'opacity-0' : 'opacity-100'}`}
+              style={{ objectFit: 'cover', transition: 'opacity 400ms', opacity: img2 && hovered ? 0 : 1 }}
             />
           )}
           {img2 && (
             <Image
               src={img2} alt={product.name} fill sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, 25vw"
-              className={`object-cover absolute inset-0 transition-opacity duration-500 ${hovered ? 'opacity-100' : 'opacity-0'}`}
+              style={{ objectFit: 'cover', position: 'absolute', inset: 0, transition: 'opacity 400ms', opacity: hovered ? 1 : 0 }}
             />
           )}
         </Link>
 
         {/* OOS overlay */}
         {isOOS && (
-          <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 pointer-events-none">
-            <span className="bg-[#1a1a1a] text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1.5">Out of Stock</span>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+            <span style={{ background: '#ffffff', color: '#9aab9e', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 10px', borderRadius: '4px' }}>Out of Stock</span>
           </div>
         )}
 
         {/* Badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1 z-20">
-          {isNew && !isSale && <span className="bg-[#c9a84c] text-white text-[9px] uppercase tracking-widest px-2 py-1 font-bold">New</span>}
-          {isSale && <span className="bg-red-500 text-white text-[9px] uppercase tracking-widest px-2 py-1 font-bold">Sale</span>}
+        <div style={{ position: 'absolute', top: '8px', left: '8px', display: 'flex', flexDirection: 'column', gap: '4px', zIndex: 20 }}>
+          {isNew && !isSale && <span style={{ background: '#c9a84c', color: '#faf8f4', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>New</span>}
+          {isSale && <span style={{ background: 'rgba(248,113,113,0.9)', color: '#fff', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>Sale</span>}
         </div>
 
-        {/* Low stock badge */}
+        {/* Low stock */}
         {lowStock && !isOOS && (
-          <div className="absolute bottom-12 left-2 z-20">
-            <span className="bg-[#1a1a1a]/80 text-white text-[9px] px-2 py-0.5 rounded font-medium">Only {lowStock.stock_qty} left!</span>
+          <div style={{ position: 'absolute', bottom: '48px', left: '8px', zIndex: 20 }}>
+            <span style={{ background: 'rgba(0,0,0,0.8)', color: '#fb923c', fontSize: '9px', padding: '2px 6px', borderRadius: '4px', fontWeight: 500 }}>Only {lowStock.stock_qty} left!</span>
           </div>
         )}
 
         {/* Wishlist */}
-        <div className="absolute top-2 right-2 z-20">
+        <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 20 }}>
           <WishlistButton
             productId={product.id}
-            className="p-1.5 rounded-full bg-white/80 backdrop-blur-sm text-[#1a1a1a]/60 hover:text-red-500 hover:bg-white transition-all shadow-sm"
+            className="p-1.5 rounded-full bg-black/50 backdrop-blur-sm text-white/60 hover:text-red-400 transition-all"
           />
         </div>
 
         {/* Quick Add */}
         {!isOOS && (
-          <div className={`absolute bottom-0 left-0 right-0 z-20 transition-all duration-300 ${hovered || quickOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'} md:group-hover:translate-y-0 md:group-hover:opacity-100`}>
+          <div style={{
+            position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20,
+            transition: 'transform 250ms, opacity 250ms',
+            transform: hovered || quickOpen ? 'translateY(0)' : 'translateY(100%)',
+            opacity: hovered || quickOpen ? 1 : 0,
+          }}>
             {quickOpen ? (
-              <div className="bg-white border-t border-[#c9a84c]/20 p-2">
-                <p className="text-[10px] text-[#1a1a1a]/50 text-center mb-1.5 uppercase tracking-widest">Select Size</p>
-                <div className="flex flex-wrap gap-1.5 justify-center">
+              <div style={{ background: '#ffffff', borderTop: '1px solid #333', padding: '10px' }}>
+                <p style={{ fontSize: '10px', color: '#9aab9e', textAlign: 'center', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Select Size</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center' }}>
                   {sizes.map(sz => {
                     const isAdded = justAdded && addedSize === sz
                     return (
                       <button
                         key={sz}
                         onClick={() => handleAdd(sz)}
-                        className={`px-3 py-1.5 text-xs rounded-full border font-medium transition-all ${
-                          isAdded ? 'bg-green-500 border-green-500 text-white' : 'border-[#c9a84c] text-[#1a1a1a] hover:bg-[#c9a84c] hover:text-white'
-                        }`}
+                        style={{
+                          padding: '4px 10px', fontSize: '12px', borderRadius: '6px',
+                          border: `1px solid ${isAdded ? '#4ade80' : '#c9a84c'}`,
+                          background: isAdded ? '#4ade80' : 'transparent',
+                          color: isAdded ? '#faf8f4' : '#c9a84c',
+                          cursor: 'pointer', fontWeight: 500, transition: 'all 150ms',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}
                       >
                         {isAdded ? <Check size={12} /> : sz}
                       </button>
@@ -193,38 +193,48 @@ export function ProductCatalogCard({ product, listView = false }: { product: Pro
             ) : (
               <button
                 onClick={e => { e.preventDefault(); if (sizes.length === 1) { handleAdd(sizes[0]) } else { setQuickOpen(true) } }}
-                className="flex items-center justify-center gap-1.5 w-full py-2.5 bg-[#1a1a1a]/90 hover:bg-[#c9a84c] text-white text-xs font-semibold transition-colors duration-200"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                  width: '100%', padding: '10px',
+                  background: 'rgba(10,10,10,0.9)',
+                  color: '#ffffff', fontSize: '12px', fontWeight: 600,
+                  border: 'none', cursor: 'pointer',
+                  transition: 'background 150ms',
+                }}
               >
                 <ShoppingBag size={13} />
-                {justAdded ? 'Added! ✓' : 'Quick Add'}
+                {justAdded ? 'Added ✓' : 'Quick Add'}
               </button>
             )}
           </div>
         )}
       </div>
 
-      {/* Info */}
-      <div className="flex flex-col gap-1">
-        {/* In-stock sizes */}
+      {/* Product Info */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {sizes.length > 0 && (
-          <div className="flex flex-wrap gap-1">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
             {sizes.slice(0, 5).map(sz => (
-              <span key={sz} className="text-[9px] border border-[#1a1a1a]/15 rounded px-1.5 py-0.5 text-[#1a1a1a]/50">{sz}</span>
+              <span key={sz} style={{ fontSize: '9px', border: '1px solid #E8DFC8', borderRadius: '4px', padding: '1px 5px', color: '#9aab9e' }}>{sz}</span>
             ))}
-            {sizes.length > 5 && <span className="text-[9px] text-[#1a1a1a]/40">+{sizes.length - 5}</span>}
+            {sizes.length > 5 && <span style={{ fontSize: '9px', color: '#9aab9e' }}>+{sizes.length - 5}</span>}
           </div>
         )}
 
-        <Link href={`/products/${product.slug}`} className="text-sm font-medium text-[#1a1a1a] line-clamp-2 hover:text-[#c9a84c] transition-colors leading-tight">
+        <Link href={`/products/${product.slug}`} style={{
+          fontSize: '13px', fontWeight: 500, color: '#1a2e1e', textDecoration: 'none',
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any,
+          overflow: 'hidden', lineHeight: 1.4, transition: 'color 150ms',
+        }}>
           {product.name}
         </Link>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-bold text-[#1a1a1a] text-sm">₹{price.toLocaleString('en-IN')}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 700, color: '#1a2e1e', fontSize: '14px' }}>₹{price.toLocaleString('en-IN')}</span>
           {mrp && mrp > price && (
             <>
-              <span className="text-xs text-[#1a1a1a]/40 line-through">₹{mrp.toLocaleString('en-IN')}</span>
-              <span className="text-[10px] text-green-700 bg-green-50 px-1.5 py-0.5 rounded font-semibold">{discount}% off</span>
+              <span style={{ fontSize: '12px', color: '#9aab9e', textDecoration: 'line-through' }}>₹{mrp.toLocaleString('en-IN')}</span>
+              <span style={{ fontSize: '10px', color: '#4ade80', fontWeight: 600 }}>{discount}% off</span>
             </>
           )}
         </div>

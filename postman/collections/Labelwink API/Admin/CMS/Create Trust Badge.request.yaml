@@ -1,0 +1,12 @@
+$kind: http-request
+name: Create Trust Badge
+method: POST
+url: '{{baseUrl}}/api/admin/cms/trust-badges'
+order: 19000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"title": "Free Shipping", "icon": "", "description": ""}

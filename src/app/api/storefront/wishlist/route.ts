@@ -14,17 +14,27 @@ export async function GET() {
       .select(`
         *,
         products (
-          id, name, slug, price, compare_at_price, images,
+          id, name, slug, price, compare_at_price,
+          product_images (url, alt, is_cover, sort_order),
           product_variants (size, stock_qty)
         )
       `, { count: 'exact' })
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
-    if (error) throw new Error(error.message)
+    if (error) {
+      console.error('Wishlist query error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
-    const items = wishlists.map(w => {
+    const items = wishlists?.map(w => {
       const p = Array.isArray(w.products) ? w.products[0] : w.products;
+      if (!p) return null;
+      // Get cover image URL from product_images join
+      const coverImage =
+        (p.product_images as any[])?.find((img: any) => img.is_cover)?.url
+        ?? (p.product_images as any[])?.[0]?.url
+        ?? null;
       return {
         ...w,
         product_id: p.id,
@@ -32,13 +42,15 @@ export async function GET() {
         slug: p.slug,
         price: p.price,
         compare_at_price: p.compare_at_price,
-        images: p.images,
-        variants: p.product_variants
+        image_url: coverImage,
+        product_images: p.product_images,
+        variants: p.product_variants,
       }
-    })
+    }).filter(Boolean) || [];
 
     return NextResponse.json({ items, count: count || items.length })
   } catch (err: unknown) {
+    console.error('Wishlist GET error:', err);
     const msg = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
@@ -47,8 +59,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const body = await req.json()
     const { product_id } = body
@@ -68,11 +80,14 @@ export async function POST(req: NextRequest) {
       .from('wishlists')
       .insert({ user_id: user.id, product_id })
     
-    // ignore duplicate conflict by checking error code
-    if (error && error.code !== '23505') throw new Error(error.message)
+    if (error && error.code !== '23505') {
+      console.error('Wishlist insert error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
     return NextResponse.json({ added: true, product_id })
   } catch (err: unknown) {
+    console.error('Wishlist POST error:', err);
     const msg = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json({ error: msg }, { status: 500 })
   }
@@ -81,8 +96,8 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const supabase = await createClient()
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const product_id = req.nextUrl.searchParams.get('product_id')
     if (!product_id) return NextResponse.json({ error: 'Missing product_id' }, { status: 400 })
@@ -93,10 +108,14 @@ export async function DELETE(req: NextRequest) {
       .eq('user_id', user.id)
       .eq('product_id', product_id)
 
-    if (error) throw new Error(error.message)
+    if (error) {
+      console.error('Wishlist delete error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
     return NextResponse.json({ removed: true, product_id })
   } catch (err: unknown) {
+    console.error('Wishlist DELETE error:', err);
     const msg = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json({ error: msg }, { status: 500 })
   }

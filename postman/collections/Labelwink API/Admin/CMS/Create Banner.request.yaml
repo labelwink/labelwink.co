@@ -1,0 +1,12 @@
+$kind: http-request
+name: Create Banner
+method: POST
+url: '{{baseUrl}}/api/admin/cms/banners'
+order: 4000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"title": "Banner Title", "image": "", "link": "", "is_active": true}

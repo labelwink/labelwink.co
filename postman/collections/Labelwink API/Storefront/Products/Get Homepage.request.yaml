@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Homepage
+method: GET
+url: '{{baseUrl}}/api/storefront/homepage'
+order: 6000

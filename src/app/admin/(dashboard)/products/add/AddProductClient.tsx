@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -89,7 +89,7 @@ export default function AddProductClient({ categories }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="admin-page-title">Add New Product</h1>
-          <p className="text-sm text-gray-400 mt-1">Create a new piece in your collection.</p>
+          <p className="text-sm text-[#5a7060] mt-1">Create a new piece in your collection.</p>
         </div>
         <div className="flex gap-3">
           <Button type="button" variant="outline" onClick={() => router.back()} className="rounded-xl border-sage/20">
@@ -202,7 +202,7 @@ export default function AddProductClient({ categories }: Props) {
               <div className="space-y-2">
                 <label className="admin-section-label">Selling Price (₹) <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5a7060] w-4 h-4" />
                   <input 
                     name="base_price" type="number" required value={formData.base_price} onChange={handleInputChange}
                     className="w-full bg-sage/5 border border-sage/10 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-teal text-sm font-semibold"
@@ -213,7 +213,7 @@ export default function AddProductClient({ categories }: Props) {
               <div className="space-y-2">
                 <label className="admin-section-label">MRP (₹) <span className="text-red-500">*</span></label>
                 <div className="relative">
-                  <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-[#5a7060] w-4 h-4" />
                   <input 
                     name="mrp" type="number" required value={formData.mrp} onChange={handleInputChange}
                     className="w-full bg-sage/5 border border-sage/10 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-teal text-sm"

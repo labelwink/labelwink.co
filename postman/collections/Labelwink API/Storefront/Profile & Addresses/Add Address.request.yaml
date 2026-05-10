@@ -1,0 +1,12 @@
+$kind: http-request
+name: Add Address
+method: POST
+url: '{{baseUrl}}/api/storefront/addresses'
+order: 4000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"name": "Home", "line1": "123 Main St", "city": "Mumbai", "state": "Maharashtra", "pincode": "400001", "phone": "9876543210", "is_default": true}

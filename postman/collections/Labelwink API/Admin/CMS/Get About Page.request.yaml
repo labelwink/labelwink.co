@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get About Page
+method: GET
+url: '{{baseUrl}}/api/admin/cms/about'
+order: 1000

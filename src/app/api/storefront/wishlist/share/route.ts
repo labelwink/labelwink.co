@@ -23,7 +23,8 @@ export async function GET(req: NextRequest) {
       .select(`
         *,
         products (
-          id, name, slug, price, compare_at_price, images,
+          id, name, slug, price, compare_at_price,
+          product_images (url, alt, is_cover, sort_order),
           product_variants (size, stock_qty)
         )
       `)
@@ -34,6 +35,10 @@ export async function GET(req: NextRequest) {
 
     const items = wishlists.map(w => {
       const p = Array.isArray(w.products) ? w.products[0] : w.products;
+      const coverImage =
+        (p.product_images as any[])?.find((img: any) => img.is_cover)?.url
+        ?? (p.product_images as any[])?.[0]?.url
+        ?? null;
       return {
         ...w,
         product_id: p.id,
@@ -41,8 +46,9 @@ export async function GET(req: NextRequest) {
         slug: p.slug,
         price: p.price,
         compare_at_price: p.compare_at_price,
-        images: p.images,
-        variants: p.product_variants
+        image_url: coverImage,
+        product_images: p.product_images,
+        variants: p.product_variants,
       }
     })
 

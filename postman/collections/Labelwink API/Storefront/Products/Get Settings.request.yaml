@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Settings
+method: GET
+url: '{{baseUrl}}/api/storefront/settings'
+order: 8000

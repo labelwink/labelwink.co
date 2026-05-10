@@ -1,0 +1,12 @@
+$kind: http-request
+name: Add to Wishlist
+method: POST
+url: '{{baseUrl}}/api/storefront/wishlist'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"product_id": "prod_id"}

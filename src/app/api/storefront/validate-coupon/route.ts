@@ -64,7 +64,7 @@ export async function POST(req: Request) {
       discount_amount,
       type: discount.type,
       code: discount.code,
-      message: discount.type === 'free_shipping' ? `Free shipping applied!` : `₹${discount_amount} off applied!`
+      message: discount.type === 'free_shipping' ? `Shipping charge waived!` : `₹${discount_amount} off applied!`
     });
 
   } catch (err: any) {

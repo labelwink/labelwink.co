@@ -37,7 +37,7 @@ function Stars({ rating }: { rating: number }) {
   return (
     <div className="flex items-center gap-0.5">
       {[1,2,3,4,5].map(i => (
-        <Star key={i} size={12} className={i <= rating ? 'fill-[#c9a84c] text-[#c9a84c]' : 'text-gray-200'} />
+        <Star key={i} size={12} className={i <= rating ? 'fill-[#c9a84c] text-[#c9a84c]' : 'text-[#1a2e1e]'} />
       ))}
       <span className="text-[10px] text-[#9ca3af] ml-1">{rating}/5</span>
     </div>
@@ -188,7 +188,7 @@ export default function ReviewsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#1a1a1a]">Reviews</h1>
+          <h1 className="text-xl font-bold text-[#1b3a34]">Reviews</h1>
           <p className="text-xs text-[#6b7280] mt-0.5">Moderate and manage customer reviews</p>
         </div>
         <button onClick={() => { fetchReviews(); fetchCounts() }} disabled={loading}
@@ -203,7 +203,7 @@ export default function ReviewsPage() {
           { label: 'Pending',  value: counts.pending,  color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-200' },
           { label: 'Approved', value: counts.approved, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
           { label: 'Rejected', value: counts.rejected, color: 'text-red-600',    bg: 'bg-red-50',     border: 'border-red-200' },
-          { label: 'Total',    value: counts.all,      color: 'text-[#1a1a1a]',  bg: 'bg-white',      border: 'border-[#e5e7eb]' },
+          { label: 'Total',    value: counts.all,      color: 'text-[#1b3a34]',  bg: 'bg-white',      border: 'border-[#e5e7eb]' },
         ].map(s => (
           <div key={s.label} className={`border ${s.border} ${s.bg} rounded-xl px-4 py-3 text-center`}>
             <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
@@ -219,7 +219,7 @@ export default function ReviewsPage() {
             onClick={() => push({ status: tab.value, page: '' })}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all border ${
               status === tab.value
-                ? 'bg-[#1a1a1a] text-white border-[#1a1a1a]'
+                ? 'bg-white text-white border-[#ffffff]'
                 : 'bg-white border-[#e5e7eb] text-[#6b7280] hover:bg-gray-50'
             }`}>
             <span className={`w-1.5 h-1.5 rounded-full ${tab.dot}`} />
@@ -254,7 +254,7 @@ export default function ReviewsPage() {
         </div>
       ) : reviews.length === 0 ? (
         <div className="bg-white border border-[#e5e7eb] rounded-xl p-16 text-center">
-          <MessageSquare size={32} className="mx-auto text-gray-200 mb-3" />
+          <MessageSquare size={32} className="mx-auto text-[#1a2e1e] mb-3" />
           <p className="text-sm text-[#6b7280]">No {status} reviews</p>
         </div>
       ) : (
@@ -272,7 +272,7 @@ export default function ReviewsPage() {
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="font-semibold text-sm text-[#1a1a1a]">
+                      <span className="font-semibold text-sm text-[#1b3a34]">
                         {review.profiles?.full_name || 'Anonymous'}
                       </span>
                       {review.is_verified_purchase && (
@@ -305,7 +305,7 @@ export default function ReviewsPage() {
 
                 {/* Body */}
                 <div className="bg-[#f9f9f9] rounded-lg p-3.5 mb-3">
-                  {review.title && <p className="font-semibold text-sm text-[#1a1a1a] mb-1">{review.title}</p>}
+                  {review.title && <p className="font-semibold text-sm text-[#1b3a34] mb-1">{review.title}</p>}
                   <p className="text-sm text-[#4b5563] leading-relaxed">
                     {review.body || <span className="text-[#9ca3af] italic">No body text</span>}
                   </p>
@@ -361,7 +361,7 @@ export default function ReviewsPage() {
                     />
                     <div className="flex gap-2 flex-wrap">
                       <button onClick={() => saveReply(review.id)} disabled={state.saving}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a1a1a] text-white rounded-lg text-xs font-semibold hover:bg-[#333] disabled:opacity-50 transition-colors">
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-white rounded-lg text-xs font-semibold hover:bg-[#333] disabled:opacity-50 transition-colors">
                         <Send size={11} /> {state.saving ? 'Saving…' : 'Save Reply'}
                       </button>
                       {review.status === 'pending' && state.text && (
@@ -377,7 +377,7 @@ export default function ReviewsPage() {
                         </button>
                       )}
                       <button onClick={() => setR(review.id, { open: false })}
-                        className="ml-auto px-3 py-1.5 text-xs text-[#6b7280] hover:text-[#1a1a1a] transition-colors">
+                        className="ml-auto px-3 py-1.5 text-xs text-[#6b7280] hover:text-[#ffffff] transition-colors">
                         Cancel
                       </button>
                     </div>
@@ -400,7 +400,7 @@ export default function ReviewsPage() {
                         {state.saving ? 'Rejecting…' : 'Confirm Reject'}
                       </button>
                       <button onClick={() => setR(review.id, { rejectOpen: false })}
-                        className="px-3 py-1.5 text-xs text-[#6b7280] hover:text-[#1a1a1a] transition-colors">Cancel</button>
+                        className="px-3 py-1.5 text-xs text-[#6b7280] hover:text-[#ffffff] transition-colors">Cancel</button>
                     </div>
                   </div>
                 )}

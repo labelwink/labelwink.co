@@ -1,0 +1,5 @@
+$kind: http-request
+name: Send Campaign
+method: POST
+url: '{{baseUrl}}/api/admin/campaigns/{{campaignId}}/send'
+order: 5000

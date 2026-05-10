@@ -1,49 +1,40 @@
 'use client'
-
 import { useEffect } from 'react'
 
-interface AdminErrorProps {
+export default function AdminError({
+  error,
+  reset,
+}: {
   error: Error & { digest?: string }
   reset: () => void
-}
-
-export default function AdminError({ error, reset }: AdminErrorProps) {
+}) {
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('[admin error]', error)
-    }
+    console.error('[Admin Error]', error)
   }, [error])
 
-  const isDev = process.env.NODE_ENV === 'development'
-
   return (
-    <div className="min-h-[50vh] flex flex-col items-center justify-center px-4 text-center">
-      <div className="w-14 h-14 rounded-xl bg-red-50 flex items-center justify-center mb-4 text-2xl border border-red-100">
-        ⚠️
+    <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8">
+      <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+        <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+          />
+        </svg>
       </div>
-      <h1 className="text-lg font-bold text-[#1a1a1a] mb-1">Admin Panel Error</h1>
-      <p className="text-sm text-[#6b7280] max-w-sm mb-6">
-        {isDev ? error.message : 'An unexpected error occurred. Please try again or reload the page.'}
+      <h2 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h2>
+      <p className="text-gray-500 text-sm mb-6 max-w-sm">
+        {error.message ?? 'An unexpected error occurred. Please try again.'}
       </p>
-      <div className="flex items-center gap-3">
-        <button
-          onClick={reset}
-          className="px-4 py-2 bg-[#1b3a34] text-white rounded-lg text-xs font-semibold hover:bg-[#16312b]"
-        >
-          Try again
-        </button>
-        <button
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 border border-[#e5e7eb] text-[#1a1a1a] rounded-lg text-xs font-semibold hover:bg-gray-50"
-        >
-          Reload page
-        </button>
-      </div>
-      {isDev && error.stack && (
-        <pre className="mt-6 text-left text-[10px] bg-gray-50 border border-gray-200 rounded-lg p-4 max-w-xl overflow-x-auto text-red-700">
-          {error.stack}
-        </pre>
-      )}
+      <button
+        type="button"
+        onClick={reset}
+        className="bg-[#1C3829] text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-[#24472F] transition-colors"
+      >
+        Try Again
+      </button>
     </div>
   )
 }

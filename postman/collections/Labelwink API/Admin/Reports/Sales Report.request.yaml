@@ -1,0 +1,10 @@
+$kind: http-request
+name: Sales Report
+method: GET
+url: '{{baseUrl}}/api/admin/reports/sales'
+order: 2000
+queryParams:
+  - key: from
+    value: '2024-01-01'
+  - key: to
+    value: '2024-12-31'

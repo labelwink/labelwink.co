@@ -1,9 +1,10 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface SearchProduct {
   id: string
@@ -93,18 +94,18 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
             value={query}
             onChange={e => handleQueryChange(e.target.value)}
             placeholder="Search for kurtas, co-ords, festive wear…"
-            className="flex-1 bg-transparent text-[#1a1a1a] text-base placeholder:text-gray-400 focus:outline-none"
+            className="flex-1 bg-transparent text-gray-900 text-base placeholder:text-gray-400 focus:outline-none"
           />
           {loading && <Loader2 className="w-5 h-5 text-[#1a3a34] animate-spin flex-shrink-0" />}
           <button
             onClick={onClose}
-            className="flex-shrink-0 text-gray-500 hover:text-[#1a3a34] transition-colors text-sm font-medium md:hidden"
+            className="flex-shrink-0 text-[#9aab9e] hover:text-[#1a3a34] transition-colors text-sm font-medium md:hidden"
           >
             Cancel
           </button>
           <button
             onClick={onClose}
-            className="flex-shrink-0 text-gray-400 hover:text-[#1a3a34] transition-colors p-1 hidden md:block"
+            className="flex-shrink-0 text-[#5a7060] hover:text-[#1a3a34] transition-colors p-1 hidden md:block"
             aria-label="Close search"
           >
             <X className="w-5 h-5" />
@@ -114,7 +115,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         {/* Results */}
         {results.length > 0 && (
           <div className="container mx-auto px-4 pb-6 border-t border-gray-200">
-            <p className="text-[10px] uppercase tracking-widest text-gray-400 py-3 font-bold">
+            <p className="text-[10px] uppercase tracking-widest text-[#5a7060] py-3 font-bold">
               {results.length} result{results.length !== 1 ? 's' : ''} for &quot;{query}&quot;
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -138,19 +139,20 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   >
                     <div className="aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden mb-2">
                       {imgSrc ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={imgSrc}
                           alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          fill
+                          sizes="(max-width: 640px) 50vw, 25vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                        <div className="w-full h-full flex items-center justify-center text-[#5a7060]">
                           <Search className="w-8 h-8" />
                         </div>
                       )}
                     </div>
-                    <p className="text-sm font-medium text-[#1a1a1a] line-clamp-2 group-hover:text-[#1a3a34] transition-colors">
+                    <p className="text-sm font-medium text-[#ffffff] line-clamp-2 group-hover:text-[#1a3a34] transition-colors">
                       {product.name}
                     </p>
                     {displayPrice && (
@@ -168,7 +170,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         {/* No results */}
         {query.length >= 2 && !loading && results.length === 0 && (
           <div className="container mx-auto px-4 pb-6 border-t border-gray-200">
-            <p className="text-sm text-gray-500 py-6 text-center">
+            <p className="text-sm text-[#9aab9e] py-6 text-center">
               No products found for &quot;{query}&quot;. Try a different search term.
             </p>
           </div>
@@ -177,14 +179,14 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
         {/* Quick links when no query */}
         {query.length < 2 && (
           <div className="container mx-auto px-4 pb-6 border-t border-gray-200">
-            <p className="text-[10px] uppercase tracking-widest text-gray-400 py-3 font-bold">Popular Categories</p>
+            <p className="text-xs font-semibold tracking-widest text-gray-500 uppercase mb-3">Popular Categories</p>
             <div className="flex flex-wrap gap-2">
               {['Kurtis', 'Co-ord Sets', 'Festive', 'Casual', 'New Arrivals'].map(cat => (
                 <Link
                   key={cat}
                   href={`/products?category=${cat.toLowerCase().replace(/ /g, '-')}`}
                   onClick={onClose}
-                  className="px-4 py-2 bg-white border border-gray-200 rounded-full text-sm text-[#1a1a1a] hover:border-[#1a3a34] hover:text-[#1a3a34] transition-colors"
+                  className="px-4 py-1.5 rounded-full border border-[#E8DFC8] bg-white text-gray-700 text-sm font-medium hover:border-[#1C3829] hover:text-[#1C3829] transition-colors cursor-pointer whitespace-nowrap"
                 >
                   {cat}
                 </Link>

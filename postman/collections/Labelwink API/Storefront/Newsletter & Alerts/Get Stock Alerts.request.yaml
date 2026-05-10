@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Stock Alerts
+method: GET
+url: '{{baseUrl}}/api/storefront/stock-alerts'
+order: 4000

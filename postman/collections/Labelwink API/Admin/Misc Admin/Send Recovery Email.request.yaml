@@ -1,0 +1,12 @@
+$kind: http-request
+name: Send Recovery Email
+method: POST
+url: '{{baseUrl}}/api/admin/abandoned-carts/send-recovery'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"cart_id": "cart_id"}

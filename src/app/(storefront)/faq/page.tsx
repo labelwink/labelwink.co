@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/lib/supabase/server'
 import { FAQAccordion } from '@/components/storefront/FAQAccordion'
 
 export const metadata = {
@@ -29,7 +29,7 @@ export default async function FAQPage() {
   return (
     <div className="container mx-auto px-4 py-12 max-w-3xl">
       <h1 className="text-3xl font-bold text-[#1b3a34] mb-2">{title}</h1>
-      {subtitle && <p className="text-gray-500 mb-8">{subtitle}</p>}
+      {subtitle && <p className="text-[#9aab9e] mb-8">{subtitle}</p>}
       <div className="mt-6">
         <FAQAccordion items={items} />
       </div>

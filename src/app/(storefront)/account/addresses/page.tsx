@@ -94,12 +94,18 @@ export default function AccountAddressesPage() {
         </div>
         <Button 
           onClick={() => setShowAddForm(!showAddForm)} 
-          className={`${showAddForm ? 'bg-destructive' : 'bg-charcoal'} hover:opacity-90 text-white gap-2 h-12 px-6 rounded-none uppercase tracking-widest text-xs font-bold transition-all`}
+          disabled={addresses.length >= 5 && !showAddForm}
+          className={`${showAddForm ? 'bg-destructive' : 'bg-charcoal'} hover:opacity-90 text-white gap-2 h-12 px-6 rounded-none uppercase tracking-widest text-xs font-bold transition-all disabled:opacity-40`}
         >
           {showAddForm ? <><X className="w-4 h-4" /> Cancel</> : <><Plus className="w-4 h-4" /> Add New</>}
         </Button>
       </div>
 
+      {addresses.length >= 5 && !showAddForm && (
+        <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 px-4 py-2 rounded-lg font-medium">
+          ⚠️ Maximum 5 addresses allowed. Delete an existing address to add a new one.
+        </p>
+      )}
       {showAddForm && (
         <form onSubmit={handleAdd} className="bg-white border border-teal/20 p-8 shadow-xl space-y-6 animate-in slide-in-from-top-4 duration-300">
           <h2 className="text-lg font-heading font-semibold text-charcoal">New Shipping Address</h2>

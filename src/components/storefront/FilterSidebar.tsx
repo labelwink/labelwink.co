@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { ChevronDown, X, SlidersHorizontal } from 'lucide-react'
@@ -22,7 +22,6 @@ interface FilterSidebarProps {
   onClear: () => void
 }
 
-const ALL_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL']
 
 function CollapsibleGroup({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(true)
@@ -33,7 +32,7 @@ function CollapsibleGroup({ title, children }: { title: string; children: React.
         className="flex items-center justify-between w-full text-sm font-semibold text-gray-800 mb-3"
       >
         {title}
-        <ChevronDown size={16} className={`text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={16} className={`text-[#5a7060] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && children}
     </div>
@@ -52,19 +51,23 @@ function FilterContent({
       {/* Sizes */}
       <CollapsibleGroup title="Size">
         <div className="flex flex-wrap gap-2">
-          {ALL_SIZES.map(sz => (
-            <button
-              key={sz}
-              onClick={() => onChange({ ...activeFilters, sizes: toggle(activeFilters.sizes, sz) })}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                activeFilters.sizes.includes(sz)
-                  ? 'bg-[#1b3a34] text-white'
-                  : 'border border-gray-300 text-gray-700 hover:border-[#1b3a34]'
-              }`}
-            >
-              {sz}
-            </button>
-          ))}
+          {availableSizes.length === 0 ? (
+            <p className="text-xs text-[#5a7060] italic">No sizes available</p>
+          ) : (
+            availableSizes.map(sz => (
+              <button
+                key={sz}
+                onClick={() => onChange({ ...activeFilters, sizes: toggle(activeFilters.sizes, sz) })}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeFilters.sizes.includes(sz)
+                    ? 'bg-[#1b3a34] text-white'
+                    : 'border border-gray-300 text-gray-700 hover:border-[#1b3a34]'
+                }`}
+              >
+                {sz}
+              </button>
+            ))
+          )}
         </div>
       </CollapsibleGroup>
 
@@ -72,7 +75,7 @@ function FilterContent({
       <CollapsibleGroup title="Price">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#5a7060] text-sm">₹</span>
             <input
               type="number"
               value={activeFilters.minPrice}
@@ -81,9 +84,9 @@ function FilterContent({
               className="w-full pl-6 pr-2 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
             />
           </div>
-          <span className="text-gray-400 text-xs">to</span>
+          <span className="text-[#5a7060] text-xs">to</span>
           <div className="relative flex-1">
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[#5a7060] text-sm">₹</span>
             <input
               type="number"
               value={activeFilters.maxPrice || maxPrice}
@@ -169,7 +172,7 @@ export function FilterSidebar(props: FilterSidebarProps) {
       {/* Desktop sidebar */}
       <aside className="hidden md:block w-[240px] flex-shrink-0 sticky top-24 self-start">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-[#1a1a1a] text-sm flex items-center gap-2">
+          <h2 className="font-semibold text-[#ffffff] text-sm flex items-center gap-2">
             <SlidersHorizontal size={16} /> Filters
           </h2>
           {activeCount > 0 && (
@@ -207,8 +210,8 @@ export function FilterSidebar(props: FilterSidebarProps) {
             </div>
 
             <div className="flex items-center justify-between px-5 pb-3 border-b border-gray-100 flex-shrink-0">
-              <h2 className="font-semibold text-[#1a1a1a]">Filters {activeCount > 0 && `(${activeCount})`}</h2>
-              <button onClick={() => setSheetOpen(false)} className="p-1 text-gray-500 hover:text-gray-800">
+              <h2 className="font-semibold text-[#ffffff]">Filters {activeCount > 0 && `(${activeCount})`}</h2>
+              <button onClick={() => setSheetOpen(false)} className="p-1 text-[#9aab9e] hover:text-gray-800">
                 <X size={20} />
               </button>
             </div>

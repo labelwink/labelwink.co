@@ -1,0 +1,12 @@
+$kind: http-request
+name: Create Razorpay Order
+method: POST
+url: '{{baseUrl}}/api/razorpay/order'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"amount": 1000, "currency": "INR"}

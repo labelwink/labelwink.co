@@ -1,0 +1,10 @@
+$kind: http-request
+name: GST Report
+method: GET
+url: '{{baseUrl}}/api/admin/reports/gst'
+order: 1000
+queryParams:
+  - key: from
+    value: '2024-01-01'
+  - key: to
+    value: '2024-12-31'

@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const supabaseAdmin = createAdminClient();
     
     const { error } = await supabaseAdmin
-      .from('newsletter_subscribers')
+      .from('newsletter_subscriptions')
       .insert([{ email }])
       .select()
       .single();

@@ -1,0 +1,12 @@
+$kind: http-request
+name: Back In Stock Webhook
+method: POST
+url: '{{baseUrl}}/api/webhooks/back-in-stock'
+order: 5000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {}

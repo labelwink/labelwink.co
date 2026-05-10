@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
@@ -36,7 +36,7 @@ export function SortDropdown({ value, onChange }: SortDropdownProps) {
         className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl text-sm text-gray-700 hover:border-[#1b3a34] bg-white min-w-[180px] justify-between"
       >
         <span>Sort: <span className="font-medium text-[#1b3a34]">{current.label}</span></span>
-        <ChevronDown size={16} className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={16} className={`text-[#5a7060] transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (

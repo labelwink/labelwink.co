@@ -1,0 +1,5 @@
+$kind: http-request
+name: Stock Report
+method: GET
+url: '{{baseUrl}}/api/admin/reports/stock'
+order: 3000

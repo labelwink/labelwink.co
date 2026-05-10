@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect } from 'react'
 import Link from 'next/link'
@@ -21,7 +21,7 @@ export default function StorefrontError({ error, reset }: StorefrontErrorProps) 
       <div className="w-16 h-16 rounded-full bg-[#fdf6ec] flex items-center justify-center mb-5 text-2xl">
         🌿
       </div>
-      <h1 className="text-2xl font-semibold text-[#1a1a1a] mb-2">Something went wrong</h1>
+      <h1 className="text-2xl font-semibold text-[#ffffff] mb-2">Something went wrong</h1>
       <p className="text-[#6b7280] text-sm max-w-sm mb-8">
         We hit a snag. Don't worry — your cart and account are safe.
         Please try again or head back home.
@@ -35,7 +35,7 @@ export default function StorefrontError({ error, reset }: StorefrontErrorProps) 
         </button>
         <Link
           href="/"
-          className="px-5 py-2.5 border border-[#e5e7eb] text-[#1a1a1a] rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+          className="px-5 py-2.5 border border-[#e5e7eb] text-[#ffffff] rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
         >
           Go home
         </Link>

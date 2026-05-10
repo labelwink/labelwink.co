@@ -28,12 +28,28 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled:  'bg-red-100 text-red-700',
 };
 
-// Loyalty tier based on wink_points
-function getLoyaltyTier(points: number) {
-  if (points >= 5000) return { name: 'Platinum', color: 'text-violet-600', bg: 'bg-violet-50 border-violet-200', emoji: '💎' };
-  if (points >= 2000) return { name: 'Gold',     color: 'text-amber-600',  bg: 'bg-amber-50 border-amber-200',   emoji: '🥇' };
-  if (points >= 500)  return { name: 'Silver',   color: 'text-slate-500',  bg: 'bg-slate-50 border-slate-200',   emoji: '🥈' };
-  return                     { name: 'Bronze',   color: 'text-orange-600', bg: 'bg-orange-50 border-orange-200', emoji: '🥉' };
+// Loyalty tier based on lifetime_earned (passed from component)
+function getLoyaltyTier(points: number, tiers: any[]) {
+  if (!tiers || tiers.length === 0) {
+    if (points >= 5000) return { name: 'Platinum', color: 'text-violet-600', bg: 'bg-violet-50 border-violet-200', emoji: '💎' };
+    if (points >= 2000) return { name: 'Gold',     color: 'text-amber-600',  bg: 'bg-amber-50 border-amber-200',   emoji: '🥇' };
+    if (points >= 500)  return { name: 'Silver',   color: 'text-slate-500',  bg: 'bg-slate-50 border-slate-200',   emoji: '🥈' };
+    return                     { name: 'Bronze',   color: 'text-orange-600', bg: 'bg-orange-50 border-orange-200', emoji: '🥉' };
+  }
+
+  let currentTier = tiers[0];
+  for (const tier of tiers) {
+    if (points >= (tier.min || 0)) {
+      currentTier = tier;
+    }
+  }
+
+  return {
+    name:  currentTier.name,
+    color: currentTier.color ? `text-[${currentTier.color}]` : 'text-orange-600',
+    bg:    currentTier.bg || 'bg-orange-50 border-orange-200',
+    emoji: currentTier.icon || '🥉'
+  };
 }
 
 export default function AccountDashboard() {
@@ -49,6 +65,8 @@ export default function AccountDashboard() {
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [saving,   setSaving]   = useState(false);
+  const [tiers,    setTiers]    = useState<any[]>([]);
+  const [lifetime, setLifetime] = useState(0);
 
   const fetchData = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -56,11 +74,11 @@ export default function AccountDashboard() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     setUser(user as any);
 
-    // Parallel fetch — profile, recent orders, wishlist count
-    const [profileRes, ordersRes, wishlistRes] = await Promise.all([
+    // Parallel fetch — profile, recent orders, wishlist count, tiers
+    const [profileRes, ordersRes, wishlistRes, settingsRes] = await Promise.all([
       supabase
         .from('profiles')
-        .select('full_name, phone, wink_points')
+        .select('full_name, phone, wink_points, lifetime_earned')
         .eq('id', user.id)
         .single(),
       supabase
@@ -73,12 +91,17 @@ export default function AccountDashboard() {
         .from('wishlists')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id),
+      supabase
+        .from('shop_settings')
+        .select('loyalty_tiers')
+        .single(),
     ]);
 
     if (profileRes.data) {
       setProfile(profileRes.data);
       setEditName(profileRes.data.full_name || '');
       setEditPhone(profileRes.data.phone || '');
+      setLifetime(profileRes.data.lifetime_earned || 0);
     } else {
       // Upsert empty profile on first visit
       await supabase.from('profiles').upsert({
@@ -93,6 +116,7 @@ export default function AccountDashboard() {
 
     setOrders(ordersRes.data || []);
     setWishlistCount(wishlistRes.count || 0);
+    setTiers(settingsRes.data?.loyalty_tiers || []);
     setLoading(false);
   }, []);
 
@@ -138,7 +162,7 @@ export default function AccountDashboard() {
   const displayName = profile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Shopper';
   const initials    = (displayName as string).charAt(0).toUpperCase();
   const points      = profile?.wink_points || 0;
-  const tier        = getLoyaltyTier(points);
+  const tier        = getLoyaltyTier(lifetime, tiers);
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -245,15 +269,18 @@ export default function AccountDashboard() {
             {tier.name} member · Earn on every delivery
           </p>
           {/* Points to next tier */}
-          {points < 5000 && (() => {
-            const nextThreshold = points < 500 ? 500 : points < 2000 ? 2000 : 5000;
-            const progress = Math.min(100, Math.round((points / nextThreshold) * 100));
+          {(() => {
+            const currentTierIndex = tiers.findIndex(t => t.name === tier.name);
+            const nextTier = tiers[currentTierIndex + 1];
+            if (!nextTier) return null;
+            
+            const progress = Math.min(100, Math.round((lifetime / nextTier.min) * 100));
             return (
               <div className="mt-3">
                 <div className="w-full bg-white/50 rounded-full h-1.5">
                   <div className={`h-1.5 rounded-full ${tier.color.replace('text-', 'bg-')}`} style={{ width: `${progress}%` }} />
                 </div>
-                <p className="text-[9px] text-charcoal/40 mt-1">{nextThreshold - points} pts to next tier</p>
+                <p className="text-[9px] text-charcoal/40 mt-1">{nextTier.min - lifetime} pts to next tier</p>
               </div>
             );
           })()}

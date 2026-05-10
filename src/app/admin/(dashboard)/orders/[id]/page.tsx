@@ -514,6 +514,55 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
       {renderTimeline()}
 
+      {/* Fulfillment & Shipment Sections */}
+      {order.status === 'confirmed' && !order.shiprocket_awb_code && (
+        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg no-print">
+          <h3 className="font-semibold text-yellow-800 mb-2">Fulfillment</h3>
+          {order.shiprocket_order_id ? (
+            <div>
+              <p className="text-sm text-yellow-700 mb-3">
+                Shiprocket Order: {order.shiprocket_order_id}
+                <br/>
+                Shipment ID: {order.shiprocket_shipment_id}
+              </p>
+              <button
+                onClick={async () => {
+                  const res = await fetch(`/api/admin/orders/${order.id}/request-pickup`, {
+                    method: 'POST'
+                  })
+                  const data = await res.json()
+                  if (data.success) {
+                    alert(`Pickup requested! AWB: ${data.awb_code} via ${data.courier_name}`)
+                    window.location.reload()
+                  } else {
+                    alert(`Error: ${data.error}`)
+                  }
+                }}
+                className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 text-sm font-medium"
+              >
+                Mark as Packed & Request Pickup
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-yellow-700">
+              Shiprocket order not yet created. 
+              Check logs or create manually in Shiprocket dashboard.
+            </p>
+          )}
+        </div>
+      )}
+
+      {order.shiprocket_awb_code && (
+        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h3 className="font-semibold text-green-800 mb-2">Shipment Details</h3>
+          <p className="text-sm text-green-700">
+            Courier: {order.shiprocket_courier_name}<br/>
+            AWB: {order.shiprocket_awb_code}<br/>
+            Status: {order.fulfillment_status}
+          </p>
+        </div>
+      )}
+
       {/* Main Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-5">
 

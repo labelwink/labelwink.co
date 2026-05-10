@@ -10,7 +10,7 @@ const VALID_STATUSES = ['approved', 'rejected', 'pending'] as const
 
 export async function PATCH(req: NextRequest, { params }: Ctx) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   const { id } = await params
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -112,7 +112,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 
 export async function DELETE(_: NextRequest, { params }: Ctx) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   const { id } = await params
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

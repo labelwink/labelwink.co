@@ -62,16 +62,14 @@ export async function GET() {
 
       supabaseAdmin
         .from('products')
-        .select('id, name, slug, price, compare_at_price, images')
-        .eq('status', 'published') // Using 'status'='published' or 'is_active' based on schema
+        .select('id, name, slug, price, compare_at_price, product_images(url, alt, is_cover, sort_order)')
+        .eq('status', 'published')
         .order('created_at', { ascending: false })
         .limit(8),
 
       supabaseAdmin
-        .from('shop_settings')
-        .select('store_name, store_tagline, logo_url, announcement_bar_bg, announcement_bar_text_color, announcement_bar_link, free_shipping_threshold')
-        .eq('id', 1)
-        .single(),
+        .from('site_settings')
+        .select('key, value'),
 
       supabaseAdmin
         .from('homepage_sections')

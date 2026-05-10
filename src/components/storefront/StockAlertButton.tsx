@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { Bell, Check } from 'lucide-react'
@@ -96,7 +96,7 @@ export function StockAlertButton({ productId, variantId, size, currentStock }: S
   if (showEmailInput && !isSubscribed) {
     return (
       <div className="w-full mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
-        <p className="text-sm text-[#1a1a1a] font-medium mb-2">Enter email to get notified:</p>
+        <p className="text-sm text-[#ffffff] font-medium mb-2">Enter email to get notified:</p>
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
             type="email"
@@ -109,7 +109,7 @@ export function StockAlertButton({ productId, variantId, size, currentStock }: S
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="px-4 py-2 bg-[#1a1a1a] text-[#faf7f2] rounded-md text-sm font-medium hover:bg-[#333] transition-colors disabled:opacity-50"
+            className="px-4 py-2 bg-white text-[#faf7f2] rounded-md text-sm font-medium hover:bg-[#333] transition-colors disabled:opacity-50"
           >
             {status === 'loading' ? '...' : 'Notify Me'}
           </button>
@@ -124,7 +124,7 @@ export function StockAlertButton({ productId, variantId, size, currentStock }: S
       <button
         onClick={handleClick}
         disabled={status === 'loading'}
-        className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-[#1a1a1a] text-[#1a1a1a] rounded-md font-medium text-sm hover:bg-[#1a1a1a] hover:text-[#faf7f2] transition-colors disabled:opacity-50"
+        className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-[#ffffff] text-[#ffffff] rounded-md font-medium text-sm hover:bg-white hover:text-[#faf7f2] transition-colors disabled:opacity-50"
       >
         <Bell size={18} />
         {status === 'loading' ? 'Setting Alert...' : 'Notify me when available'}

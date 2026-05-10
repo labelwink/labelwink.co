@@ -2,18 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 const PRODUCT_SELECT = `
-  id, name, slug, price, mrp, compare_at_price,
-  description, short_description, images,
-  fabric, fabric_material, care_instructions,
-  sleeve_type, fit_type, occasion_tags, size_guide, additional_info,
-  specifications, tags, season, occasion,
+  id, name, slug, price, compare_at_price,
+  description,
+  fabric, occasion,
+  tags, season,
   hsn_code, weight,
-  meta_title, meta_description, og_image_url, og_image_cloudinary_id,
+  meta_title, meta_description,
   status, is_active, created_at, updated_at,
-  category_id, related_product_ids,
+  collection_id,
+  size_chart_data,
+  product_images (url, alt, is_cover, sort_order),
   product_variants (
-    id, size, color, color_hex, price, mrp,
-    stock_qty, sku, image_url, image_cloudinary_ids,
+    id, size, color, stock_qty, price, sku, image_url,
     is_active, low_stock_threshold
   )
 `
@@ -77,12 +77,12 @@ export async function GET(
 
   // ── 4. Related products (same category, different slug, LIMIT 4) ───────────
   let related_products: unknown[] = []
-  if (product.category_id) {
+  if (product.collection_id) {
     const { data: related } = await supabase
       .from('products')
-      .select('id, name, slug, price, mrp, compare_at_price, images')
+      .select('id, name, slug, price, compare_at_price, product_images(url, alt, is_cover, sort_order)')
       .eq('is_active', true)
-      .eq('category_id', product.category_id)
+      .eq('collection_id', product.collection_id)
       .neq('id', product.id)
       .order('created_at', { ascending: false })
       .limit(4)

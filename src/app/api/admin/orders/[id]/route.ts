@@ -10,7 +10,7 @@ type RouteContext = { params: Promise<{ id: string }> }
 
 export async function GET(_: NextRequest, { params }: RouteContext) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
   const { id } = await params
   try {
     const supabase = createAdminSupabaseClient()
@@ -64,7 +64,7 @@ export async function GET(_: NextRequest, { params }: RouteContext) {
 
 export async function PATCH(req: NextRequest, { params }: RouteContext) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
   const { id } = await params
   const supabase = createAdminSupabaseClient()
 

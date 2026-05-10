@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 
@@ -38,7 +38,7 @@ export function ContactForm() {
       <div className="flex flex-col items-center justify-center h-full py-16 text-center">
         <div className="text-4xl mb-4">✓</div>
         <h3 className="text-lg font-semibold text-[#1b3a34] mb-2">Message Sent!</h3>
-        <p className="text-gray-500 text-sm">We'll get back to you within 24 hours.</p>
+        <p className="text-[#9aab9e] text-sm">We'll get back to you within 24 hours.</p>
         <button
           onClick={() => setStatus('idle')}
           className="mt-6 text-sm text-[#1b3a34] hover:underline"
@@ -51,7 +51,7 @@ export function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-lg font-semibold text-[#1a1a1a]">Send a Message</h2>
+      <h2 className="text-lg font-semibold text-[#ffffff]">Send a Message</h2>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>

@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/requireAdmin'
 
 export async function POST(req: NextRequest) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   const supabase = createAdminClient()
   try {

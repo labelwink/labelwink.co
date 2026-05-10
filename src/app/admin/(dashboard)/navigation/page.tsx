@@ -22,7 +22,7 @@ export default function NavigationPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  // ─── Header Nav ───────────────────────────────────────
+  // --- Header Nav ---------------------------------------
   const updateNav = (i: number, field: keyof NavItem, val: string) => {
     setMainNav(prev => prev.map((item, idx) => idx === i ? { ...item, [field]: val } : item))
   }
@@ -37,10 +37,10 @@ export default function NavigationPage() {
       body: JSON.stringify({ section: 'main_nav', items: mainNav }),
     })
     setSaving(null)
-    showToast(res.ok ? 'Header nav saved ✓' : 'Save failed')
+    showToast(res.ok ? 'Header nav saved ?' : 'Save failed')
   }
 
-  // ─── Footer ───────────────────────────────────────────
+  // --- Footer -------------------------------------------
   const updateColTitle = (ci: number, title: string) =>
     setFooterCols(prev => prev.map((c, i) => i === ci ? { ...c, title } : c))
 
@@ -66,7 +66,7 @@ export default function NavigationPage() {
       body: JSON.stringify({ section: 'footer_columns', columns: footerCols }),
     })
     setSaving(null)
-    showToast(res.ok ? 'Footer saved ✓' : 'Save failed')
+    showToast(res.ok ? 'Footer saved ?' : 'Save failed')
   }
 
   if (loading) return (
@@ -84,10 +84,10 @@ export default function NavigationPage() {
         </div>
       )}
 
-      {/* ─── Header Navigation ─── */}
+      {/* --- Header Navigation --- */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-[#1a1a1a]">Header Navigation</h2>
+          <h2 className="text-xl font-bold text-[#1b3a34]">Header Navigation</h2>
           <button onClick={addNav}
             className="flex items-center gap-1.5 text-sm text-[#1b3a34] border border-[#1b3a34] rounded-lg px-3 py-1.5 hover:bg-[#1b3a34] hover:text-white transition-colors">
             <Plus size={14} /> Add Item
@@ -100,7 +100,7 @@ export default function NavigationPage() {
           )}
           {mainNav.map((item, i) => (
             <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-[#e5e7eb] last:border-0">
-              <GripVertical size={16} className="text-gray-300 cursor-grab flex-shrink-0" />
+              <GripVertical size={16} className="text-[#5a7060] cursor-grab flex-shrink-0" />
               <input
                 value={item.label}
                 onChange={e => updateNav(i, 'label', e.target.value)}
@@ -113,7 +113,7 @@ export default function NavigationPage() {
                 className="flex-1 border border-[#e5e7eb] rounded-lg px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                 placeholder="/path"
               />
-              <button onClick={() => removeNav(i)} className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0">
+              <button onClick={() => removeNav(i)} className="text-[#5a7060] hover:text-red-500 transition-colors flex-shrink-0">
                 <X size={16} />
               </button>
             </div>
@@ -129,10 +129,10 @@ export default function NavigationPage() {
         </div>
       </section>
 
-      {/* ─── Footer Columns ─── */}
+      {/* --- Footer Columns --- */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-[#1a1a1a]">Footer Columns</h2>
+          <h2 className="text-xl font-bold text-[#1b3a34]">Footer Columns</h2>
           <button onClick={addColumn}
             className="flex items-center gap-1.5 text-sm text-[#1b3a34] border border-[#1b3a34] rounded-lg px-3 py-1.5 hover:bg-[#1b3a34] hover:text-white transition-colors">
             <Plus size={14} /> Add Column
@@ -149,7 +149,7 @@ export default function NavigationPage() {
                   className="flex-1 border border-[#e5e7eb] rounded-lg px-3 py-1.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                   placeholder="Column Title"
                 />
-                <button onClick={() => removeColumn(ci)} className="text-gray-400 hover:text-red-500 transition-colors">
+                <button onClick={() => removeColumn(ci)} className="text-[#5a7060] hover:text-red-500 transition-colors">
                   <X size={16} />
                 </button>
               </div>
@@ -169,7 +169,7 @@ export default function NavigationPage() {
                       className="flex-1 border border-[#e5e7eb] rounded-lg px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-[#1b3a34]"
                       placeholder="/path"
                     />
-                    <button onClick={() => removeLink(ci, li)} className="text-gray-300 hover:text-red-500 transition-colors flex-shrink-0">
+                    <button onClick={() => removeLink(ci, li)} className="text-[#5a7060] hover:text-red-500 transition-colors flex-shrink-0">
                       <X size={14} />
                     </button>
                   </div>

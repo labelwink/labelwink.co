@@ -1,0 +1,12 @@
+$kind: http-request
+name: Test Email Template
+method: POST
+url: '{{baseUrl}}/api/admin/email-templates/test'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"template_id": "welcome", "to": "test@example.com"}

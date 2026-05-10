@@ -1,0 +1,12 @@
+$kind: http-request
+name: Update Address
+method: POST
+url: '{{baseUrl}}/api/storefront/addresses/{{addressId}}'
+order: 6000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"name": "Office"}

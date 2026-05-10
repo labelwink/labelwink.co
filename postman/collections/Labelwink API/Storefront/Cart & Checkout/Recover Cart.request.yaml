@@ -1,0 +1,8 @@
+$kind: http-request
+name: Recover Cart
+method: GET
+url: '{{baseUrl}}/api/storefront/cart/recover'
+order: 2000
+queryParams:
+  - key: token
+    value: recovery_token

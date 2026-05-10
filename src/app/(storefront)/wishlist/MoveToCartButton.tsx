@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -21,7 +21,7 @@ export function MoveToCartButton({ productId, slug }: { productId: string, slug:
     <button
       onClick={handleMove}
       disabled={loading}
-      className="flex items-center justify-center gap-2 w-full mt-3 py-2 px-4 bg-[#1a1a1a] text-[#faf7f2] rounded-md hover:bg-[#333] transition-colors font-medium text-sm disabled:opacity-50"
+      className="flex items-center justify-center gap-2 w-full mt-3 py-2 px-4 bg-white text-[#faf7f2] rounded-md hover:bg-[#333] transition-colors font-medium text-sm disabled:opacity-50"
     >
       <ShoppingCart size={16} />
       {loading ? 'Moving...' : 'Move to Cart'}

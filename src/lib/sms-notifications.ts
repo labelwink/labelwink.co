@@ -1,11 +1,26 @@
 import { sendSMS } from './msg91';
 import { createAdminClient } from './supabase/server';
 
+/** Fetch SMS-related keys from site_settings (key-value store) */
+async function getSmsSettings(): Promise<Record<string, any>> {
+  try {
+    const supabase = createAdminClient();
+    const keys = ['sms_enabled', 'sms_order_placed', 'sms_order_dispatched', 'sms_order_delivered'];
+    const { data } = await supabase.from('site_settings').select('key, value').in('key', keys);
+    return (data ?? []).reduce((acc: Record<string, any>, row) => {
+      const raw = row.value;
+      acc[row.key] = raw !== null && typeof raw === 'object' && 'v' in raw ? raw.v : raw;
+      return acc;
+    }, {});
+  } catch {
+    return {};
+  }
+}
+
 async function shouldSendSMS(event: string): Promise<boolean> {
   try {
-    const supabaseAdmin = createAdminClient();
-    const { data: settings } = await supabaseAdmin.from('shop_settings').select('*').single();
-    if (!settings || !settings.sms_enabled) return false;
+    const settings = await getSmsSettings();
+    if (!settings.sms_enabled) return false;
 
     if (event === 'order_placed') return !!settings.sms_order_placed;
     if (event === 'order_dispatched') return !!settings.sms_order_dispatched;
@@ -35,11 +50,6 @@ export async function sendOrderPlacedSMS(phone: string, data: { customer_name: s
   try {
     if (!(await shouldSendSMS('order_placed'))) return;
     const message = `Hi ${data.customer_name}! Your order ${data.invoice_number} for ₹${data.total} is confirmed. Thank you for shopping with ${data.store_name}!`;
-    
-    // sendSMS from msg91.ts expects templateVars, but the prompt says sendSMS(phone, { message, type: 'order_placed' })
-    // Let's look at sendSMS in msg91.ts: export async function sendSMS(phone: string, templateVars: Record<string, string>): Promise<void>
-    // It doesn't return anything. Wait, msg91.ts sendSMS returns void. I need to handle it.
-    // Actually, I'll pass { message } to templateVars.
     await sendSMS(phone, { message });
     await logSMS(phone, 'order_placed', 'sent', { success: true, via: 'MSG91 Flow API' });
   } catch (err: any) {

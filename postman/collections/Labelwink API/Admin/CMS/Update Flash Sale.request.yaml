@@ -1,0 +1,12 @@
+$kind: http-request
+name: Update Flash Sale
+method: PATCH
+url: '{{baseUrl}}/api/admin/cms/flash-sale'
+order: 11000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"title": "Updated Flash Sale"}

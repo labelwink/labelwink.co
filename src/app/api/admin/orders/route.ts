@@ -6,7 +6,7 @@ export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
   const supabase = createAdminSupabaseClient()
   const { searchParams } = new URL(req.url)
 
@@ -17,10 +17,14 @@ export async function GET(req: NextRequest) {
   const to      = searchParams.get('to') || ''
   const PAGE_SIZE = 25
 
-  let query = (supabase as ReturnType<typeof createAdminSupabaseClient>)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase as any)
     .from('orders')
     .select(
-      'id, status, total, subtotal, shipping_amount, discount_amount, customer_name, customer_email, customer_phone, payment_status, razorpay_payment_id, shiprocket_order_id, tracking_number, shipping_carrier, created_at, invoices(invoice_number), order_items(id)',
+      `id, shipping_name, shipping_phone, total_amount, status,
+       payment_status, fulfillment_status, created_at,
+       invoice_number, coupon_code,
+       profiles(email, full_name)`,
       { count: 'exact' }
     )
     .order('created_at', { ascending: false })
@@ -28,7 +32,7 @@ export async function GET(req: NextRequest) {
   if (status) query = query.eq('status', status)
   if (search) {
     query = query.or(
-      `customer_name.ilike.%${search}%,customer_email.ilike.%${search}%,customer_phone.ilike.%${search}%,tracking_number.ilike.%${search}%,id.ilike.%${search}%`
+      `shipping_name.ilike.%${search}%,shipping_phone.ilike.%${search}%,invoice_number.ilike.%${search}%,id.ilike.%${search}%`
     )
   }
   if (from) query = query.gte('created_at', from)

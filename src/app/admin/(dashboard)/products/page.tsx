@@ -184,7 +184,7 @@ export default function ProductsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#1a1a1a]">Products</h1>
+          <h1 className="text-xl font-bold text-[#1b3a34]">Products</h1>
           <p className="text-xs text-[#6b7280] mt-0.5">{total.toLocaleString('en-IN')} total</p>
         </div>
         <div className="flex items-center gap-2">
@@ -312,7 +312,7 @@ export default function ProductsPage() {
               ) : products.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="text-center py-16">
-                    <Package size={32} className="mx-auto text-gray-200 mb-3" />
+                    <Package size={32} className="mx-auto text-[#1a2e1e] mb-3" />
                     <p className="text-sm text-[#6b7280]">No products found</p>
                     <Link href="/admin/products/new" className="text-xs text-[#1b3a34] underline mt-1 inline-block">
                       Add your first product →
@@ -348,7 +348,7 @@ export default function ProductsPage() {
                       <td className="px-2 py-3">
                         <div className="w-10 h-12 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0 relative">
                           <img 
-                            src={cover || '/placeholder-product.png'} 
+                            src={cover || '/placeholder-product.jpg'} 
                             alt={p.name || ''} 
                             className="w-full h-full object-cover" 
                           />
@@ -357,7 +357,7 @@ export default function ProductsPage() {
 
                       {/* Name + slug */}
                       <td className="px-3 py-3 max-w-[220px]">
-                        <p className="font-medium text-[#1a1a1a] text-xs truncate">{p.name}</p>
+                        <p className="font-medium text-[#1b3a34] text-xs truncate">{p.name}</p>
                         <p className="text-[10px] text-[#9ca3af] truncate">/products/{p.slug}</p>
                         {sizes && <p className="text-[10px] text-[#6b7280] mt-0.5">{sizes}</p>}
                       </td>
@@ -367,7 +367,7 @@ export default function ProductsPage() {
 
                       {/* Price */}
                       <td className="px-3 py-3 text-right">
-                        <span className="text-xs font-semibold text-[#1a1a1a]">{formatCurrency(p.price)}</span>
+                        <span className="text-xs font-semibold text-[#1b3a34]">{formatCurrency(p.price)}</span>
                       </td>
 
                       {/* MRP */}
@@ -393,7 +393,7 @@ export default function ProductsPage() {
                           className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all ${
                             p.visible
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                              : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+                              : 'bg-gray-50 text-[#9aab9e] border-gray-200 hover:bg-gray-100'
                           } disabled:opacity-50`}
                         >
                           {p.visible
@@ -471,7 +471,7 @@ export default function ProductsPage() {
             <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mb-4">
               <Trash2 size={18} className="text-red-600" />
             </div>
-            <h3 className="font-semibold text-base text-[#1a1a1a] mb-1">Delete Product</h3>
+            <h3 className="font-semibold text-base text-[#1b3a34] mb-1">Delete Product</h3>
             <p className="text-sm text-[#6b7280] mb-5">
               Delete <strong>&ldquo;{deleteName}&rdquo;</strong>? All variants and images will also be removed. This cannot be undone.
             </p>

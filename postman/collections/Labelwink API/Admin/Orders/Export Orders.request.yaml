@@ -1,0 +1,10 @@
+$kind: http-request
+name: Export Orders
+method: GET
+url: '{{baseUrl}}/api/admin/orders/export'
+order: 7000
+queryParams:
+  - key: from
+    value: '2024-01-01'
+  - key: to
+    value: '2024-12-31'

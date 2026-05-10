@@ -1,0 +1,5 @@
+$kind: http-request
+name: List Campaigns
+method: GET
+url: '{{baseUrl}}/api/admin/campaigns'
+order: 1000

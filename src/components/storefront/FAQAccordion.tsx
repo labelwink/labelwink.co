@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 
@@ -11,7 +11,7 @@ export function FAQAccordion({ items }: { items: FAQItem[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
 
   if (!items || items.length === 0) {
-    return <p className="text-gray-500 text-sm">No FAQ items available.</p>
+    return <p className="text-[#9aab9e] text-sm">No FAQ items available.</p>
   }
 
   return (
@@ -31,7 +31,7 @@ export function FAQAccordion({ items }: { items: FAQItem[] }) {
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              className={`flex-shrink-0 ml-4 text-gray-400 transition-transform duration-200 ${openIndex === i ? 'rotate-180' : ''}`}
+              className={`flex-shrink-0 ml-4 text-[#5a7060] transition-transform duration-200 ${openIndex === i ? 'rotate-180' : ''}`}
             >
               <path d="M6 9l6 6 6-6" />
             </svg>

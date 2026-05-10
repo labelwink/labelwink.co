@@ -1,0 +1,12 @@
+$kind: http-request
+name: Subscribe Newsletter
+method: POST
+url: '{{baseUrl}}/api/storefront/newsletter'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"email": "user@example.com"}

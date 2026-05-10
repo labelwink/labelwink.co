@@ -1,39 +1,38 @@
-import { NextResponse } from 'next/server';
-import { createClient, createAdminClient } from '@/lib/supabase/server';
-
-async function verifyAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-  
-  const supabaseAdmin = createAdminClient();
-  const { data: profile } = await supabaseAdmin.from('profiles').select('role').eq('id', user.id).single();
-  return profile?.role === 'admin';
-}
+import { NextResponse } from "next/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/requireAdmin";
 
 export async function GET() {
-  const isAdmin = await verifyAdmin();
-  if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
-  const supabaseAdmin = createAdminClient();
-  const { data: trust_badges, error } = await supabaseAdmin
-    .from('trust_badges')
-    .select('*')
-    .order('sort_order', { ascending: true });
+  try {
+    const supabaseAdmin = createAdminClient();
+    const { data: trust_badges, error } = await supabaseAdmin
+      .from("trust_badges")
+      .select("*")
+      .order("sort_order", { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(trust_badges);
+    if (error) {
+      console.error("Admin trust badges fetch error:", error);
+      return NextResponse.json([]);
+    }
+    return NextResponse.json(trust_badges || []);
+  } catch (error: unknown) {
+    console.error("[cms/trust-badges] Unexpected error:", error);
+    return NextResponse.json([], { status: 200 });
+  }
 }
 
 export async function POST(req: Request) {
-  const isAdmin = await verifyAdmin();
-  if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
   try {
     const body = await req.json();
     const supabaseAdmin = createAdminClient();
     const { data: badge, error } = await supabaseAdmin
-      .from('trust_badges')
+      .from("trust_badges")
       .insert(body)
       .select()
       .single();
@@ -46,20 +45,20 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  const isAdmin = await verifyAdmin();
-  if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
   try {
     const body = await req.json();
     const { id, ...fields } = body;
-    
-    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
     const supabaseAdmin = createAdminClient();
     const { data: badge, error } = await supabaseAdmin
-      .from('trust_badges')
+      .from("trust_badges")
       .update(fields)
-      .eq('id', id)
+      .eq("id", id)
       .select()
       .single();
 
@@ -71,20 +70,20 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const isAdmin = await verifyAdmin();
-  if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
   try {
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-    
-    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+    const id = searchParams.get("id");
+
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
     const supabaseAdmin = createAdminClient();
     const { error } = await supabaseAdmin
-      .from('trust_badges')
+      .from("trust_badges")
       .delete()
-      .eq('id', id);
+      .eq("id", id);
 
     if (error) throw error;
     return NextResponse.json({ success: true });
@@ -94,20 +93,21 @@ export async function DELETE(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  const isAdmin = await verifyAdmin();
-  if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const guard = await requireAdmin();
+  if (guard instanceof NextResponse) return guard;
 
   try {
     const { ids } = await req.json();
-    if (!Array.isArray(ids)) return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+    if (!Array.isArray(ids))
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
     const supabaseAdmin = createAdminClient();
-    
+
     for (let i = 0; i < ids.length; i++) {
       await supabaseAdmin
-        .from('trust_badges')
+        .from("trust_badges")
         .update({ sort_order: i })
-        .eq('id', ids[i]);
+        .eq("id", ids[i]);
     }
 
     return NextResponse.json({ success: true });

@@ -1,0 +1,12 @@
+$kind: http-request
+name: Abandon Cart
+method: POST
+url: '{{baseUrl}}/api/storefront/cart/abandon'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"cart_items": [], "user_id": ""}

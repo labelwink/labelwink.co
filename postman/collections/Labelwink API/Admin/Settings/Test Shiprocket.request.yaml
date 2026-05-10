@@ -1,0 +1,5 @@
+$kind: http-request
+name: Test Shiprocket
+method: GET
+url: '{{baseUrl}}/api/admin/settings/test-shiprocket'
+order: 5000

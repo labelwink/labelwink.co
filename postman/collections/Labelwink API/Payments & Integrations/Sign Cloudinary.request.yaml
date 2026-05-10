@@ -1,0 +1,12 @@
+$kind: http-request
+name: Sign Cloudinary
+method: POST
+url: '{{baseUrl}}/api/sign-cloudinary'
+order: 7000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"params_to_sign": {}}

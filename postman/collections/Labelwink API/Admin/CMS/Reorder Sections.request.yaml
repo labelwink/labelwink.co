@@ -1,0 +1,12 @@
+$kind: http-request
+name: Reorder Sections
+method: PUT
+url: '{{baseUrl}}/api/admin/cms/sections/reorder'
+order: 17000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"order": []}

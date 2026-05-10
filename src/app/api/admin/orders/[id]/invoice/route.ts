@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/requireAdmin';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireAdmin();
-  if (guard) return guard;
+  if (guard instanceof NextResponse) return guard;
 
   const { id } = await params;
   const supabase = createAdminClient();

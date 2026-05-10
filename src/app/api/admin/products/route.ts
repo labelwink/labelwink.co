@@ -26,71 +26,75 @@ const CreateProductSchema = z.object({
   name: z.string().min(1, 'Product name is required').max(200),
   slug: z.string().max(200).optional(),
   description: z.string().optional().nullable(),
-  short_description: z.string().optional().nullable(),
-  category: z.string().optional().nullable(),
-  category_id: z.string().uuid().optional().nullable(),
+  collection_id: z.string().uuid().optional().nullable(),
   price: z.coerce.number().min(0, 'Price must be ≥ 0'),
-  mrp: z.coerce.number().min(0, 'MRP must be ≥ 0').optional().nullable(),
+  compare_at_price: z.coerce.number().min(0).optional().nullable(),
   visible: z.boolean().optional().default(true),
   status: z.string().optional().default('active'),
   fabric: z.string().optional().nullable(),
-  care_instructions: z.string().optional().nullable(),
-  seo_title: z.string().optional().nullable(),
-  seo_description: z.string().optional().nullable(),
-  og_image_cloudinary_id: z.string().optional().nullable(),
-  tags: z.array(z.string()).optional().nullable(),
-  featured: z.boolean().optional(),
-  weight: z.coerce.number().min(0).optional().nullable(),
-  hsn_code: z.string().optional().nullable(),
+  occasion: z.string().optional().nullable(),
   fit: z.string().optional().nullable(),
   season: z.string().optional().nullable(),
+  tags: z.array(z.string()).optional().nullable(),
+  is_featured: z.boolean().optional(),
+  weight: z.coerce.number().min(0).optional().nullable(),
+  hsn_code: z.string().optional().nullable(),
+  meta_title: z.string().optional().nullable(),
+  meta_description: z.string().optional().nullable(),
+  size_chart_data: z.any().optional().nullable(),
   variants: z.array(VariantSchema).optional().default([]),
   images: z.array(ImageSchema).optional().default([]),
 })
 
 export async function GET(req: NextRequest) {
-  const guard = await requireAdmin()
-  if (guard) return guard
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = createAdminSupabaseClient() as any
-  const { searchParams } = new URL(req.url)
+  try {
+    const guard = await requireAdmin()
+    if (guard instanceof NextResponse) return guard
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createAdminSupabaseClient() as any
+    const { searchParams } = new URL(req.url)
 
-  const search   = searchParams.get('search')   || ''
-  const category = searchParams.get('category') || ''
-  const visible  = searchParams.get('visible')  || ''   // 'true' | 'false' | ''
-  const page     = Math.max(0, Number(searchParams.get('page') || '0'))
-  const PAGE_SIZE = 25
+    const search   = searchParams.get('search')   || ''
+    const category = searchParams.get('category') || ''
+    const visible  = searchParams.get('visible')  || ''   // 'true' | 'false' | ''
+    const page     = Math.max(0, Number(searchParams.get('page') || '0'))
+    const PAGE_SIZE = 25
 
-  let query = supabase
-    .from('products')
-    .select(
-      'id, name, slug, category, price, mrp, visible, status, created_at, product_variants(id, size, stock_qty), product_images(url, is_cover, sort_order)',
-      { count: 'exact' }
-    )
-    .order('created_at', { ascending: false })
+    let query = supabase
+      .from('products')
+      .select(
+        'id, name, slug, collection_id, price, compare_at_price, visible, status, created_at, is_featured, product_variants(id, size, stock_qty, price), product_images(url, is_cover, sort_order)',
+        { count: 'exact' }
+      )
+      .order('created_at', { ascending: false })
 
-  if (search)   query = query.ilike('name', `%${search}%`)
-  if (category) query = query.eq('category', category)
-  if (visible === 'true')  query = query.eq('visible', true)
-  if (visible === 'false') query = query.eq('visible', false)
+    if (search)   query = query.ilike('name', `%${search}%`)
+    if (category) query = query.eq('collection_id', category)
+    if (visible === 'true')  query = query.eq('visible', true)
+    if (visible === 'false') query = query.eq('visible', false)
 
-  query = query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+    query = query.range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
-  const { data, count, error } = await query
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    const { data, count, error } = await query
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({
-    products: data ?? [],
-    total: count ?? 0,
-    page,
-    pageSize: PAGE_SIZE,
-    totalPages: Math.ceil((count ?? 0) / PAGE_SIZE),
-  })
+    return NextResponse.json({
+      products: data ?? [],
+      total: count ?? 0,
+      page,
+      pageSize: PAGE_SIZE,
+      totalPages: Math.ceil((count ?? 0) / PAGE_SIZE),
+    })
+  } catch (error) {
+    console.error('[admin/products GET]', error)
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
+
 
 export async function POST(req: NextRequest) {
   const guard = await requireAdmin()
-  if (guard) return guard
+  if (guard instanceof NextResponse) return guard
 
   // ── Validate request body ───────────────────────────────────────────────────
   let body: unknown

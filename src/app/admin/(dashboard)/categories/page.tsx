@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/lib/supabase/server'
+﻿import { createAdminClient } from '@/lib/supabase/server'
 import { LayoutGrid, Plus, Edit2, Power } from 'lucide-react'
 import Link from 'next/link'
 
@@ -14,7 +14,7 @@ export default async function CategoriesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="admin-page-title">Categories</h1>
-          <p className="text-sm text-gray-400 mt-1">{categories?.length ?? 0} categories total</p>
+          <p className="text-sm text-[#5a7060] mt-1">{categories?.length ?? 0} categories total</p>
         </div>
         <Link href="/admin/categories/new"
           className="bg-charcoal text-white px-6 py-3 rounded-xl text-sm font-bold uppercase tracking-widest hover:bg-charcoal/90 transition-colors flex items-center gap-2">
@@ -28,7 +28,7 @@ export default async function CategoriesPage() {
             <LayoutGrid size={40} />
           </div>
           <h3 className="text-lg font-semibold text-charcoal">No categories yet</h3>
-          <p className="text-sm text-gray-400 mt-1 mb-8">Categories organize your products on the storefront navigation.</p>
+          <p className="text-sm text-[#5a7060] mt-1 mb-8">Categories organize your products on the storefront navigation.</p>
           <Link href="/admin/categories/new"
             className="bg-teal text-white px-8 py-3 rounded-xl text-sm font-bold uppercase tracking-widest">
             Create First Category
@@ -57,8 +57,8 @@ export default async function CategoriesPage() {
                       <span className="text-sm font-bold text-charcoal">{cat.name}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-5 text-sm text-gray-400 font-mono">/{cat.slug}</td>
-                  <td className="px-6 py-5 text-sm text-center text-gray-500 font-medium">{cat.sort_order}</td>
+                  <td className="px-6 py-5 text-sm text-[#5a7060] font-mono">/{cat.slug}</td>
+                  <td className="px-6 py-5 text-sm text-center text-[#9aab9e] font-medium">{cat.sort_order}</td>
                   <td className="px-6 py-5 text-center">
                     <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full ${
                       cat.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-500'

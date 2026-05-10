@@ -1,0 +1,8 @@
+$kind: http-request
+name: Get Unsubscribe
+method: GET
+url: '{{baseUrl}}/api/storefront/unsubscribe'
+order: 3000
+queryParams:
+  - key: token
+    value: unsub_token

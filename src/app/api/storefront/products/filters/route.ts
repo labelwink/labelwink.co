@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 // Canonical size order for sorting
-const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '2XL', '3XL']
+const SIZE_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL']
 
 function sortSizes(sizes: string[]): string[] {
   return sizes.sort((a, b) => {
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
   const supabase = await createClient()
 
-  // ── Run all filter queries in parallel ─────────────────────────────────────
+  // Run all filter queries in parallel
   const [
     sizesResult,
     colorsResult,
@@ -49,34 +49,43 @@ export async function GET(req: NextRequest) {
       .select('price')
       .eq('is_active', true),
 
-    // 4. Distinct fabrics
+    // 4. Distinct fabrics — real column is 'fabric'
     supabase
       .from('products')
-      .select('fabric_material')
+      .select('fabric')
       .eq('is_active', true)
-      .not('fabric_material', 'is', null),
+      .not('fabric', 'is', null),
 
-    // 5. Distinct sleeve types
+    // 5. Sleeve types — no dedicated column; pulled from tags
     supabase
       .from('products')
-      .select('sleeve_type')
+      .select('tags')
       .eq('is_active', true)
-      .not('sleeve_type', 'is', null),
+      .not('tags', 'is', null),
 
-    // 6. Occasions from occasion_tags on products
+    // 6. Occasions — use 'occasion' column or tags array
     supabase
       .from('products')
-      .select('occasion_tags')
-      .eq('is_active', true)
-      .not('occasion_tags', 'is', null),
+      .select('occasion, tags')
+      .eq('is_active', true),
   ])
 
-  // ── Sizes (fallback to direct query if RPC doesn't exist) ──────────────────
+  // 7. Sleeve tags for western wear (after Promise.all)
+  let westernSleeveResult = null
+  if (collection === 'western-wear') {
+    westernSleeveResult = await supabase
+      .from('products')
+      .select('tags')
+      .eq('is_active', true)
+      .contains('tags', ['western-wear'])
+      .not('tags', 'is', null)
+  }
+
+  // Sizes (fallback to direct query if RPC doesn't exist)
   let sizes: string[] = []
   if (!sizesResult.error && sizesResult.data) {
     sizes = (sizesResult.data as { size: string }[]).map((r) => r.size)
   } else {
-    // Fallback: direct join
     let variantQuery = supabase
       .from('product_variants')
       .select('size, products!inner(is_active, tags)')
@@ -93,35 +102,36 @@ export async function GET(req: NextRequest) {
     sizes = sortSizes(rawSizes as string[])
   }
 
-  // ── Colors ──────────────────────────────────────────────────────────────────
+  // Colors
   const colors = [
     ...new Set(
       (colorsResult.data ?? []).map((r) => r.color).filter(Boolean)
     ),
   ].sort() as string[]
 
-  // ── Price range ─────────────────────────────────────────────────────────────
+  // Price range
   const prices = (priceRangeResult.data ?? []).map((p) => Number(p.price)).filter((n) => n > 0)
   const price_range = {
     min: prices.length > 0 ? Math.floor(Math.min(...prices)) : 0,
     max: prices.length > 0 ? Math.ceil(Math.max(...prices)) : 10000,
   }
 
-  // ── Fabrics ─────────────────────────────────────────────────────────────────
+  // Fabrics — from real 'fabric' column
   const fabrics = [
     ...new Set(
-      (fabricsResult.data ?? []).map((p) => p.fabric_material).filter(Boolean)
+      (fabricsResult.data ?? []).map((p) => (p as any).fabric).filter(Boolean)
     ),
   ].sort() as string[]
 
-  // ── Sleeve types ────────────────────────────────────────────────────────────
+  // Sleeve types — derived from tags array
   const SLEEVE_ORDER = ['sleeveless', 'half_sleeve', '3/4_sleeve', 'full_sleeve']
+  const sleeveTagKeywords = ['sleeveless', 'half-sleeve', 'half_sleeve', 'full-sleeve', 'full_sleeve', '3/4-sleeve', '3/4_sleeve', 'short-sleeve', 'elbow-sleeve', 'three-quarter-sleeve']
   const rawSleeves = [
     ...new Set(
-      (sleeveResult.data ?? []).map((p) => p.sleeve_type).filter(Boolean)
+      (sleeveResult.data ?? []).flatMap((p) => (p as any).tags ?? []).filter((t: string) => sleeveTagKeywords.some(k => t.includes('sleeve') || t.includes('sleeveless')))
     ),
   ] as string[]
-  const sleeve_types = rawSleeves.sort((a, b) => {
+  let sleeve_types: string[] = rawSleeves.sort((a, b) => {
     const ai = SLEEVE_ORDER.indexOf(a)
     const bi = SLEEVE_ORDER.indexOf(b)
     if (ai === -1 && bi === -1) return a.localeCompare(b)
@@ -130,23 +140,27 @@ export async function GET(req: NextRequest) {
     return ai - bi
   })
 
-  // ── Occasions (from occasion_tags on products) ──────────────────────────────
-  const allOccasionTags = (occasionsResult.data ?? []).flatMap(
-    (p) => (p.occasion_tags as string[]) ?? []
-  )
-  const occasions = [...new Set(allOccasionTags)].filter(Boolean).sort()
+  // Override for western wear collection
+  if (collection === 'western-wear' && westernSleeveResult?.data) {
+    const westernSleeveTags = (westernSleeveResult.data as { tags: string[] }[])
+      .flatMap(p => p.tags || [])
+      .filter(tag => ['short-sleeve', 'elbow-sleeve', 'three-quarter-sleeve', 'full-sleeve'].includes(tag))
+    sleeve_types = [...new Set(westernSleeveTags)].sort((a, b) => {
+      const order = ['short-sleeve', 'elbow-sleeve', 'three-quarter-sleeve', 'full-sleeve']
+      return order.indexOf(a) - order.indexOf(b)
+    })
+  }
+
+  // Occasions — from 'occasion' column (text) merged with occasion-type tags
+  const allOccasionVals = (occasionsResult.data ?? []).flatMap((p) => {
+    const vals: string[] = []
+    if ((p as any).occasion) vals.push((p as any).occasion)
+    return vals
+  })
+  const occasions = [...new Set(allOccasionVals)].filter(Boolean).sort()
 
   return NextResponse.json(
-    {
-      sizes,       // always at least []
-      colors,      // always at least []
-      price_range, // always has min/max
-      fabrics,     // always at least []
-      sleeve_types, // always at least []
-      occasions,   // always at least []
-    },
-    {
-      headers: { 'Cache-Control': 'public, s-maxage=120' },
-    }
+    { sizes, colors, price_range, fabrics, sleeve_types, occasions },
+    { headers: { 'Cache-Control': 'public, s-maxage=120' } }
   )
 }

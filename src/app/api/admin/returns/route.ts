@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/requireAdmin'
 
 export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
+  const guard = await requireAdmin()
+  if (guard instanceof NextResponse) return guard
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminSupabaseClient() as any
   const { searchParams } = new URL(req.url)
@@ -12,10 +16,10 @@ export async function GET(req: NextRequest) {
   const PAGE_SIZE = 25
 
   let query = supabase
-    .from('return_requests')
+    .from('returns')
     .select(
-      `id, reason, status, admin_note, refund_amount, created_at,
-       orders ( id, total, customer_name, customer_email, customer_phone ),
+      `id, order_id, user_id, reason, status, items, refund_amount, created_at,
+       orders ( id, order_number, total_amount ),
        profiles ( id, full_name, email )`,
       { count: 'exact' }
     )

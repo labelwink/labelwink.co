@@ -5,7 +5,7 @@ import { requireAdmin } from '@/lib/requireAdmin'
 export async function GET(req: NextRequest) {
   try {
     const guard = await requireAdmin()
-    if (guard) return guard
+    if (guard instanceof NextResponse) return guard
 
     const supabase = createAdminSupabaseClient()
     const { data, error } = await supabase
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const guard = await requireAdmin()
-    if (guard) return guard
+    if (guard instanceof NextResponse) return guard
 
     const supabase = createAdminSupabaseClient()
     const { template_key, subject, preview_text, is_active } = await req.json()

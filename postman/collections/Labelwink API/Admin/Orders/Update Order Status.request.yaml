@@ -1,0 +1,5 @@
+$kind: http-request
+name: Update Order Status
+method: GET
+url: '{{baseUrl}}/api/admin/orders/{{orderId}}/status'
+order: 5000

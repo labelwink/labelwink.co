@@ -1,0 +1,12 @@
+$kind: http-request
+name: Update Variant Inventory
+method: POST
+url: '{{baseUrl}}/api/admin/inventory/{{variantId}}'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"stock_qty": 100}

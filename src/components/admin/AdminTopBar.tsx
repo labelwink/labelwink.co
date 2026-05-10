@@ -23,13 +23,6 @@ const NOTIF_ICONS: Record<string, React.ElementType> = {
   return_request: RotateCcw,
 }
 
-const NOTIF_COLORS: Record<string, string> = {
-  new_order:      'bg-blue-100 text-blue-600',
-  low_stock:      'bg-amber-100 text-amber-600',
-  new_review:     'bg-purple-100 text-purple-600',
-  return_request: 'bg-orange-100 text-orange-600',
-}
-
 export function AdminTopBar() {
   const router = useRouter()
   const { setIsOpen } = useSidebar()
@@ -44,13 +37,10 @@ export function AdminTopBar() {
       const res = await fetch('/api/admin/notifications')
       if (res.ok) {
         const json = await res.json()
-        // Support both new { notifications } shape and legacy flat array
         const items = Array.isArray(json) ? json : (json.notifications ?? [])
         setNotifications(items)
       }
-    } catch {
-      // fail silently
-    }
+    } catch {}
   }
 
   useEffect(() => {
@@ -59,7 +49,6 @@ export function AdminTopBar() {
     return () => clearInterval(interval)
   }, [])
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -97,11 +86,29 @@ export function AdminTopBar() {
   }
 
   return (
-    <header className="h-[56px] bg-[#1b3a34] px-5 flex items-center justify-between flex-shrink-0 border-b border-white/[0.08]">
+    <header style={{
+      height: '64px',
+      background: '#ffffff',
+      borderBottom: '1px solid #e8e2d6',
+      padding: '0 24px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexShrink: 0,
+      position: 'sticky',
+      top: 0,
+      zIndex: 30,
+    }}>
       {/* Left: hamburger (mobile) */}
       <button
         onClick={() => setIsOpen(true)}
-        className="lg:hidden text-white/70 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/10"
+        className="lg:hidden"
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: '#5a7060', padding: '8px', borderRadius: '8px',
+          display: 'flex', alignItems: 'center',
+          transition: 'color 150ms, background 150ms',
+        }}
         aria-label="Open menu"
       >
         <Menu size={20} />
@@ -109,63 +116,103 @@ export function AdminTopBar() {
       <div className="hidden lg:block" />
 
       {/* Right: actions */}
-      <div className="flex items-center gap-2">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
 
         {/* Notification Bell */}
-        <div className="relative" ref={dropdownRef}>
+        <div style={{ position: 'relative' }} ref={dropdownRef}>
           <button
             onClick={() => setOpen(o => !o)}
-            className="relative text-white/70 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#5a7060', padding: '8px', borderRadius: '8px',
+              position: 'relative', display: 'flex', alignItems: 'center',
+              transition: 'color 150ms, background 150ms',
+            }}
             aria-label="Notifications"
           >
             <Bell size={18} />
             {unread > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+              <span style={{
+                position: 'absolute', top: '4px', right: '4px',
+                background: '#c0392b', color: '#ffffff',
+                fontSize: '9px', fontWeight: 700,
+                width: '16px', height: '16px', borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
                 {unread > 9 ? '9+' : unread}
               </span>
             )}
           </button>
 
           {open && (
-            <div className="absolute right-0 mt-2 w-[320px] bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                <span className="font-semibold text-sm text-[#1a1a1a]">Notifications</span>
+            <div style={{
+              position: 'absolute', right: 0, top: '100%', marginTop: '8px',
+              width: '320px', background: '#ffffff',
+              border: '1px solid #e8e2d6', borderRadius: '12px',
+              boxShadow: '0 8px 24px rgba(26,46,30,0.12)',
+              zIndex: 50, overflow: 'hidden',
+            }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 16px', borderBottom: '1px solid #f5f2ec',
+              }}>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: '#1a2e1e' }}>Notifications</span>
                 {unread > 0 && (
                   <button
                     onClick={() => markRead()}
-                    className="text-xs text-[#1b3a34] hover:underline font-medium flex items-center gap-1"
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: '12px', color: '#2d5a3d', fontWeight: 500,
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                    }}
                   >
                     <Check size={11} /> Mark all read
                   </button>
                 )}
               </div>
 
-              <div className="max-h-[340px] overflow-y-auto divide-y divide-gray-50">
+              <div style={{ maxHeight: '340px', overflowY: 'auto' }}>
                 {notifications.length === 0 ? (
-                  <div className="text-sm text-gray-400 text-center py-10 flex flex-col items-center gap-2">
-                    <Bell size={24} className="text-gray-200" />
+                  <div style={{ textAlign: 'center', padding: '40px 16px', color: '#9aab9e', fontSize: '14px' }}>
+                    <Bell size={24} style={{ color: '#d4cebf', margin: '0 auto 8px' }} />
                     <p>No notifications</p>
                   </div>
                 ) : (
                   notifications.slice(0, 12).map(notif => {
                     const Icon = NOTIF_ICONS[notif.type ?? ''] ?? Bell
-                    const colorClass = NOTIF_COLORS[notif.type ?? ''] ?? 'bg-gray-100 text-gray-400'
                     return (
                       <button
                         key={notif.id}
                         onClick={() => handleNotifClick(notif)}
-                        className={`w-full text-left flex gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${!notif.is_read ? 'bg-blue-50/50' : ''}`}
+                        style={{
+                          width: '100%', textAlign: 'left',
+                          display: 'flex', gap: '12px',
+                          padding: '12px 16px',
+                          background: notif.is_read ? 'transparent' : '#eef5f1',
+                          border: 'none', borderBottom: '1px solid #f5f2ec',
+                          cursor: 'pointer', transition: 'background 150ms',
+                        }}
                       >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${colorClass}`}>
+                        <div style={{
+                          width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
+                          background: '#eef5f1', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#2d5a3d',
+                        }}>
                           <Icon size={14} />
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-[#1a1a1a] truncate">{notif.title}</p>
-                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.body}</p>
-                          <p className="text-[10px] text-gray-400 mt-1">{timeAgo(notif.created_at)}</p>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: '13px', fontWeight: 600, color: '#1a2e1e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {notif.title}
+                          </p>
+                          <p style={{ fontSize: '12px', color: '#9aab9e', marginTop: '2px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden' }}>
+                            {notif.body}
+                          </p>
+                          <p style={{ fontSize: '10px', color: '#d4cebf', marginTop: '4px' }}>
+                            {timeAgo(notif.created_at)}
+                          </p>
                         </div>
                         {!notif.is_read && (
-                          <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-2" />
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2d5a3d', flexShrink: 0, marginTop: '8px' }} />
                         )}
                       </button>
                     )
@@ -181,7 +228,16 @@ export function AdminTopBar() {
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="hidden sm:flex items-center gap-1.5 text-white/70 hover:text-white border border-white/20 hover:border-white/40 rounded-lg px-3 py-1.5 text-xs font-medium transition-all"
+          className="hidden sm:flex"
+          style={{
+            alignItems: 'center', gap: '6px',
+            color: '#5a7060', border: '1px solid #e8e2d6',
+            borderRadius: '8px', padding: '6px 12px',
+            fontSize: '13px', fontWeight: 500, textDecoration: 'none',
+            transition: 'color 150ms, border-color 150ms, background 150ms',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#2d5a3d'; (e.currentTarget as HTMLElement).style.borderColor = '#2d5a3d'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#5a7060'; (e.currentTarget as HTMLElement).style.borderColor = '#e8e2d6'; }}
         >
           <ExternalLink size={13} />
           Store
@@ -190,7 +246,16 @@ export function AdminTopBar() {
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-1.5 text-white/60 hover:text-white border border-white/20 hover:border-white/40 rounded-lg px-3 py-1.5 text-xs font-medium transition-all"
+          style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            color: '#5a7060', border: '1px solid #e8e2d6',
+            borderRadius: '8px', padding: '6px 12px',
+            fontSize: '13px', fontWeight: 500,
+            background: 'none', cursor: 'pointer',
+            transition: 'color 150ms, border-color 150ms',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#c0392b'; (e.currentTarget as HTMLElement).style.borderColor = '#f5c6c2'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#5a7060'; (e.currentTarget as HTMLElement).style.borderColor = '#e8e2d6'; }}
           aria-label="Logout"
         >
           <LogOut size={13} />

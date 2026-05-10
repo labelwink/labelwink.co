@@ -1,0 +1,8 @@
+$kind: http-request
+name: Search
+method: GET
+url: '{{baseUrl}}/api/storefront/search'
+order: 5000
+queryParams:
+  - key: q
+    value: dress

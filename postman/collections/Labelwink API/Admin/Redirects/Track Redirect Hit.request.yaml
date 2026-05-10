@@ -1,0 +1,12 @@
+$kind: http-request
+name: Track Redirect Hit
+method: POST
+url: '{{baseUrl}}/api/admin/redirects/hit'
+order: 4000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"path": "/old-path"}

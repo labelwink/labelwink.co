@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { verifyOTP, normalizePhone } from '@/lib/msg91';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { sendEmail } from '@/lib/brevo';
 
 export async function POST(request: Request) {
   try {
-    const { phone, otp, first_name, last_name, email, alt_phone } = await request.json();
+    const { phone, otp, first_name, last_name, email, alt_phone, ref_code } = await request.json();
 
     if (!phone || !otp || !first_name || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -66,17 +66,71 @@ export async function POST(request: Request) {
         }).eq('id', user_id);
     }
 
+    // --- Referral Handling ---
+    if (ref_code) {
+      try {
+        const { data: referrer } = await supabaseAdmin
+          .from('profiles')
+          .select('id')
+          .eq('referral_code', ref_code.toUpperCase())
+          .maybeSingle();
+
+        if (referrer && referrer.id !== user_id) {
+          // Link referred user
+          await supabaseAdmin.from('referrals').insert({
+            referrer_id: referrer.id,
+            referred_id: user_id,
+            status: 'pending'
+          });
+
+          await supabaseAdmin.from('profiles')
+            .update({ referred_by: referrer.id })
+            .eq('id', user_id);
+
+          // Award points to referred user
+          const { data: settings } = await supabaseAdmin.from('shop_settings').select('referral_referred_points').single();
+          const points = settings?.referral_referred_points || 100;
+
+          const { data: lp } = await supabaseAdmin.from('loyalty_points').select('balance, lifetime_earned').eq('user_id', user_id).maybeSingle();
+          if (lp) {
+            await supabaseAdmin.from('loyalty_points').update({
+              balance: lp.balance + points,
+              lifetime_earned: lp.lifetime_earned + points,
+              updated_at: new Date().toISOString()
+            }).eq('user_id', user_id);
+          } else {
+            await supabaseAdmin.from('loyalty_points').insert({
+              user_id: user_id,
+              balance: points,
+              lifetime_earned: points
+            });
+          }
+
+          await supabaseAdmin.from('loyalty_transactions').insert({
+            user_id: user_id,
+            points: points,
+            type: 'referral_signup',
+            reason: 'Welcome bonus for joining via referral'
+          });
+        }
+      } catch (err) {
+        console.error('Referral handling failed:', err);
+        // Silently ignore referral errors to not block registration
+      }
+    }
+    // --- End Referral Handling ---
+
     const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shop.hawklab.in';
     const emailHtml = `
-      <div style="font-family: Arial, sans-serif; color: #1a1a1a; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0;">
-        <div style="background-color: #1a1a1a; padding: 20px; text-align: center;">
+      <div style="font-family: Arial, sans-serif; color: #ffffff; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0;">
+        <div style="background-color: #ffffff; padding: 20px; text-align: center;">
           <h1 style="color: #c9a84c; margin: 0;">LabelWink</h1>
         </div>
         <div style="padding: 20px; background-color: #faf7f2;">
           <h2>Welcome ${first_name}! 🎉</h2>
           <p>We're thrilled to have you join LabelWink. Your account has been successfully created.</p>
           <div style="text-align: center; margin-top: 30px;">
-            <a href="${SITE_URL}" style="background-color: #c9a84c; color: #1a1a1a; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block;">Start Shopping</a>
+            <a href="${SITE_URL}" style="background-color: #c9a84c; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 4px; display: inline-block;">Start Shopping</a>
           </div>
         </div>
       </div>

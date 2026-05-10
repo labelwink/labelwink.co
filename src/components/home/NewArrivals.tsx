@@ -14,8 +14,8 @@ export function NewArrivals({ products }: NewArrivalsProps) {
         <p className="text-[10px] md:text-xs tracking-[0.3em] text-[#c9a84c] mb-2 font-medium">
           Fresh Every Week
         </p>
-        <h2 className="font-serif text-3xl text-[#1a3a34]">New Arrivals</h2>
-        <p className="text-gray-500 mt-2 text-sm">Step into elegance with our latest ethnic wear</p>
+        <h2 className="font-serif text-3xl text-[#1C3829] font-bold">New Arrivals</h2>
+        <p className="text-[#6B6B5A] mt-2 text-sm">Step into elegance with our latest ethnic wear</p>
       </div>
 
       {/* Horizontal scroll on mobile, 4-col grid on desktop */}
@@ -50,7 +50,7 @@ export function NewArrivals({ products }: NewArrivalsProps) {
       <div className="text-center mt-8 px-4">
         <Link
           href="/products"
-          className="inline-block border border-[#1a3a34] text-[#1a3a34] px-8 py-3 text-sm tracking-widest hover:bg-[#1a3a34] hover:text-white transition-colors rounded-sm"
+          className="inline-block border border-[#1C3829] text-[#1C3829] hover:bg-[#1C3829] hover:text-white transition-colors px-4 py-2 rounded-lg"
         >
           View All Products
         </Link>

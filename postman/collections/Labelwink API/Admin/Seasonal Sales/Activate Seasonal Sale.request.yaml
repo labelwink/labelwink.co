@@ -1,0 +1,5 @@
+$kind: http-request
+name: Activate Seasonal Sale
+method: POST
+url: '{{baseUrl}}/api/admin/seasonal-sales/{{saleId}}/activate'
+order: 5000

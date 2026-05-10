@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Referral Stats
+method: GET
+url: '{{baseUrl}}/api/storefront/referrals/stats'
+order: 6000

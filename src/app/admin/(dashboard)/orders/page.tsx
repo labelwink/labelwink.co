@@ -204,7 +204,7 @@ export default function OrdersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#1a1a1a]">Orders</h1>
+          <h1 className="text-xl font-bold text-[#1b3a34]">Orders</h1>
           <p className="text-[#6b7280] text-xs mt-0.5">{total.toLocaleString('en-IN')} total orders</p>
         </div>
         <div className="flex items-center gap-2">
@@ -253,7 +253,7 @@ export default function OrdersPage() {
             onChange={e => updateUrl({ from: e.target.value, page: '0' })}
             className="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700" 
           />
-          <span className="text-gray-400">to</span>
+          <span className="text-[#5a7060]">to</span>
           <input 
             type="date" 
             value={to} 
@@ -273,8 +273,8 @@ export default function OrdersPage() {
               onClick={() => updateUrl({ status: tab.value, page: '0' })}
               className={`pb-2 px-1 text-xs font-bold whitespace-nowrap transition-all border-b-2 flex items-center gap-1.5 ${
                 isActive
-                  ? 'border-[#c9a84c] text-[#1a1a1a]'
-                  : 'border-transparent text-gray-500 hover:text-gray-900'
+                  ? 'border-[#c9a84c] text-[#c9a84c]'
+                  : 'border-transparent text-[#9aab9e] hover:text-gray-900'
               }`}
             >
               {tab.label}
@@ -347,7 +347,7 @@ export default function OrdersPage() {
               ) : orders.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-center py-16">
-                    <ShoppingBag size={32} className="mx-auto text-gray-200 mb-3" />
+                    <ShoppingBag size={32} className="mx-auto text-[#1a2e1e] mb-3" />
                     <p className="text-sm text-[#6b7280]">No orders found</p>
                     {(status || search || from || to) && (
                       <button onClick={() => updateUrl({ status: '', search: '', from: '', to: '', page: '0' })} className="text-xs text-[#c9a84c] font-bold underline mt-2">
@@ -398,14 +398,14 @@ export default function OrdersPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 max-w-[160px]">
-                        <p className="font-medium text-[#1a1a1a] truncate text-xs">{o.customer_name || '—'}</p>
+                        <p className="font-medium text-[#1b3a34] truncate text-xs">{o.customer_name || '—'}</p>
                         <p className="text-[10px] text-[#9ca3af] truncate">{o.customer_phone || o.customer_email || '—'}</p>
                       </td>
-                      <td className="px-4 py-3.5 text-xs text-gray-500 max-w-[120px] truncate">
+                      <td className="px-4 py-3.5 text-xs text-[#9aab9e] max-w-[120px] truncate">
                         {o.order_items ? o.order_items.length + ' items' : '—'}
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <span className="font-bold text-[#1a1a1a] text-xs">{formatCurrency(Number(o.total ?? 0))}</span>
+                        <span className="font-bold text-[#1b3a34] text-xs">{formatCurrency(Number(o.total ?? 0))}</span>
                       </td>
                       <td className="px-4 py-3.5 text-center">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${badgeCls}`}>

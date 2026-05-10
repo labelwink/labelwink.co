@@ -1,0 +1,12 @@
+$kind: http-request
+name: Razorpay Webhook
+method: POST
+url: '{{baseUrl}}/api/razorpay/webhook'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {}

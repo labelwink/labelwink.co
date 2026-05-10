@@ -1,0 +1,12 @@
+$kind: http-request
+name: Test Telegram
+method: POST
+url: '{{baseUrl}}/api/admin/settings/test-telegram'
+order: 7000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"message": "Test message"}

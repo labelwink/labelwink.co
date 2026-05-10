@@ -1,0 +1,63 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/supabase/server'
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { slug: string } }
+) {
+  try {
+    const supabase = createAdminClient()
+
+    const { data, error } = await supabase
+      .from('site_pages')
+      .select('*')
+      .eq('slug', params.slug)
+      .limit(1)
+      .single()
+
+    if (error && error.code === 'PGRST116') {
+      return NextResponse.json({ title: '', content: '' }, { status: 404 })
+    }
+
+    if (error) {
+      console.error('[admin/cms/pages]', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json(data || { title: '', content: '' })
+  } catch (err) {
+    console.error('[admin/cms/pages]', err)
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { slug: string } }
+) {
+  try {
+    const supabase = createAdminClient()
+    const { title, content } = await req.json()
+
+    const { data, error } = await supabase
+      .from('site_pages')
+      .update({
+        title,
+        content,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('slug', params.slug)
+      .select('*')
+      .single()
+
+    if (error) {
+      console.error('[admin/cms/pages PATCH]', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json(data)
+  } catch (err) {
+    console.error('[admin/cms/pages PATCH]', err)
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  }
+}

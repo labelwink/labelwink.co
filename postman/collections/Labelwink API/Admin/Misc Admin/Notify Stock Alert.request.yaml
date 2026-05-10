@@ -1,0 +1,12 @@
+$kind: http-request
+name: Notify Stock Alert
+method: POST
+url: '{{baseUrl}}/api/admin/stock-alerts/notify'
+order: 4000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {"product_id": "id", "variant_id": "id"}

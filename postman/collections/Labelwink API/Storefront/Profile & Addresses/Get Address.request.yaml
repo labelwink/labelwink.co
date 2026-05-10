@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get Address
+method: GET
+url: '{{baseUrl}}/api/storefront/addresses/{{addressId}}'
+order: 5000

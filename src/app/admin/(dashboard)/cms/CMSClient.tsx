@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import {
@@ -139,7 +139,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
             className={`px-4 py-2.5 text-xs font-semibold transition-all border-b-2 -mb-px ${
               activeTab === tab
                 ? 'border-[#1b3a34] text-[#1b3a34]'
-                : 'border-transparent text-[#6b7280] hover:text-[#1a1a1a]'
+                : 'border-transparent text-[#6b7280] hover:text-[#ffffff]'
             }`}
           >
             {tab}
@@ -162,11 +162,11 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
           {/* Add form */}
           {showAddBanner && (
             <div className="bg-white border border-[#e5e7eb] rounded-xl p-5 space-y-4">
-              <h3 className="text-sm font-semibold text-[#1a1a1a]">New Hero Banner</h3>
+              <h3 className="text-sm font-semibold text-[#ffffff]">New Hero Banner</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {/* Image upload */}
                 <div>
-                  <p className="text-xs font-medium text-[#1a1a1a] mb-2">Banner Image *</p>
+                  <p className="text-xs font-medium text-[#ffffff] mb-2">Banner Image *</p>
                   <CloudinaryImageUploader
                     onUpload={pid => setBannerForm(prev => ({ ...prev, cloudinary_public_id: pid }))}
                     folder="labelwink/banners"
@@ -178,7 +178,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
                 {/* Fields */}
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-medium text-[#1a1a1a] mb-1">Heading *</label>
+                    <label className="block text-xs font-medium text-[#ffffff] mb-1">Heading *</label>
                     <input
                       value={bannerForm.title}
                       onChange={e => setBannerForm(p => ({ ...p, title: e.target.value }))}
@@ -187,7 +187,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#1a1a1a] mb-1">Button Text</label>
+                    <label className="block text-xs font-medium text-[#ffffff] mb-1">Button Text</label>
                     <input
                       value={bannerForm.cta_text}
                       onChange={e => setBannerForm(p => ({ ...p, cta_text: e.target.value }))}
@@ -196,7 +196,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#1a1a1a] mb-1">Link URL</label>
+                    <label className="block text-xs font-medium text-[#ffffff] mb-1">Link URL</label>
                     <input
                       value={bannerForm.cta_link}
                       onChange={e => setBannerForm(p => ({ ...p, cta_link: e.target.value }))}
@@ -227,7 +227,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
           {/* Banner list */}
           {banners.length === 0 ? (
             <div className="bg-white border border-dashed border-[#e5e7eb] rounded-xl p-14 text-center">
-              <ImageIcon size={28} className="mx-auto text-gray-200 mb-3" />
+              <ImageIcon size={28} className="mx-auto text-[#1a2e1e] mb-3" />
               <p className="text-sm text-[#6b7280]">No banners yet — add one above</p>
             </div>
           ) : (
@@ -242,11 +242,11 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
                       {previewUrl
                         // eslint-disable-next-line @next/next/no-img-element
                         ? <img src={previewUrl} alt={b.title} className="w-full h-full object-cover" />
-                        : <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={18} /></div>
+                        : <div className="w-full h-full flex items-center justify-center text-[#5a7060]"><ImageIcon size={18} /></div>
                       }
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-[#1a1a1a] truncate">{b.title}</p>
+                      <p className="text-sm font-semibold text-[#ffffff] truncate">{b.title}</p>
                       <div className="flex items-center gap-3 mt-0.5 text-[10px] text-[#9ca3af]">
                         {b.cta_text && <span className="flex items-center gap-1"><ImageIcon size={9} /> {b.cta_text}</span>}
                         {b.cta_link && <span className="flex items-center gap-1"><LinkIcon size={9} /> {b.cta_link}</span>}
@@ -259,7 +259,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold border transition-colors disabled:opacity-50 ${
                           b.is_active
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-gray-50 text-gray-500 border-gray-200'
+                            : 'bg-gray-50 text-[#9aab9e] border-gray-200'
                         }`}
                       >
                         <Power size={10} /> {b.is_active ? 'Active' : 'Draft'}
@@ -323,7 +323,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold border flex-shrink-0 transition-colors ${
                       ann.is_active
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : 'bg-gray-50 text-gray-500 border-gray-200'
+                        : 'bg-gray-50 text-[#9aab9e] border-gray-200'
                     }`}
                   >
                     <Power size={10} /> {ann.is_active ? 'Active' : 'Draft'}
@@ -341,7 +341,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
           <p className="text-xs text-[#6b7280]">Toggle homepage sections on/off.</p>
           {sections.length === 0 ? (
             <div className="bg-white border border-dashed border-[#e5e7eb] rounded-xl p-14 text-center">
-              <Layout size={28} className="mx-auto text-gray-200 mb-3" />
+              <Layout size={28} className="mx-auto text-[#1a2e1e] mb-3" />
               <p className="text-sm text-[#6b7280]">No sections configured</p>
             </div>
           ) : (
@@ -352,7 +352,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
                     <Layout size={14} className="text-[#1b3a34]" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[#1a1a1a]">{sec.title}</p>
+                    <p className="text-sm font-semibold text-[#ffffff]">{sec.title}</p>
                     <p className="text-[10px] font-mono text-[#9ca3af]">{sec.section_key}</p>
                   </div>
                 </div>
@@ -361,7 +361,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold border transition-colors ${
                     sec.is_active
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      : 'bg-gray-50 text-gray-500 border-gray-200'
+                      : 'bg-gray-50 text-[#9aab9e] border-gray-200'
                   }`}
                 >
                   <Power size={10} /> {sec.is_active ? 'Enabled' : 'Disabled'}
