@@ -3,15 +3,16 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    const { slug } = await params;
     const supabase = await createClient()
 
     const { data, error } = await supabase
       .from('site_pages')
       .select('title, content, updated_at')
-      .eq('slug', params.slug)
+      .eq('slug', slug)
       .eq('is_published', true)
       .limit(1)
       .single()

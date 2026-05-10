@@ -3,15 +3,16 @@ import { createAdminClient } from '@/lib/supabase/server'
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    const { slug } = await params;
     const supabase = createAdminClient()
 
     const { data, error } = await supabase
       .from('site_pages')
       .select('*')
-      .eq('slug', params.slug)
+      .eq('slug', slug)
       .limit(1)
       .single()
 
@@ -33,9 +34,10 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    const { slug } = await params;
     const supabase = createAdminClient()
     const { title, content } = await req.json()
 
@@ -46,7 +48,7 @@ export async function PATCH(
         content,
         updated_at: new Date().toISOString(),
       })
-      .eq('slug', params.slug)
+      .eq('slug', slug)
       .select('*')
       .single()
 

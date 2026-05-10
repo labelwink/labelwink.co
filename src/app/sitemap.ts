@@ -38,7 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7
   }))
 
-  const occasionPages: MetadataRoute.Sitemap = occasions.map(o => ({
+  const occasionPages: MetadataRoute.Sitemap = occasions.map((o: any) => ({
     url: `${SITE_URL}/products?occasion=${o.slug}`,
     changeFrequency: 'weekly',
     priority: 0.6

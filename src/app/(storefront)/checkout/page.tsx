@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
 import { useCartStore } from '@/store/useCartStore';
@@ -560,6 +560,10 @@ export default function CheckoutPage() {
                     customerName={customerName}
                     customerEmail={customerEmail}
                     customerPhone={customerPhone}
+                    onSuccess={() => {
+                      clearCart();
+                      router.push('/account/orders');
+                    }}
                   />
                 </div>
               </div>

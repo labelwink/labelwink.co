@@ -4,12 +4,12 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { key: string } }
+  { params }: { params: Promise<{ key: string }> }
 ) {
   const error = await requireSuperAdmin(req)
   if (error) return error
 
-  const { key } = params
+  const { key } = await params
   const body = await req.json()
 
   const supabase = createAdminClient()
@@ -33,12 +33,12 @@ export async function PATCH(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { key: string } }
+  { params }: { params: Promise<{ key: string }> }
 ) {
   const error = await requireSuperAdmin(req)
   if (error) return error
 
-  const { key } = params
+  const { key } = await params
   const body = await req.json()
 
   // Send test email via Brevo

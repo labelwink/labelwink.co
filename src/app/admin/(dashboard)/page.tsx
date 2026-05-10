@@ -45,29 +45,29 @@ async function getDashboardData() {
 
   const supabaseAny = supabase as any
 
-  const [
-    { data: thisMonthOrders },
-    { data: lastMonthOrders },
-    { data: todayOrders },
-    { count: activeProducts },
-    { data: lowStockVariants },
-    { data: recentOrders },
-    { count: totalCustomers },
-    { count: pendingReturns },
-    { count: pendingReviews },
-    { data: topProducts },
-  ] = await Promise.all([
-    supabaseAny.from('orders').select('id, total_amount, status').gte('created_at', thisMonthStart).neq('status', 'cancelled').returns<OrderRow[]>(),
-    supabaseAny.from('orders').select('total_amount').gte('created_at', lastMonthStart).lte('created_at', lastMonthEnd).neq('status', 'cancelled').returns<OrderRow[]>(),
-    supabaseAny.from('orders').select('id, total_amount').gte('created_at', todayStart).neq('status', 'cancelled').returns<OrderRow[]>(),
+  const results = await Promise.all([
+    supabaseAny.from('orders').select('id, total_amount, status').gte('created_at', thisMonthStart).neq('status', 'cancelled'),
+    supabaseAny.from('orders').select('total_amount').gte('created_at', lastMonthStart).lte('created_at', lastMonthEnd).neq('status', 'cancelled'),
+    supabaseAny.from('orders').select('id, total_amount').gte('created_at', todayStart).neq('status', 'cancelled'),
     supabaseAny.from('products').select('id', { count: 'exact', head: true }).eq('visible', true),
-    supabaseAny.from('product_variants').select('id, size, color, stock_qty, low_stock_threshold, product_id, products:product_id(name, id)').lte('stock_qty', 10).eq('is_active', true).order('stock_qty', { ascending: true }).limit(20).returns<VariantRow[]>(),
-    supabaseAny.from('orders').select('id, total_amount, status, shipping_name, created_at, profiles(email, full_name)').order('created_at', { ascending: false }).limit(5).returns<OrderRow[]>(),
+    supabaseAny.from('product_variants').select('id, size, color, stock_qty, low_stock_threshold, product_id, products:product_id(name, id)').lte('stock_qty', 10).eq('is_active', true).order('stock_qty', { ascending: true }).limit(20),
+    supabaseAny.from('orders').select('id, total_amount, status, shipping_name, created_at, profiles(email, full_name)').order('created_at', { ascending: false }).limit(5),
     supabaseAny.from('profiles').select('id', { count: 'exact', head: true }),
     supabaseAny.from('returns').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     supabaseAny.from('reviews').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-    supabaseAny.from('order_items').select('product_id, quantity, products:product_id(name)').limit(100).returns<OrderItemRow[]>(),
+    supabaseAny.from('order_items').select('product_id, quantity, products:product_id(name)').limit(100),
   ])
+
+  const thisMonthOrders = results[0].data as OrderRow[] | null
+  const lastMonthOrders = results[1].data as OrderRow[] | null
+  const todayOrders = results[2].data as OrderRow[] | null
+  const activeProducts = results[3].count
+  const lowStockVariants = results[4].data as VariantRow[] | null
+  const recentOrders = results[5].data as OrderRow[] | null
+  const totalCustomers = results[6].count
+  const pendingReturns = results[7].count
+  const pendingReviews = results[8].count
+  const topProducts = results[9].data as OrderItemRow[] | null
 
   const sumRevenue = (orders: Array<{ total_amount: number | null }> | null) =>
     orders?.reduce((s, o) => s + Number(o.total_amount ?? 0), 0) ?? 0

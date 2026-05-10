@@ -131,10 +131,10 @@ export default function PoliciesPage() {
               <button onMouseDown={e => { e.preventDefault(); format('formatBlock', 'h3') }}
                 className="px-3 py-1 text-sm font-semibold border border-[#e5e7eb] rounded hover:bg-gray-200 bg-white">H3</button>
               <button onMouseDown={e => { e.preventDefault(); format('formatBlock', 'p') }}
-                className="px-3 py-1 text-sm border border-[#e5e7eb] rounded hover:bg-gray-200 bg-white">¶ Para</button>
+                className="px-3 py-1 text-sm border border-[#e5e7eb] rounded hover:bg-gray-200 bg-white"> Para</button>
               <div className="w-px bg-gray-300 mx-1" />
               <button onMouseDown={e => { e.preventDefault(); format('insertUnorderedList') }}
-                className="px-3 py-1 text-sm border border-[#e5e7eb] rounded hover:bg-gray-200 bg-white">• List</button>
+                className="px-3 py-1 text-sm border border-[#e5e7eb] rounded hover:bg-gray-200 bg-white"> List</button>
               <button onMouseDown={e => { e.preventDefault(); format('insertOrderedList') }}
                 className="px-3 py-1 text-sm border border-[#e5e7eb] rounded hover:bg-gray-200 bg-white">1. List</button>
             </div>
@@ -159,7 +159,7 @@ export default function PoliciesPage() {
         </div>
       )}
 
-      {loading && <div className="text-center py-10 text-[#6b7280]">Loading…</div>}
+      {loading && <div className="text-center py-10 text-[#6b7280]">Loading</div>}
     </div>
   )
 }

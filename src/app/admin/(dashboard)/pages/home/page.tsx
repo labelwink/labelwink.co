@@ -126,7 +126,7 @@ function CollectionsSection() {
   };
 
   if (loading)
-    return <p className="text-sm text-[#6b7280] pt-4">Loading collections…</p>;
+    return <p className="text-sm text-[#6b7280] pt-4">Loading collections</p>;
 
   return (
     <div className="pt-4 space-y-3">
@@ -204,7 +204,7 @@ function CollectionsSection() {
         disabled={saving || collections.length === 0}
         className="flex items-center gap-2 px-5 py-2 bg-[#1b3a34] text-white rounded-xl text-sm hover:bg-[#234d44] disabled:opacity-60"
       >
-        {saving ? "Saving…" : "Save Collections Order"}
+        {saving ? "Saving" : "Save Collections Order"}
       </button>
     </div>
   );
@@ -234,14 +234,14 @@ export default function HomePageEditor() {
   };
 
   if (!data)
-    return <div className="text-center py-20 text-[#6b7280]">Loading…</div>;
+    return <div className="text-center py-20 text-[#6b7280]">Loading</div>;
 
   return (
     <div className="space-y-4">
       {ToastComponent}
       <div>
         <nav className="text-sm text-[#6b7280] mb-1">
-          Admin › Pages › <span className="text-[#1b3a34]">Homepage</span>
+          Admin  Pages  <span className="text-[#1b3a34]">Homepage</span>
         </nav>
         <h1 className="text-2xl font-bold text-[#1b3a34]">
           Homepage Content Editor
@@ -518,7 +518,7 @@ export default function HomePageEditor() {
                 }
                 className="text-red-500 hover:text-red-700 text-sm px-2 py-1"
               >
-                ×
+                
               </button>
             </div>
           ))}

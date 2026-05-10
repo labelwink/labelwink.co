@@ -46,18 +46,3 @@ export function verifyRazorpaySignature(razorpay_order_id: string, razorpay_paym
   }
 }
 
-export async function createRazorpayOrder(amount: number, receipt: string) {
-  const options = {
-    amount: Math.round(amount * 100), // convert to paise
-    currency: 'INR',
-    receipt: receipt,
-  };
-
-  try {
-    const order = await razorpay.orders.create(options);
-    return order;
-  } catch (error) {
-    console.error('Error creating Razorpay order:', error);
-    throw error;
-  }
-}

@@ -4,12 +4,12 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const error = await requireSuperAdmin(req)
   if (error) return error
 
-  const { id } = params
+  const { id } = await params
   const body = await req.json()
 
   const supabase = createAdminClient()
@@ -29,12 +29,12 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const error = await requireSuperAdmin(req)
   if (error) return error
 
-  const { id } = params
+  const { id } = await params
   const supabase = createAdminClient()
 
   const { error: dbError } = await supabase

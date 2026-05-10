@@ -79,6 +79,10 @@ interface Order {
   tracking_url: string | null
   shiprocket_order_id: string | null
   shiprocket_awb: string | null
+  shiprocket_awb_code?: string | null
+  shiprocket_shipment_id?: string | null
+  shiprocket_courier_name?: string | null
+  fulfillment_status?: string | null
   admin_note: string | null
   shipping_address: ShippingAddress | null
   shipping_method: string | null

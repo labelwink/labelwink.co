@@ -6,8 +6,8 @@ import { SlidersHorizontal, X, Search, LayoutGrid, List, ChevronDown } from 'luc
 import { ProductCatalogCard } from '@/components/product/ProductCatalogCard'
 import { CatalogFilterSidebar } from '@/components/storefront/CatalogFilterSidebar'
 
-interface Variant { id: string; size: string; color: string | null; stock_qty: number; price: number; mrp: number | null; is_active: boolean }
-interface Product { id: string; name: string; slug: string; price: number; mrp: number | null; compare_at_price: number | null; images: any; created_at: string; fabric: string | null; occasion: string | null; tags: string[] | null; product_variants: Variant[] }
+interface Variant { id: string; size: string; color: string | null; stock_qty: number; price: number; mrp: number | null; compare_at_price: number | null; is_active: boolean }
+interface Product { id: string; name: string; slug: string; price: number; mrp: number | null; compare_at_price: number | null; product_images: any; created_at: string; fabric: string | null; occasion: string | null; tags: string[] | null; product_variants: Variant[] }
 interface FilterOptions { sizes: string[]; colors: string[]; price_range: { min: number; max: number }; fabrics: string[]; sleeve_types: string[]; occasions: string[] }
 
 const SORT_OPTIONS = [

@@ -7,32 +7,37 @@ export async function GET(req: NextRequest) {
   if (error) return error
 
   const { searchParams } = new URL(req.url)
-  const category = searchParams.get('category')
-  const level = searchParams.get('level')
+  const category = searchParams.get('category') // maps to 'module' in DB
+  const level    = searchParams.get('level')
 
   const supabase = createAdminClient()
 
-  let query = supabase.from('system_logs').select('*')
+  let query = supabase
+    .from('system_logs')
+    .select('id, level, module, message, details, created_at')
 
-  if (category) {
-    query = query.eq('category', category)
+  if (category && category !== 'all') {
+    query = query.eq('module', category)
   }
 
-  if (level) {
+  if (level && level !== 'all') {
     query = query.eq('level', level)
   }
 
-  const { data, error: dbError } = await query.order('created_at', { ascending: false }).limit(500)
+  const { data, error: dbError } = await query
+    .order('created_at', { ascending: false })
+    .limit(500)
 
   if (dbError) {
     return NextResponse.json({ error: dbError.message }, { status: 500 })
   }
 
-  // Convert to CSV
+  // Convert to CSV (use 'module' as 'Category')
   const logs = data || []
-  let csv = 'ID,Level,Category,Message,Created At,Resolved\n'
+  let csv = 'ID,Level,Category,Message,Created At\n'
   logs.forEach(log => {
-    csv += `"${log.id}","${log.level}","${log.category}","${log.message.replace(/"/g, '""')}","${log.created_at}","${log.resolved}"\n`
+    const msg = (log.message || '').replace(/"/g, '""')
+    csv += `"${log.id}","${log.level}","${log.module ?? 'system'}","${msg}","${log.created_at}"\n`
   })
 
   return new Response(csv, {

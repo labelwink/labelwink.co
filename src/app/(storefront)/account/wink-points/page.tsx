@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { Coins, TrendingUp, TrendingDown, RotateCcw, ArrowUpCircle, Clock, Gift, Copy, CheckCheck } from 'lucide-react';
@@ -43,6 +43,9 @@ export default function WinkPointsPage() {
   const [tiers,        setTiers]            = useState<any[]>([]);
   const [redeemRatio,  setRedeemRatio]      = useState(100);
   const [pointsRate,   setPointsRate]       = useState(1);
+  const [redeemPoints, setRedeemPoints]     = useState(100);
+  const [redeemResult, setRedeemResult]     = useState<{code: string, discount: number} | null>(null);
+  const [redeeming,    setRedeeming]        = useState(false);
 
   useEffect(() => {
     Promise.all([

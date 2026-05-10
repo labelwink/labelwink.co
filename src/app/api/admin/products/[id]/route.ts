@@ -77,11 +77,9 @@ export async function PATCH(req: NextRequest, { params }: RouteCtx) {
         .map((img: Record<string, unknown>, i: number) => ({
           product_id: id,
           url: img.url,
-          cloudinary_public_id: img.public_id || img.cloudinary_public_id || null,
           alt: img.alt || null,
           sort_order: i,
           is_cover: i === 0 || img.is_cover === true,
-          is_primary: i === 0 || img.is_cover === true,
         }))
       if (imageRows.length > 0) {
         const { error: imgErr } = await supabase.from('product_images').insert(imageRows)

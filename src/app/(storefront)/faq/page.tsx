@@ -1,38 +1,118 @@
-﻿import { createClient } from '@/lib/supabase/server'
-import { FAQAccordion } from '@/components/storefront/FAQAccordion'
+'use client'
 
-export const metadata = {
-  title: 'FAQ | Label Wink',
-  description: 'Frequently asked questions about Label Wink — shipping, returns, sizing and more.',
+import { useEffect, useState, Suspense } from 'react'
+import Link from 'next/link'
+import { Loader2, HelpCircle } from 'lucide-react'
+
+interface FAQItem {
+  id: string
+  question: string
+  answer: string
+  category: string
 }
 
-export default async function FAQPage() {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('cms_content')
-    .select('content')
-    .eq('page', 'faq')
-    .single()
-  const cms = (data?.content as any) || {}
+function FAQContent() {
+  const [items, setItems] = useState<FAQItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const title = cms.title || 'Frequently Asked Questions'
-  const subtitle = cms.subtitle || ''
-  const items: { question: string; answer: string }[] = Array.isArray(cms.faqs)
-    ? cms.faqs
-    : [
-        { question: 'What is your return policy?', answer: 'We accept returns within 7 days of delivery for unused, unwashed items with tags intact.' },
-        { question: 'How long does shipping take?', answer: 'Standard delivery takes 3–7 business days. Express options are available at checkout.' },
-        { question: 'Do you ship internationally?', answer: 'Currently we ship within India only. International shipping coming soon!' },
-        { question: 'How do I track my order?', answer: 'You will receive a tracking link via SMS and email once your order is dispatched.' },
-      ]
+  useEffect(() => {
+    fetch('/api/storefront/faq')
+      .then((r) => r.json())
+      .then((d) => setItems(d.items || []))
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const categories = Array.from(new Set(items.map((i) => i.category)))
 
   return (
-    <div className="container mx-auto px-4 py-12 max-w-3xl">
-      <h1 className="text-3xl font-bold text-[#1b3a34] mb-2">{title}</h1>
-      {subtitle && <p className="text-[#9aab9e] mb-8">{subtitle}</p>}
-      <div className="mt-6">
-        <FAQAccordion items={items} />
+    <div className="min-h-screen bg-[#FDF8F0]">
+      <div className="max-w-3xl mx-auto px-4 py-12">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-[#1C3829] mb-3">
+            Frequently Asked Questions
+          </h1>
+          <p className="text-gray-600">
+            Find answers to common questions about our products and policies
+          </p>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-[#C9A84C]" />
+          </div>
+        ) : items.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border border-[#E8DFC8]">
+            <HelpCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 mb-4">No FAQ items available yet.</p>
+            <p className="text-gray-500">
+              Have a question?{' '}
+              <Link
+                href="/contact"
+                className="text-[#1C3829] underline hover:text-[#C9A84C]"
+              >
+                Contact us
+              </Link>
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {categories.map((category) => (
+              <div key={category}>
+                <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-4">
+                  {category}
+                </h2>
+                <div className="space-y-3">
+                  {items
+                    .filter((i) => i.category === category)
+                    .map((item) => (
+                      <div
+                        key={item.id}
+                        className="bg-white border border-[#E8DFC8] rounded-xl overflow-hidden shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedId(
+                              expandedId === item.id ? null : item.id
+                            )
+                          }
+                          className="w-full p-5 text-left flex items-center justify-between hover:bg-[#FDF8F0] transition-colors"
+                        >
+                          <span className="font-medium text-[#1C3829]">
+                            {item.question}
+                          </span>
+                          <span
+                            className={`text-[#C9A84C] transition-transform ${
+                              expandedId === item.id ? 'rotate-180' : ''
+                            }`}
+                          >
+                            ▼
+                          </span>
+                        </button>
+
+                        {expandedId === item.id && (
+                          <div className="px-5 py-4 bg-[#FDF8F0] border-t border-[#E8DFC8] text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                            {item.answer}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
+  )
+}
+
+export default function FAQPage() {
+  return (
+    <Suspense>
+      <FAQContent />
+    </Suspense>
   )
 }

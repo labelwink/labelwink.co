@@ -8,12 +8,12 @@ import {
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const authError = await requireAdmin(request)
-  if (authError) return authError
+  const authResult = await requireAdmin()
+  if (authResult instanceof NextResponse) return authResult
 
-  const { id } = params
+  const { id } = await params
 
   try {
     const supabase = createAdminClient()

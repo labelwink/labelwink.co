@@ -6,12 +6,12 @@ const VALID_ROLES = ['customer', 'employee', 'admin', 'super_admin'] as const
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const error = await requireSuperAdmin(req)
   if (error) return error
 
-  const { id } = params
+  const { id } = await params
   const body = await req.json()
 
   // Only allow safe fields to be updated to prevent mass assignment

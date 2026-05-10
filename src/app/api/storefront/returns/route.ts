@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const guard = await requireAdmin();
-  if (guard) return guard;
+  if (guard instanceof NextResponse) return guard;
 
   const supabase = createAdminClient();
   const { data, error } = await supabase
@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const guard = await requireAdmin();
-  if (guard) return guard;
+  if (guard instanceof NextResponse) return guard;
 
   const supabase = createAdminClient();
 

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { 
@@ -389,8 +389,8 @@ function CampaignModal({ campaign, onClose, onSuccess }: { campaign: any, onClos
                     <div className="flex justify-between items-center px-1">
                       <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Email Body (HTML)</label>
                       <div className="flex gap-2">
-                        <button type="button" onClick={() => setFormData({...formData, body_html: formData.body_html + '{{store_name}}'})} className="text-[10px] bg-charcoal/5 px-2 py-1 rounded hover:bg-charcoal/10">Add {{store_name}}</button>
-                        <button type="button" onClick={() => setFormData({...formData, body_html: formData.body_html + '{{unsubscribe_url}}'})} className="text-[10px] bg-charcoal/5 px-2 py-1 rounded hover:bg-charcoal/10">Add {{unsubscribe_url}}</button>
+                        <button type="button" onClick={() => setFormData({...formData, body_html: formData.body_html + '{{store_name}}'})} className="text-[10px] bg-charcoal/5 px-2 py-1 rounded hover:bg-charcoal/10">Add {'{{store_name}}'}</button>
+                        <button type="button" onClick={() => setFormData({...formData, body_html: formData.body_html + '{{unsubscribe_url}}'})} className="text-[10px] bg-charcoal/5 px-2 py-1 rounded hover:bg-charcoal/10">Add {'{{unsubscribe_url}}'}</button>
                       </div>
                     </div>
                     <textarea 

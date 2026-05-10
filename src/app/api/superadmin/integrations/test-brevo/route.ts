@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const supabase = createAdminClient()
-    const { data: user } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
 
     const brevoKey = process.env.BREVO_API_KEY
     if (!brevoKey) {

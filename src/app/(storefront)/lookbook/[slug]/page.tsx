@@ -2,7 +2,7 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { cloudinaryUrl } from '@/lib/utils/cloudinary'
+import { cloudinaryUrl, getCloudinaryUrl } from '@/lib/utils/cloudinary'
 import type { Metadata } from 'next'
 
 export const revalidate = 3600
@@ -71,7 +71,7 @@ export default async function LookbookSlugPage({ params }: Props) {
     .neq('slug', slug)
     .limit(3)
 
-  const coverUrl = cloudinaryUrl(post.cover_image_url, 800, 1000)
+  const coverUrl = getCloudinaryUrl(post.cover_image_url, { width: 800, height: 1000 })
 
   return (
     <div className="min-h-screen bg-[#faf7f2]">
@@ -121,7 +121,7 @@ export default async function LookbookSlugPage({ params }: Props) {
             {relatedProducts.map(product => {
               const cover = product.product_images?.find((img: { is_cover: boolean }) => img.is_cover)?.url
                          ?? product.product_images?.[0]?.url
-              const imgUrl = cloudinaryUrl(cover, 'thumbnail')
+              const imgUrl = getCloudinaryUrl(cover, { width: 400, height: 500 })
               return (
                 <Link
                   key={product.id}
@@ -167,7 +167,7 @@ export default async function LookbookSlugPage({ params }: Props) {
                   <div className="relative aspect-video overflow-hidden bg-gray-100">
                     {other.cover_image_url && (
                       <Image
-                        src={cloudinaryUrl(other.cover_image_url, 400, 250)}
+                        src={getCloudinaryUrl(other.cover_image_url, { width: 400, height: 250 })}
                         alt={other.title}
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-300"

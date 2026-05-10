@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { createClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { 
@@ -60,7 +60,9 @@ export default async function RewardsPage() {
     { name: 'Bronze',   min: 0,     max: 999,   icon: '🥉', color: '#cd7f32', perks: ["Earn points on every order", "Birthday bonus"] },
     { name: 'Silver',   min: 1000,  max: 4999,  icon: '🥈', color: '#9e9e9e', perks: ["Everything in Bronze", "Early access to sales", "Exclusive events"] },
     { name: 'Gold',     min: 5000,  max: 9999,  icon: '🥇', color: '#c9a84c', perks: ["Everything in Silver", "Priority support", "Exclusive offers", "Complimentary shipping benefits"] },
-  const currentTierIndex = TIERS.findIndex((t, i) => userLifetime >= t.min && (TIERS[i+1] ? userLifetime < TIERS[i+1].min : true));
+  ];
+  const userLifetime = userStats?.lifetime_earned || 0;
+  const currentTierIndex = TIERS.findIndex((t: any, i: number) => userLifetime >= t.min && (TIERS[i+1] ? userLifetime < TIERS[i+1].min : true));
   const nextTier = TIERS[currentTierIndex + 1];
 
   return (
@@ -180,7 +182,7 @@ export default async function RewardsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {TIERS.map((t, i) => (
+            {TIERS.map((t: any, i: number) => (
               <TierCard 
                 key={t.name}
                 tier={t}

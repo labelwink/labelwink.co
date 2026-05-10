@@ -3,11 +3,11 @@ import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabaseAdmin = createAdminSupabaseClient();
-    const id = params.id;
+    const { id } = await params;
 
     const { data: campaign, error } = await supabaseAdmin
       .from('email_campaigns')
@@ -42,10 +42,10 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const body = await req.json();
     const supabaseAdmin = createAdminSupabaseClient();
 
@@ -81,10 +81,10 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const supabaseAdmin = createAdminSupabaseClient();
 
     const { data: campaign } = await supabaseAdmin

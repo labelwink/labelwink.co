@@ -1,7 +1,7 @@
-﻿import { createAdminSupabaseClient } from '@/lib/supabase/admin'
+import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 import Image from 'next/image'
 import Link from 'next/link'
-import { cloudinaryUrl } from '@/lib/utils/cloudinary'
+import { cloudinaryUrl, getCloudinaryUrl } from '@/lib/utils/cloudinary'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -59,7 +59,7 @@ export default async function LookbookPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {lookbooks.map(post => {
               const season = seasonTag(post.tags)
-              const imgUrl = cloudinaryUrl(post.cover_image_url, 'pdp')
+              const imgUrl = getCloudinaryUrl(post.cover_image_url || '', { width: 800, height: 1000 })
               return (
                 <Link
                   key={post.id}

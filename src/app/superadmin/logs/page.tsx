@@ -72,7 +72,7 @@ export default function LogsPage() {
           table: 'system_logs',
         },
         (payload) => {
-          setLogs((prev) => [payload.new, ...prev].slice(0, 100))
+          setLogs((prev) => [(payload.new as Log), ...prev].slice(0, 100))
           setIsLive(true)
         }
       )

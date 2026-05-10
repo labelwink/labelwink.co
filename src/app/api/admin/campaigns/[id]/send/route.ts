@@ -10,10 +10,10 @@ function generateUnsubscribeToken(email: string) {
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const body = await req.json();
     const { test_email } = body;
     

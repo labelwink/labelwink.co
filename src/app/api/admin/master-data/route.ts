@@ -29,14 +29,15 @@ export async function GET(req: NextRequest) {
   }
 
   data?.forEach(attr => {
-    const typeKey = {
+    const map: Record<string, keyof typeof grouped> = {
       size: 'sizes',
       color: 'colors',
       fabric: 'fabrics',
       sleeve_type: 'sleeves',
       occasion: 'occasions',
       fit: 'fits',
-    }[attr.type] as keyof typeof grouped
+    }
+    const typeKey = map[attr.type]
 
     if (typeKey) {
       grouped[typeKey].push({

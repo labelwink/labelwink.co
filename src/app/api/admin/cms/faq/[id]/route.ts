@@ -3,9 +3,10 @@ import { createAdminClient } from '@/lib/supabase/server'
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = createAdminClient()
     const { question, answer, category, sort_order, is_active } = await req.json()
 
@@ -19,7 +20,7 @@ export async function PATCH(
         is_active,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select('*')
       .single()
 
@@ -37,15 +38,16 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = createAdminClient()
 
     const { error } = await supabase
       .from('faq_items')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (error) {
       console.error('[admin/cms/faq DELETE]', error)

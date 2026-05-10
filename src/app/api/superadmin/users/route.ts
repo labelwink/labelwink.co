@@ -85,19 +85,17 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Insert profile row using service-role SSR client (fine for DB ops)
+  // Update profile row using service-role SSR client (fine for DB ops)
+  // The 'on_auth_user_created' trigger already inserted the basic profile row.
   const supabase = createAdminClient()
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
-    .insert([
-      {
-        id: authData.user.id,
-        email,
-        full_name,
-        phone: phone || null,
-        role: safeRole,
-      },
-    ])
+    .update({
+      full_name,
+      phone: phone || null,
+      role: safeRole,
+    })
+    .eq('id', authData.user.id)
     .select()
     .single()
 
@@ -105,7 +103,7 @@ export async function POST(req: NextRequest) {
     // Rollback: delete the orphaned auth user
     await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
     return NextResponse.json(
-      { error: `Profile creation failed: ${profileError.message}` },
+      { error: `Profile update failed: ${profileError.message}` },
       { status: 500 }
     )
   }

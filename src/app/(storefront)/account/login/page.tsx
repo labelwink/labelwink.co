@@ -156,129 +156,127 @@ function LoginContent() {
         </div>
 
         {loginMode === 'phone' ? (
-          <form onSubmit={sendOTP} className="space-y-6">
-            <div className="space-y-3">
-              <Label htmlFor="phone" className="text-[10px] font-bold uppercase tracking-widest text-charcoal/60">Mobile Number</Label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-charcoal/40 text-sm font-medium">+91</span>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="Enter 10-digit mobile number"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  required
-                  className="h-14 pl-14 bg-sage/5 border-sage/20 focus-visible:ring-teal text-lg tracking-wider"
-                />
+          step === 'phone' ? (
+            <form onSubmit={sendOTP} className="space-y-6">
+              <div className="space-y-3">
+                <Label htmlFor="phone" className="text-[10px] font-bold uppercase tracking-widest text-charcoal/60">Mobile Number</Label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-charcoal/40 text-sm font-medium">+91</span>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="Enter 10-digit mobile number"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    required
+                    className="h-14 pl-14 bg-sage/5 border-sage/20 focus-visible:ring-teal text-lg tracking-wider"
+                  />
+                </div>
               </div>
-            </div>
-            <Button 
-              type="submit" 
-              disabled={loading || phone.length < 10} 
-              className="w-full h-14 bg-charcoal text-cream rounded-none uppercase tracking-[0.2em] font-bold text-xs hover:bg-teal transition-all"
-            >
-              {loading ? <Loader2 className="animate-spin w-4 h-4" /> : 'Get Secure OTP'}
-            </Button>
-          </form>
+              <Button 
+                type="submit" 
+                disabled={loading || phone.length < 10} 
+                className="w-full h-14 bg-charcoal text-cream rounded-none uppercase tracking-[0.2em] font-bold text-xs hover:bg-teal transition-all"
+              >
+                {loading ? <Loader2 className="animate-spin w-4 h-4" /> : 'Get Secure OTP'}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={verifyOTP} className="space-y-6 animate-in fade-in slide-in-from-right duration-500">
+              <div className="space-y-3 text-center">
+                <Label htmlFor="otp" className="text-[10px] font-bold uppercase tracking-widest text-charcoal/60">Verification Code</Label>
+                <Input
+                  id="otp"
+                  type="text"
+                  placeholder="000000"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  required
+                  className="h-16 bg-sage/5 border-sage/20 focus-visible:ring-teal text-center tracking-[1em] text-2xl font-bold"
+                />
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  Code sent to +91 {phone}
+                </p>
+              </div>
+              <Button 
+                type="submit" 
+                disabled={loading || otp.length < 6} 
+                className="w-full h-14 bg-teal text-cream rounded-none uppercase tracking-[0.2em] font-bold text-xs hover:bg-charcoal transition-all"
+              >
+                {loading ? <Loader2 className="animate-spin w-4 h-4" /> : 'Verify & Login'}
+              </Button>
+              
+              <div className="text-center pt-4">
+                {countdown > 0 ? (
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Resend OTP in {countdown}s</p>
+                ) : (
+                  <button 
+                    type="button" 
+                    onClick={sendOTP}
+                    className="text-[10px] text-teal font-bold uppercase tracking-widest hover:underline"
+                  >
+                    Resend OTP
+                  </button>
+                )}
+                <div className="mt-4">
+                  <button 
+                    type="button" 
+                    onClick={() => setStep('phone')}
+                    className="text-[10px] text-charcoal/40 font-bold uppercase tracking-widest hover:text-charcoal"
+                  >
+                    Change Number
+                  </button>
+                </div>
+              </div>
+            </form>
+          )
         ) : (
           <div className="space-y-6 animate-in fade-in slide-in-from-right duration-500">
-            {step === 'phone' ? (
-              <>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-widest text-charcoal/60 mb-1">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 text-sm bg-white focus:ring-2 focus:ring-[#1C3829] focus:border-transparent outline-none"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="password" className="text-[10px] font-bold uppercase tracking-widest text-charcoal/60 mb-1">Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Enter your password"
-                        className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-xl text-gray-900 text-sm bg-white focus:ring-2 focus:ring-[#1C3829] focus:border-transparent outline-none"
-                      />
-                      <button type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                        {showPassword ? '🙈' : '👁'}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex justify-end">
-                    <a href="/account/forgot-password"
-                      className="text-xs text-[#1C3829] hover:text-[#C9A84C] transition-colors">
-                      Forgot password?
-                    </a>
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={handleEmailLogin}
-                    disabled={loading || !email || !password}
-                    className="w-full py-3 bg-[#1C3829] text-white rounded-xl font-medium hover:bg-[#24472F] transition-colors disabled:opacity-60">
-                    {loading ? 'Signing in...' : 'Sign In'}
-                  </Button>
-                </div>
-              </>
-            ) : null}
-          </div>
-        ) : (
-          <form onSubmit={verifyOTP} className="space-y-6 animate-in fade-in slide-in-from-right duration-500">
-            <div className="space-y-3 text-center">
-              <Label htmlFor="otp" className="text-[10px] font-bold uppercase tracking-widest text-charcoal/60">Verification Code</Label>
-              <Input
-                id="otp"
-                type="text"
-                placeholder="000000"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                required
-                className="h-16 bg-sage/5 border-sage/20 focus-visible:ring-teal text-center tracking-[1em] text-2xl font-bold"
-              />
-              <p className="text-[10px] text-muted-foreground mt-2">
-                Code sent to +91 {phone}
-              </p>
-            </div>
-            <Button 
-              type="submit" 
-              disabled={loading || otp.length < 6} 
-              className="w-full h-14 bg-teal text-cream rounded-none uppercase tracking-[0.2em] font-bold text-xs hover:bg-charcoal transition-all"
-            >
-              {loading ? <Loader2 className="animate-spin w-4 h-4" /> : 'Verify & Login'}
-            </Button>
-            
-            <div className="text-center pt-4">
-              {countdown > 0 ? (
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Resend OTP in {countdown}s</p>
-              ) : (
-                <button 
-                  type="button" 
-                  onClick={sendOTP}
-                  className="text-[10px] text-teal font-bold uppercase tracking-widest hover:underline"
-                >
-                  Resend OTP
-                </button>
-              )}
-              <div className="mt-4">
-                <button 
-                  type="button" 
-                  onClick={() => setStep('phone')}
-                  className="text-[10px] text-charcoal/40 font-bold uppercase tracking-widest hover:text-charcoal"
-                >
-                  Change Number
-                </button>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="email" className="text-[10px] font-bold uppercase tracking-widest text-charcoal/60 mb-1">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 text-sm bg-white focus:ring-2 focus:ring-[#1C3829] focus:border-transparent outline-none"
+                />
               </div>
+              <div>
+                <Label htmlFor="password" className="text-[10px] font-bold uppercase tracking-widest text-charcoal/60 mb-1">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-xl text-gray-900 text-sm bg-white focus:ring-2 focus:ring-[#1C3829] focus:border-transparent outline-none"
+                  />
+                  <button type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    {showPassword ? '🙈' : '👁'}
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <a href="/account/forgot-password"
+                  className="text-xs text-[#1C3829] hover:text-[#C9A84C] transition-colors">
+                  Forgot password?
+                </a>
+              </div>
+              <Button
+                type="button"
+                onClick={handleEmailLogin}
+                disabled={loading || !email || !password}
+                className="w-full py-3 bg-[#1C3829] text-white rounded-xl font-medium hover:bg-[#24472F] transition-colors disabled:opacity-60">
+                {loading ? 'Signing in...' : 'Sign In'}
+              </Button>
             </div>
-          </form>
+          </div>
         )}
 
         <div className="mt-12">

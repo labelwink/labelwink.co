@@ -7,19 +7,22 @@ export async function GET(req: NextRequest) {
   if (error) return error
 
   const { searchParams } = new URL(req.url)
-  const category = searchParams.get('category')
-  const level = searchParams.get('level')
-  const limit = parseInt(searchParams.get('limit') || '100')
+  const category = searchParams.get('category') // maps to 'module' in DB
+  const level    = searchParams.get('level')
+  const limit    = parseInt(searchParams.get('limit') || '100')
 
   const supabase = createAdminClient()
 
-  let query = supabase.from('system_logs').select('*')
+  let query = supabase
+    .from('system_logs')
+    .select('id, level, module, message, details, created_at')
 
-  if (category) {
-    query = query.eq('category', category)
+  // DB uses 'module' — the frontend sends 'category'
+  if (category && category !== 'all') {
+    query = query.eq('module', category)
   }
 
-  if (level) {
+  if (level && level !== 'all') {
     query = query.eq('level', level)
   }
 
@@ -31,5 +34,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: dbError.message }, { status: 500 })
   }
 
-  return NextResponse.json({ logs: data || [] })
+  // Normalise to frontend shape: category = module, metadata = details, resolved = false
+  const logs = (data || []).map(row => ({
+    ...row,
+    category: row.module ?? 'system',
+    metadata: row.details ?? {},
+    resolved: false,
+  }))
+
+  return NextResponse.json({ logs })
 }

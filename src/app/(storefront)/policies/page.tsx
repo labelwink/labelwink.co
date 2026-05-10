@@ -1,41 +1,89 @@
-import { createClient } from '@/lib/supabase/server'
+'use client'
 
-export default async function PoliciesPage() {
-  const supabase = await createClient()
-  const { data: policies } = await supabase
-    .from('policies')
-    .select('*')
-    .order('type', { ascending: true })
+import { Suspense, useEffect, useState } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+
+const TABS = [
+  { key: 'privacy', label: 'Privacy Policy', slug: 'privacy-policy' },
+  { key: 'returns', label: 'Return Policy', slug: 'return-policy' },
+  { key: 'terms', label: 'Terms of Service', slug: 'terms-of-service' },
+  { key: 'shipping', label: 'Shipping Policy', slug: 'shipping-policy' },
+  { key: 'refund', label: 'Refund Policy', slug: 'refund-policy' },
+]
+
+function PoliciesContent() {
+  const params = useSearchParams()
+  const router = useRouter()
+  const [data, setData] = useState<{ title: string; content: string } | null>(
+    null
+  )
+  const [loading, setLoading] = useState(true)
+  const activeTab = params.get('tab') ?? 'privacy'
+  const activeSlug =
+    TABS.find((t) => t.key === activeTab)?.slug ?? 'privacy-policy'
+
+  useEffect(() => {
+    setLoading(true)
+    setData(null)
+    fetch(`/api/storefront/pages/${activeSlug}`)
+      .then((r) => r.json())
+      .then((d) => setData(d))
+      .catch(() => setData({ title: '', content: '' }))
+      .finally(() => setLoading(false))
+  }, [activeSlug])
 
   return (
-    <div className="bg-cream min-h-screen pb-20">
-      <div className="container mx-auto px-4 py-16 md:py-24 max-w-4xl">
-        <div className="text-center mb-20">
-          <h1 className="font-heading text-5xl md:text-6xl font-semibold mb-6">Store Policies</h1>
-          <p className="text-muted-foreground tracking-widest uppercase text-sm">Transparency & Trust at Label Wink</p>
-          <div className="w-24 h-1 bg-teal mx-auto mt-8"></div>
+    <div className="min-h-screen bg-[#FDF8F0]">
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <h1 className="text-3xl font-bold text-[#1C3829] mb-8">Policies</h1>
+
+        {/* Tabs */}
+        <div className="flex overflow-x-auto border-b border-[#E8DFC8] mb-8">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => router.push(`/policies?tab=${tab.key}`)}
+              className={`px-5 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                activeTab === tab.key
+                  ? 'border-[#C9A84C] text-[#1C3829]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        <div className="space-y-20">
-          {policies?.map((policy, index) => (
-            <section key={policy.id} className="space-y-6">
-              <h2 className="font-heading text-3xl text-charcoal border-b border-sage/20 pb-4">
-                {index + 1}. {policy.title}
-              </h2>
-              <div 
-                className="prose prose-sage max-w-none text-charcoal/80 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: policy.content }}
-              />
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest italic pt-4">
-                Last updated: {new Date(policy.updated_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </p>
-            </section>
-          ))}
-          
-          {!policies?.length && (
-            <div className="text-center py-20 text-muted-foreground italic">
-              Policies are being updated. Please check back later.
+        {/* Body */}
+        <div className="bg-white rounded-2xl border border-[#E8DFC8] p-8 shadow-sm min-h-[300px]">
+          {loading ? (
+            <div className="animate-pulse space-y-3">
+              {[...Array(10)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-4 bg-gray-200 rounded ${i % 5 === 4 ? 'w-2/3' : 'w-full'}`}
+                />
+              ))}
             </div>
+          ) : !data?.content ? (
+            <div className="text-center py-12 text-gray-400">
+              <p className="text-4xl mb-4">📄</p>
+              <p className="text-sm">
+                This policy is being set up. Please check back soon.
+              </p>
+            </div>
+          ) : (
+            <>
+              {data.title && (
+                <h2 className="text-xl font-bold text-[#1C3829] mb-6">
+                  {data.title}
+                </h2>
+              )}
+              <div className="text-gray-700 text-sm leading-7 whitespace-pre-wrap">
+                {data.content}
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -43,3 +91,10 @@ export default async function PoliciesPage() {
   )
 }
 
+export default function PoliciesPage() {
+  return (
+    <Suspense>
+      <PoliciesContent />
+    </Suspense>
+  )
+}

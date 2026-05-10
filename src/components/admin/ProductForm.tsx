@@ -1,9 +1,10 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/components/admin/Toast'
 import { Loader2, X, Crown, Upload, Star } from 'lucide-react'
+import ProductImageUpload from './ProductImageUpload'
 
 const CATEGORIES = ['Kurtis', 'Co-ord Sets', 'Festive', 'Casual', 'Dresses', 'Tops', 'Bottoms', 'Sets', 'Accessories']
 const GENDERS    = ['Women', 'Men', 'Unisex', 'Girls', 'Boys']
@@ -92,17 +93,16 @@ export default function ProductForm({ product }: { product?: any }) {
   // Specs
   const [specs, setSpecs] = useState<Record<string, string>>(product?.specifications || {})
 
-  // Images — seeded from product_images table
-  const [images, setImages] = useState<Array<{ url: string; public_id: string | null; alt: string; is_cover: boolean }>>(
-    (product?.product_images || []).map((img: any, i: number) => ({
-      url: img.url || '',
-      public_id: img.cloudinary_public_id || null,
-      alt: img.alt || '',
-      is_cover: img.is_cover ?? (i === 0),
-    }))
+  // Images — managed by system-wide ProductImageUpload
+  const [images, setImages] = useState<string[]>(
+    (product?.product_images || [])
+      .sort((a: any, b: any) => {
+        if (a.is_cover) return -1
+        if (b.is_cover) return 1
+        return a.sort_order - b.sort_order
+      })
+      .map((img: any) => img.url)
   )
-  const [uploading, setUploading] = useState<number[]>([])
-  const fileRef = useRef<HTMLInputElement>(null)
 
   // SEO
   const [metaTitle, setMetaTitle] = useState(product?.meta_title || '')
@@ -156,33 +156,7 @@ export default function ProductForm({ product }: { product?: any }) {
     setVariants(newVariants)
   }
 
-  const handleFiles = async (files: FileList | null) => {
-    if (!files) return
-    const remaining = 8 - images.length
-    const toUpload = Array.from(files).slice(0, remaining)
-    if (toUpload.length === 0) return showToast('Maximum 8 images allowed', 'error')
 
-    const indices = toUpload.map((_, i) => images.length + i)
-    setUploading(indices)
-    setImages(prev => [...prev, ...toUpload.map(() => ({ url: '', public_id: null, alt: '', is_cover: false }))])
-
-    for (let i = 0; i < toUpload.length; i++) {
-      const fd = new FormData()
-      fd.append('file', toUpload[i])
-      try {
-        const res = await fetch('/api/admin/upload', { method: 'POST', body: fd, credentials: 'include' })
-        const { url, public_id } = await res.json()
-        setImages(prev => {
-          const next = [...prev]
-          next[indices[i]] = { url, public_id: public_id || null, alt: '', is_cover: indices[i] === 0 && prev.filter(im => im.url).length === 0 }
-          return next
-        })
-      } catch {
-        setImages(prev => prev.filter((_, idx) => idx !== indices[i]))
-      }
-    }
-    setUploading([])
-  }
 
   const save = async (visible: boolean) => {
     if (!name.trim()) { showToast('Product name is required', 'error'); setTab(0); return }
@@ -197,10 +171,9 @@ export default function ProductForm({ product }: { product?: any }) {
       fabric, fit, season,
       hsn_code: hsnCode || null,
       weight: weight ? Number(weight) : null,
-      images: images.filter(img => img.url).map((img, i) => ({
-        url: img.url,
-        public_id: img.public_id || null,
-        is_cover: i === 0 || img.is_cover,
+      images: images.map((url, i) => ({
+        url,
+        is_cover: i === 0,
         sort_order: i,
       })),
       specifications: specs,
@@ -548,79 +521,7 @@ export default function ProductForm({ product }: { product?: any }) {
           {/* TAB 4: Images */}
           {tab === 4 && (
             <div className="space-y-4">
-              <div
-                onClick={() => fileRef.current?.click()}
-                onDragOver={e => e.preventDefault()}
-                onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files) }}
-                className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center cursor-pointer hover:border-[#1b3a34] hover:bg-green-50/30 transition-colors"
-              >
-                <Upload size={32} className="mx-auto mb-3 text-[#5a7060]" />
-                <p className="text-sm font-medium text-[#ffffff]">Drop product images here or click to upload</p>
-                <p className="text-xs text-[#6b7280] mt-1">Supports JPG, PNG, WebP — Max 8 images, 5MB each</p>
-                <input ref={fileRef} type="file" multiple accept="image/*" className="hidden" onChange={e => handleFiles(e.target.files)} />
-              </div>
-
-              {images.length > 0 && (
-                <>
-                  <p className="text-xs text-[#6b7280]">Click the ★ star on any image to set it as the cover photo. The cover image appears first on the storefront.</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    {images.map((img, i) => {
-                      const isCover = i === 0 || img.is_cover
-                      return (
-                        <div key={i} className={`relative border-2 rounded-xl overflow-hidden transition-colors ${
-                          isCover ? 'border-[#1b3a34]' : 'border-[#e5e7eb]'
-                        }`}>
-                          {/* Cover badge */}
-                          {isCover && (
-                            <div className="absolute top-2 left-2 bg-[#1b3a34] text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1 z-10">
-                              <Crown size={10} /> Cover
-                            </div>
-                          )}
-
-                          {/* Set as cover button (only on non-cover images) */}
-                          {!isCover && !uploading.includes(i) && img.url && (
-                            <button
-                              type="button"
-                              title="Set as cover image"
-                              onClick={() => setImages(prev => {
-                                const target = prev[i]
-                                const rest = prev.filter((_, idx) => idx !== i)
-                                return [{ ...target, is_cover: true }, ...rest.map(im => ({ ...im, is_cover: false }))]
-                              })}
-                              className="absolute top-2 left-2 bg-white/80 text-[#c9a84c] rounded-full p-1 z-10 hover:bg-[#c9a84c] hover:text-white transition-colors"
-                            >
-                              <Star size={13} />
-                            </button>
-                          )}
-
-                          {/* Delete button */}
-                          <button
-                            type="button"
-                            onClick={() => setImages(prev => prev.filter((_, idx) => idx !== i))}
-                            className="absolute top-2 right-2 bg-red-600 text-white rounded-full p-0.5 z-10 hover:bg-red-700"
-                          >
-                            <X size={14} />
-                          </button>
-
-                          {uploading.includes(i) ? (
-                            <div className="aspect-[3/4] bg-gray-100 flex items-center justify-center">
-                              <Loader2 size={24} className="animate-spin text-[#1b3a34]" />
-                            </div>
-                          ) : (
-                            <img src={img.url} alt="" className="w-full aspect-[3/4] object-cover" />
-                          )}
-                          <input
-                            value={img.alt}
-                            onChange={e => setImages(prev => prev.map((im, idx) => idx === i ? { ...im, alt: e.target.value } : im))}
-                            className="w-full px-2 py-1.5 text-xs border-t border-[#e5e7eb] focus:outline-none"
-                            placeholder="Alt text (optional)"
-                          />
-                        </div>
-                      )
-                    })}
-                  </div>
-                </>
-              )}
+              <ProductImageUpload images={images} onChange={setImages} />
             </div>
           )}
 
