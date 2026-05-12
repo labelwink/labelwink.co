@@ -8,7 +8,7 @@ interface NewsletterSignupProps {
   threshold?: number;
 }
 
-export function NewsletterSignup({ threshold = 999 }: NewsletterSignupProps) {
+export function NewsletterSignup({ threshold = 3499 }: NewsletterSignupProps) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const supabase = createClient();

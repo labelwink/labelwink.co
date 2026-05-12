@@ -6,10 +6,10 @@ import { useToast } from '@/components/admin/Toast'
 import { Loader2, X, Crown, Upload, Star } from 'lucide-react'
 import ProductImageUpload from './ProductImageUpload'
 
-const CATEGORIES = ['Kurtis', 'Co-ord Sets', 'Festive', 'Casual', 'Dresses', 'Tops', 'Bottoms', 'Sets', 'Accessories']
-const GENDERS    = ['Women', 'Men', 'Unisex', 'Girls', 'Boys']
-const FITS       = ['Regular', 'Slim', 'Loose', 'Oversized', 'Flared']
-const SEASONS    = ['All Season', 'Summer', 'Winter', 'Monsoon', 'Festive']
+// Categories and attributes are now DB-driven — no hardcoded arrays
+const GENDERS = ['Women', 'Men', 'Unisex', 'Girls', 'Boys']
+const SEASONS = ['All Season', 'Summer', 'Winter', 'Monsoon', 'Festive']
+
 const TABS = ['Basic Info', 'Pricing', 'Variants & Stock', 'Specifications', 'Images', 'SEO']
 
 function slugify(s: string) {
@@ -22,31 +22,41 @@ export default function ProductForm({ product }: { product?: any }) {
   const [tab, setTab] = useState(0)
   const [saving, setSaving] = useState(false)
 
-  // Dynamic attributes
+  // DB-driven attributes
+  const [categories, setCategories] = useState<{id:string,name:string,slug:string,is_active:boolean}[]>([])
   const [attrOptions, setAttrOptions] = useState<{
-    sizes: {value:string,label:string}[],
-    colors: {value:string,label:string}[],
-    fabrics: {value:string,label:string}[],
-    sleeves: {value:string,label:string}[],
-    occasions: {value:string,label:string}[],
-    fits: {value:string,label:string}[]
-  }>({ sizes:[],colors:[],fabrics:[],
-       sleeves:[],occasions:[],fits:[] })
+    sizes: {id:string,label:string,value:string}[],
+    colors: {id:string,label:string,value:string}[],
+    fabrics: {id:string,label:string,value:string}[],
+    sleeve_types: {id:string,label:string,value:string}[],
+    occasions: {id:string,label:string,value:string}[],
+    fits: {id:string,label:string,value:string}[],
+    patterns: {id:string,label:string,value:string}[],
+  }>({ sizes:[],colors:[],fabrics:[],sleeve_types:[],occasions:[],fits:[],patterns:[] })
   const [attrLoading, setAttrLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/admin/master-data')
-      .then(r => r.json())
-      .then(data => {
-        setAttrOptions(data)
-        setAttrLoading(false)
+    Promise.all([
+      fetch('/api/admin/categories').then(r => r.json()),
+      fetch('/api/admin/attributes').then(r => r.json()),
+    ]).then(([catRes, attrRes]) => {
+      setCategories(catRes.categories ?? [])
+      setAttrOptions({
+        sizes:        attrRes.sizes        ?? [],
+        colors:       attrRes.colors       ?? [],
+        fabrics:      attrRes.fabrics      ?? [],
+        sleeve_types: attrRes.sleeve_types ?? [],
+        occasions:    attrRes.occasions    ?? [],
+        fits:         attrRes.fits         ?? [],
+        patterns:     attrRes.patterns     ?? [],
       })
-      .catch(console.error)
+      setAttrLoading(false)
+    }).catch(console.error)
   }, [])
 
   // Basic Info
   const [name, setName] = useState(product?.name || '')
-  const [category, setCategory] = useState(product?.category || '')
+  const [categoryId, setCategoryId] = useState(product?.category_id || '')
   const [shortDesc, setShortDesc] = useState(product?.short_description || '')
   const [description, setDescription] = useState(product?.description || '')
   const [tags, setTags] = useState<string[]>(product?.tags || [])
@@ -118,11 +128,12 @@ export default function ProductForm({ product }: { product?: any }) {
 
   // Variant management helpers
   const addVariant = () => {
+    const tempId = crypto.randomUUID()
     setVariants([...variants, {
-      id: crypto.randomUUID(),
+      id: tempId,
       size: '',
-      color: '',
-      fabric: '',
+      color: colour || '',
+      fabric: fabric || '',
       sku: '',
       price: Number(price) || 0,
       compare_at_price: Number(mrp) || 0,
@@ -142,51 +153,136 @@ export default function ProductForm({ product }: { product?: any }) {
   }
 
   const generateAllSizeVariants = () => {
-    const newVariants = attrOptions.sizes.map(size => ({
-      id: crypto.randomUUID(),
-      size: size.value,
-      color: colour,
-      fabric: fabric,
-      sku: `${slugify(name)}-${size.value}`.toUpperCase(),
-      price: Number(price) || 0,
-      compare_at_price: Number(mrp) || 0,
-      stock: 0,
-      is_active: true
-    }))
+    const baseSlug = slug || slugify(name) || 'product'
+    const newVariants = attrOptions.sizes.map(size => {
+      const timestamp = Date.now().toString(16).toUpperCase().slice(-4)
+      const random = Math.random().toString(36).substring(2, 5).toUpperCase()
+      return {
+        id: crypto.randomUUID(),
+        size: size.value,
+        color: colour,
+        fabric: fabric,
+        sku: `LW-${size.value}-${baseSlug.toUpperCase().slice(0, 8)}-${timestamp}${random}`,
+        price: Number(price) || 0,
+        compare_at_price: Number(mrp) || 0,
+        stock: 0,
+        is_active: true
+      }
+    })
     setVariants(newVariants)
   }
 
+  // Real-time SKU validation
+  const [skuErrors, setSkuErrors] = useState<Record<string, string>>({})
+  const [checkingSkus, setCheckingSkus] = useState<Record<string, boolean>>({})
 
+  const validateSKU = async (sku: string, variantId: string) => {
+    if (!sku || sku.length < 3) return
+    
+    setCheckingSkus(prev => ({ ...prev, [variantId]: true }))
+    try {
+      const res = await fetch(`/api/admin/products/check-sku?sku=${encodeURIComponent(sku)}&productId=${product?.id || ''}`)
+      const data = await res.json()
+      if (!data.available) {
+        setSkuErrors(prev => ({ ...prev, [variantId]: data.message || 'Already in use' }))
+      } else {
+        setSkuErrors(prev => {
+          const next = { ...prev }
+          delete next[variantId]
+          return next
+        })
+      }
+    } catch (err) {
+      console.error('SKU check failed:', err)
+    } finally {
+      setCheckingSkus(prev => ({ ...prev, [variantId]: false }))
+    }
+  }
+
+  // Debounced SKU check
+  useEffect(() => {
+    const timers: Record<string, NodeJS.Timeout> = {}
+    variants.forEach(v => {
+      if (v.sku && !skuErrors[v.id]) {
+        timers[v.id] = setTimeout(() => validateSKU(v.sku, v.id), 800)
+      }
+    })
+    return () => Object.values(timers).forEach(clearTimeout)
+  }, [variants.map(v => v.sku).join(',')])
 
   const save = async (visible: boolean) => {
-    if (!name.trim()) { showToast('Product name is required', 'error'); setTab(0); return }
-    if (!price || !mrp) { showToast('Price and MRP are required', 'error'); setTab(1); return }
-    if (!slug.trim()) { showToast('Slug is required', 'error'); setTab(5); return }
+    // Basic validation
+    if (!name.trim()) { 
+      showToast('Product name is required', 'error')
+      setTab(0)
+      return 
+    }
+    if (!categoryId) {
+      showToast('Please select a category', 'error')
+      setTab(0)
+      return
+    }
+    if (!price || !mrp) { 
+      showToast('Price and MRP are required', 'error')
+      setTab(1)
+      return 
+    }
+    if (!slug.trim()) { 
+      showToast('Slug is required', 'error')
+      setTab(5)
+      return 
+    }
+
+    // SKU Error check
+    const hasSkuErrors = Object.keys(skuErrors).length > 0
+    if (hasSkuErrors) {
+      showToast('Please resolve SKU conflicts in Variants tab', 'error')
+      setTab(2)
+      return
+    }
+
+    if (variants.length === 0) {
+      showToast('At least one variant is required', 'error')
+      setTab(2)
+      return
+    }
+
+    // Check if any variant is missing size
+    const missingSize = variants.find(v => !v.size)
+    if (missingSize) {
+      showToast('All variants must have a size', 'error')
+      setTab(2)
+      return
+    }
 
     setSaving(true)
     const body = {
-      name, slug, category, short_description: shortDesc, description,
+      name, slug, category_id: categoryId || null, short_description: shortDesc, description,
       tags, occasion: occasions, mrp: Number(mrp), price: Number(price),
       first_order_discount: firstOrderDiscount,
-      fabric, fit, season,
+      fabric, fit, season, gender,
+      collection,
       hsn_code: hsnCode || null,
-      weight: weight ? Number(weight) : null,
+      weight_grams: weight ? Number(weight) : null,
       images: images.map((url, i) => ({
         url,
+        alt: `${name} - Image ${i + 1}`,
         is_cover: i === 0,
         sort_order: i,
       })),
       specifications: specs,
-      visible, meta_title: metaTitle, meta_description: metaDesc,
+      visible, status: visible ? 'published' : 'draft',
+      meta_title: metaTitle, meta_description: metaDesc,
       variants: variants.map(v => ({
         id: v.id,
         size: v.size,
-        color: v.color,
-        fabric: v.fabric,
-        sku: v.sku,
-        price: v.price,
-        compare_at_price: v.compare_at_price,
-        stock_qty: v.stock,
+        color: v.color || colour,
+        fabric: v.fabric || fabric,
+        sku: v.sku.trim().toUpperCase(),
+        price: Number(v.price) || Number(price) || 0,
+        compare_at_price: Number(v.compare_at_price) || Number(mrp) || 0,
+        low_stock_threshold: 5,
+        stock_qty: Number(v.stock) || 0,
         is_active: v.is_active
       }))
     }
@@ -194,15 +290,27 @@ export default function ProductForm({ product }: { product?: any }) {
     try {
       const url = product ? `/api/admin/products/${product.id}` : '/api/admin/products'
       const method = product ? 'PATCH' : 'POST'
-      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), credentials: 'include' })
+      const res = await fetch(url, { 
+        method, 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(body), 
+        credentials: 'include' 
+      })
+      
+      const data = await res.json().catch(() => ({}))
+      
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}))
-        console.error('Product save error response:', errData)
-        throw new Error(errData.error || 'Save failed')
+        if (res.status === 409) {
+          showToast(data.error || 'SKU or Slug conflict. Please check your entries.', 'error')
+          return
+        }
+        throw new Error(data.error || 'Save failed')
       }
-      showToast('Product saved ✓', 'success')
-      setTimeout(() => router.push('/admin/products'), 800)
+      
+      showToast(product ? 'Product updated successfully ✓' : 'Product published successfully ✓', 'success')
+      setTimeout(() => router.push('/admin/products'), 1000)
     } catch (err: any) {
+      console.error('Save error:', err)
       showToast(err.message || 'Save failed. Please try again.', 'error')
     } finally {
       setSaving(false)
@@ -219,9 +327,10 @@ export default function ProductForm({ product }: { product?: any }) {
           {TABS.map((t, i) => (
             <button
               key={t}
+              type="button"
               onClick={() => setTab(i)}
-              className={`px-5 py-3 text-sm font-medium whitespace-nowrap flex-shrink-0 transition-colors ${
-                tab === i ? 'border-b-2 border-[#1b3a34] text-[#1b3a34]' : 'text-[#6b7280] hover:text-[#ffffff]'
+              className={`px-5 py-3 text-sm font-medium whitespace-nowrap flex-shrink-0 transition-colors border-b-2 ${
+                tab === i ? 'border-[#1C3829] text-[#1C3829] font-semibold' : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               {t}
@@ -234,42 +343,44 @@ export default function ProductForm({ product }: { product?: any }) {
           {tab === 0 && (
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-[#ffffff] mb-1">Product Name *</label>
+                <label className="admin-label">Product Name *</label>
                 <input value={name} onChange={e => setName(e.target.value)} maxLength={100}
-                  className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
+                  className="admin-input"
                   placeholder="e.g. Floral Kurta Set" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Category *</label>
-                  <select value={category} onChange={e => setCategory(e.target.value)}
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                  <select value={categoryId} onChange={e => setCategoryId(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] bg-white">
                     <option value="">Select category</option>
-                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                    {categories.filter(c => c.is_active).map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Collection</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Collection</label>
                   <input value={collection} onChange={e => setCollection(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                     placeholder="e.g. Summer Bloom 2025" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#ffffff] mb-1">Short Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
                 <textarea value={shortDesc} onChange={e => setShortDesc(e.target.value)} maxLength={160} rows={2}
                   className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] resize-none"
                   placeholder="Brief description shown on product cards" />
                 <p className="text-xs text-[#6b7280] mt-1">{shortDesc.length}/160</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#ffffff] mb-1">Full Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Description</label>
                 <textarea value={description} onChange={e => setDescription(e.target.value)} rows={5}
                   className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] resize-none"
                   placeholder="Detailed product description" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#ffffff] mb-1">Tags</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {tags.map(tag => (
                     <span key={tag} className="flex items-center gap-1 bg-[#1b3a34]/10 text-[#1b3a34] text-xs px-3 py-1 rounded-full">
@@ -285,27 +396,27 @@ export default function ProductForm({ product }: { product?: any }) {
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Colour</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Colour</label>
                   <input value={colour} onChange={e => setColour(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                     placeholder="e.g. Rust Orange" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Fabric</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fabric</label>
                   <input value={fabric} onChange={e => setFabric(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                     placeholder="e.g. Cotton Blend" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Fit</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fit</label>
                   <select value={fit} onChange={e => setFit(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] bg-white">
                     <option value="">Select fit</option>
-                    {FITS.map(f => <option key={f}>{f}</option>)}
+                    {attrOptions.fits.map(f => <option key={f.id} value={f.label}>{f.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Gender</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
                   <select value={gender} onChange={e => setGender(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] bg-white">
                     <option value="">Select</option>
@@ -315,7 +426,7 @@ export default function ProductForm({ product }: { product?: any }) {
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Season</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Season</label>
                   <select value={season} onChange={e => setSeason(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] bg-white">
                     <option value="">Select</option>
@@ -323,30 +434,29 @@ export default function ProductForm({ product }: { product?: any }) {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#ffffff] mb-1">HSN Code</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">HSN Code</label>
                   <input value={hsnCode} onChange={e => setHsnCode(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                     placeholder="e.g. 6211" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Weight (grams)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Weight (grams)</label>
                   <input type="number" min="0" value={weight} onChange={e => setWeight(e.target.value)}
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
                     placeholder="e.g. 350" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#ffffff] mb-2">Occasion</label>
-                <div className="flex flex-wrap gap-3">
-                  {['Casual', 'Festive', 'Party', 'Office', 'Wedding'].map(o => (
-                    <label key={o} className="flex items-center gap-2 text-sm cursor-pointer">
-                      <input type="checkbox" checked={occasions.includes(o)}
-                        onChange={e => setOccasions(e.target.checked ? [...occasions, o] : occasions.filter(x => x !== o))}
-                        className="rounded border-gray-300 text-[#1b3a34] focus:ring-[#1b3a34]" />
-                      {o}
-                    </label>
+                <label className="admin-label">Occasion</label>
+                <select
+                  value={Array.isArray(occasions) ? occasions[0] ?? '' : occasions}
+                  onChange={e => setOccasions([e.target.value])}
+                  className="admin-select">
+                  <option value="">Select occasion</option>
+                  {attrOptions.occasions.map(o => (
+                    <option key={o.id} value={o.label}>{o.label}</option>
                   ))}
-                </div>
+                </select>
               </div>
             </div>
           )}
@@ -356,12 +466,12 @@ export default function ProductForm({ product }: { product?: any }) {
             <div className="space-y-5 max-w-lg">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#ffffff] mb-1">MRP (₹) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">MRP (₹) *</label>
                   <input type="number" value={mrp} onChange={e => setMrp(e.target.value)} min="0"
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#ffffff] mb-1">Selling Price (₹) *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Selling Price (₹) *</label>
                   <input type="number" value={price} onChange={e => setPrice(e.target.value)} min="0"
                     className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
                 </div>
@@ -380,7 +490,7 @@ export default function ProductForm({ product }: { product?: any }) {
                 >
                   <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${firstOrderDiscount ? 'translate-x-6' : ''}`} />
                 </button>
-                <label className="text-sm font-medium text-[#ffffff]">First Order Discount</label>
+                <label className="text-sm font-medium text-gray-700">First Order Discount</label>
               </div>
             </div>
           )}
@@ -393,7 +503,7 @@ export default function ProductForm({ product }: { product?: any }) {
               ) : (
                 <>
                   <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-[#ffffff]">Product Variants</h3>
+                    <h3 className="text-lg font-semibold text-gray-700">Product Variants</h3>
                     <div className="flex gap-2">
                       <button type="button" onClick={generateAllSizeVariants}
                         className="px-4 py-2 bg-[#1b3a34] text-white rounded-lg text-sm font-medium hover:bg-[#2a4a42] transition-colors">
@@ -413,7 +523,7 @@ export default function ProductForm({ product }: { product?: any }) {
                       {variants.map((variant, idx) => (
                         <div key={variant.id} className="p-4 bg-gray-50 rounded-xl border border-[#e5e7eb]">
                           <div className="flex justify-between items-start mb-3">
-                            <span className="text-sm font-medium text-[#ffffff]">Variant {idx + 1}</span>
+                            <span className="text-sm font-medium text-gray-700">Variant {idx + 1}</span>
                             <button type="button" onClick={() => removeVariant(idx)}
                               className="text-red-500 hover:text-red-700 text-sm">Remove</button>
                           </div>
@@ -423,7 +533,7 @@ export default function ProductForm({ product }: { product?: any }) {
                               <select value={variant.size} onChange={e => updateVariant(idx, 'size', e.target.value)}
                                 className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]">
                                 <option value="">Select Size</option>
-                                {attrOptions.sizes.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                                {attrOptions.sizes.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
                               </select>
                             </div>
                             <div>
@@ -431,7 +541,7 @@ export default function ProductForm({ product }: { product?: any }) {
                               <select value={variant.color} onChange={e => updateVariant(idx, 'color', e.target.value)}
                                 className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]">
                                 <option value="">Select Color</option>
-                                {attrOptions.colors.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                                {attrOptions.colors.map(c => <option key={c.id} value={c.label}>{c.label}</option>)}
                               </select>
                             </div>
                             <div>
@@ -439,14 +549,28 @@ export default function ProductForm({ product }: { product?: any }) {
                               <select value={variant.fabric} onChange={e => updateVariant(idx, 'fabric', e.target.value)}
                                 className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]">
                                 <option value="">Select Fabric</option>
-                                {attrOptions.fabrics.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+                                {attrOptions.fabrics.map(f => <option key={f.id} value={f.label}>{f.label}</option>)}
                               </select>
                             </div>
-                            <div>
+                            <div className="lg:col-span-2">
                               <label className="block text-xs font-medium text-[#6b7280] mb-1">SKU</label>
-                              <input value={variant.sku} onChange={e => updateVariant(idx, 'sku', e.target.value)}
-                                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]"
-                                placeholder="e.g. LW-XS-001" />
+                              <div className="relative">
+                                <input value={variant.sku} onChange={e => updateVariant(idx, 'sku', e.target.value.toUpperCase())}
+                                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 transition-colors ${
+                                    skuErrors[variant.id] 
+                                      ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                                      : 'border-[#e5e7eb] focus:ring-[#1b3a34]'
+                                  }`}
+                                  placeholder="e.g. LW-XS-001" />
+                                {checkingSkus[variant.id] && (
+                                  <div className="absolute right-3 top-2.5">
+                                    <Loader2 size={14} className="animate-spin text-gray-400" />
+                                  </div>
+                                )}
+                              </div>
+                              {skuErrors[variant.id] && (
+                                <p className="text-[10px] text-red-500 mt-1 font-medium">{skuErrors[variant.id]}</p>
+                              )}
                             </div>
                             <div>
                               <label className="block text-xs font-medium text-[#6b7280] mb-1">Price</label>
@@ -472,8 +596,8 @@ export default function ProductForm({ product }: { product?: any }) {
                         </div>
                       ))}
                       <p className="text-sm text-[#6b7280]">
-                        Total variants: <strong className="text-[#ffffff]">{variants.length}</strong> |
-                        Total stock: <strong className="text-[#ffffff]">{variants.reduce((s, v) => s + v.stock, 0)}</strong>
+                        Total variants: <strong className="text-gray-700">{variants.length}</strong> |
+                        Total stock: <strong className="text-gray-700">{variants.reduce((s, v) => s + v.stock, 0)}</strong>
                       </p>
                     </div>
                   )}
@@ -484,37 +608,84 @@ export default function ProductForm({ product }: { product?: any }) {
 
           {/* TAB 3: Specifications */}
           {tab === 3 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                'Material/Fabric', 'Color Name', 'Style', 'Sleeve Type', 'Closure', 'Length (inches)',
-                'Bottom Length (inches)', 'Pant Type', 'Wash Care', 'Additional Notes'
-              ].map(field => (
-                <div key={field}>
-                  <label className="block text-sm font-medium text-[#ffffff] mb-1">{field}</label>
-                  {field.includes('Care') || field.includes('Notes') ? (
-                    <textarea value={specs[field] || ''} onChange={e => setSpecs(p => ({ ...p, [field]: e.target.value }))} rows={2}
-                      className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] resize-none" />
-                  ) : (
-                    <input value={specs[field] || ''} onChange={e => setSpecs(p => ({ ...p, [field]: e.target.value }))}
-                      className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
-                  )}
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="admin-field">
+                  <label className="admin-label">Fabric</label>
+                  <select name="fabric" value={fabric} onChange={e => setFabric(e.target.value)} className="admin-select">
+                    <option value="">Select fabric</option>
+                    {attrOptions.fabrics.map(f => <option key={f.id} value={f.label}>{f.label}</option>)}
+                  </select>
                 </div>
-              ))}
-              {['Lining', 'Pockets', 'Feeding Friendly'].map(field => (
-                <div key={field}>
-                  <label className="block text-sm font-medium text-[#ffffff] mb-2">{field}</label>
-                  <div className="flex gap-3">
-                    {(field === 'Feeding Friendly' ? ['Yes', 'No', 'N/A'] : ['Yes', 'No']).map(opt => (
-                      <label key={opt} className="flex items-center gap-1.5 text-sm cursor-pointer">
-                        <input type="radio" name={field} checked={specs[field] === opt}
-                          onChange={() => setSpecs(p => ({ ...p, [field]: opt }))}
-                          className="text-[#1b3a34] focus:ring-[#1b3a34]" />
-                        {opt}
-                      </label>
-                    ))}
+                <div className="admin-field">
+                  <label className="admin-label">Sleeve Type</label>
+                  <select value={specs['Sleeve Type'] || ''} onChange={e => setSpecs(p => ({ ...p, 'Sleeve Type': e.target.value }))} className="admin-select">
+                    <option value="">Select sleeve type</option>
+                    {attrOptions.sleeve_types.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
+                  </select>
+                </div>
+                <div className="admin-field">
+                  <label className="admin-label">Fit</label>
+                  <select name="fit" value={fit} onChange={e => setFit(e.target.value)} className="admin-select">
+                    <option value="">Select fit</option>
+                    {attrOptions.fits.map(f => <option key={f.id} value={f.label}>{f.label}</option>)}
+                  </select>
+                </div>
+                <div className="admin-field">
+                  <label className="admin-label">Pattern</label>
+                  <select value={specs['Pattern'] || ''} onChange={e => setSpecs(p => ({ ...p, 'Pattern': e.target.value }))} className="admin-select">
+                    <option value="">Select pattern</option>
+                    {attrOptions.patterns.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
+                  </select>
+                </div>
+                <div className="admin-field">
+                  <label className="admin-label">Length (inches)</label>
+                  <input value={specs['Length (inches)'] || ''} onChange={e => setSpecs(p => ({ ...p, 'Length (inches)': e.target.value }))}
+                    placeholder="e.g. 46" className="admin-input" />
+                </div>
+                <div className="admin-field">
+                  <label className="admin-label">Closure</label>
+                  <input value={specs['Closure'] || ''} onChange={e => setSpecs(p => ({ ...p, 'Closure': e.target.value }))}
+                    placeholder="e.g. Button, Zip" className="admin-input" />
+                </div>
+                <div className="admin-field">
+                  <label className="admin-label">Bottom Length (inches)</label>
+                  <input value={specs['Bottom Length (inches)'] || ''} onChange={e => setSpecs(p => ({ ...p, 'Bottom Length (inches)': e.target.value }))}
+                    placeholder="e.g. 40" className="admin-input" />
+                </div>
+                <div className="admin-field">
+                  <label className="admin-label">Pant Type</label>
+                  <input value={specs['Pant Type'] || ''} onChange={e => setSpecs(p => ({ ...p, 'Pant Type': e.target.value }))}
+                    placeholder="e.g. Palazzo, Straight" className="admin-input" />
+                </div>
+              </div>
+              <div className="admin-field">
+                <label className="admin-label">Wash Care</label>
+                <textarea value={specs['Wash Care'] || ''} onChange={e => setSpecs(p => ({ ...p, 'Wash Care': e.target.value }))} rows={2}
+                  placeholder="e.g. Hand wash cold, do not bleach, dry in shade" className="admin-textarea" />
+              </div>
+              <div className="admin-field">
+                <label className="admin-label">Additional Notes</label>
+                <textarea value={specs['Additional Notes'] || ''} onChange={e => setSpecs(p => ({ ...p, 'Additional Notes': e.target.value }))} rows={2}
+                  placeholder="Any other product details" className="admin-textarea" />
+              </div>
+              <div className="grid grid-cols-3 gap-4 pt-1">
+                {(['Lining', 'Pockets', 'Feeding Friendly'] as const).map(field => (
+                  <div key={field} className="admin-field">
+                    <label className="admin-label">{field}</label>
+                    <div className="flex gap-3 flex-wrap">
+                      {(field === 'Feeding Friendly' ? ['Yes', 'No', 'N/A'] : ['Yes', 'No']).map(opt => (
+                        <label key={opt} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer">
+                          <input type="radio" name={field} checked={specs[field] === opt}
+                            onChange={() => setSpecs(p => ({ ...p, [field]: opt }))}
+                            className="accent-[#1C3829]" />
+                          {opt}
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
@@ -529,18 +700,18 @@ export default function ProductForm({ product }: { product?: any }) {
           {tab === 5 && (
             <div className="space-y-5 max-w-2xl">
               <div>
-                <label className="block text-sm font-medium text-[#ffffff] mb-1">Meta Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Meta Title</label>
                 <input value={metaTitle} onChange={e => setMetaTitle(e.target.value)}
                   className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#ffffff] mb-1">Meta Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Meta Description</label>
                 <textarea value={metaDesc} onChange={e => setMetaDesc(e.target.value)} maxLength={160} rows={3}
                   className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] resize-none" />
                 <p className="text-xs text-[#6b7280] mt-1">{metaDesc.length}/160</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#ffffff] mb-1">URL Slug</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">URL Slug</label>
                 <input value={slug} onChange={e => { setSlug(e.target.value); setSlugEdited(true) }}
                   className="w-full border border-[#e5e7eb] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34]" />
                 <p className="text-xs text-[#6b7280] mt-1">labelwink.co/products/{slug || '…'}</p>

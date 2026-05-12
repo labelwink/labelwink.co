@@ -58,14 +58,17 @@ function ProductCard({ product }: { product: any }) {
   return (
     <Link
       href={`/products/${product.slug}`}
+      className="product-card-hover group"
       style={{
-        background: '#FAF5E9', borderRadius: '12px',
-        border: '1px solid #E8DFC8', overflow: 'hidden',
-        textDecoration: 'none', display: 'block',
-        transition: 'border-color 200ms, transform 200ms',
+        background: 'var(--labelwink-cream-card, #FAF5E9)', 
+        borderRadius: '0px',
+        border: '1px solid var(--labelwink-cream-border, #E8DFC8)', 
+        overflow: 'hidden',
+        textDecoration: 'none', 
+        display: 'block',
+        transition: 'all 300ms',
         cursor: 'pointer',
       }}
-      className="product-card-hover"
     >
       {/* Image */}
       <div style={{ position: 'relative', aspectRatio: '3/4', background: '#FAF5E9', overflow: 'hidden' }}>
@@ -91,14 +94,14 @@ function ProductCard({ product }: { product: any }) {
           <span style={{
             position: 'absolute', top: '8px', left: '8px',
             background: 'rgba(201,168,76,0.9)', color: '#FDF8F0',
-            fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px',
+            fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '0',
           }}>NEW</span>
         )}
         {hasDiscount && (
           <span style={{
             position: 'absolute', top: '8px', right: '8px',
             background: 'rgba(74,222,128,0.9)', color: '#FDF8F0',
-            fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px',
+            fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '0',
           }}>SALE</span>
         )}
       </div>
@@ -139,91 +142,48 @@ export default async function Home() {
       <style dangerouslySetInnerHTML={{ __html: `
         .product-card-hover:hover {
           border-color: #c9a84c !important;
-          transform: translateY(-2px);
+          transform: translateY(-4px);
+          shadow: 0 10px 30px -10px rgba(28, 56, 41, 0.1);
         }
         .collection-card:hover {
-          transform: scale(1.02);
-          border-bottom: 3px solid #c9a84c !important;
+          transform: scale(1.01);
+          border-bottom: 2px solid #c9a84c !important;
         }
       `}} />
 
       {/* SECTION 1: Hero Banner */}
-      <section style={{
-        position: 'relative',
-        height: 'min(90vh, 700px)',
-        background: banner?.image_url ? 'transparent' : 'linear-gradient(135deg, #1C3829 0%, #24472F 60%, #1C3829 100%)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        overflow: 'hidden',
-      }}>
+      <section className="w-full">
         {banner?.image_url && (
-          <Image
+          <img
             src={banner.image_url}
             alt={banner.title || 'Hero Banner'}
-            fill
-            priority
-            sizes="100vw"
-            style={{ objectFit: 'cover', opacity: 0.7 }}
+            className="w-full h-auto block"
+            style={{ display: 'block' }}
           />
         )}
-        {/* Botanical pattern overlay */}
-        <LeafPattern opacity={0.05} id="hero" />
-        {/* Gradient overlay */}
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 1,
-          background: banner?.image_url
-            ? 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.5) 100%)'
-            : 'linear-gradient(to bottom, rgba(28,56,41,0.4) 0%, rgba(28,56,41,0.2) 100%)',
-        }} />
 
-        {/* Hero content */}
-        <div style={{
-          position: 'relative', zIndex: 10, textAlign: 'center',
-          padding: '0 24px', maxWidth: '700px',
-        }}>
-          <span style={{
-            display: 'inline-block', marginBottom: '16px',
-            fontSize: '12px', fontWeight: 500,
-            textTransform: 'uppercase', letterSpacing: '0.15em',
-            color: '#C9A84C',
-          }}>
-            {banner?.subtitle || 'Better Together'}
-          </span>
-          <h1 style={{
-            fontSize: 'clamp(32px, 6vw, 64px)',
-            fontWeight: 600, color: '#ffffff', lineHeight: 1.1,
-            marginBottom: '16px',
-          }}>
-            {banner?.title || 'The New Season · 2026'}
-          </h1>
-          <p style={{
-            fontSize: 'clamp(15px, 2vw, 18px)', color: 'rgba(253,248,240,0.85)',
-            marginBottom: '32px', lineHeight: 1.6,
-          }}>
-            {banner?.description || 'From coffee dates to weekend getaways — your perfect pair starts with what you wear'}
-          </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link
-              href={banner?.cta_link || '/products'}
-              className="bg-[#C9A84C] text-[#1C3829] font-semibold px-6 py-3 rounded-full hover:bg-[#D4B76A] transition-all duration-300"
-              style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', fontSize: '15px' }}
-            >
-              {banner?.cta_text || 'Shop Now'}
-            </Link>
-            <Link
-              href="/collections"
-              className="border border-white text-white px-6 py-3 rounded-full hover:bg-white hover:text-[#1C3829] transition-all duration-300"
-              style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', fontSize: '15px', fontWeight: 500 }}
-            >
-              View Collections
-            </Link>
+        <div className="relative z-10 pb-12 md:pb-16 lg:pb-20">
+          <div className="mx-auto max-w-[1200px] text-center">
+            <div className="flex flex-wrap gap-4 justify-center">
+              {banner?.cta_text && (
+                <Link
+                  href={banner.cta_link || '#'}
+                  className="bg-labelwink-gold text-labelwink-green font-bold px-8 py-4 rounded-none hover:bg-labelwink-gold-hover transition-all duration-300 shadow-xl uppercase tracking-widest text-xs inline-flex items-center"
+                  style={{ textDecoration: 'none' }}
+                >
+                  {banner.cta_text}
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </section>
 
       {/* SECTION 2: Featured Collections */}
       {collections && collections.length > 0 && (
-        <section style={{ padding: '64px 24px', maxWidth: '1400px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <section style={{ padding: '64px 24px', maxWidth: '1400px', margin: '0 auto', position: 'relative' }}>
+          <LeafPattern opacity={0.03} id="collections-pattern" />
+          <div style={{ textAlign: 'center', marginBottom: '40px', position: 'relative', zIndex: 1 }}>
             <h2 style={{ fontSize: '24px', fontWeight: 600, color: '#1C3829', marginBottom: '8px' }}>Shop by Collection</h2>
             <p style={{ fontSize: '14px', color: '#6B6B5A' }}>Explore our curated collections</p>
           </div>
@@ -232,7 +192,7 @@ export default async function Home() {
               <Link
                 key={c.id}
                 href={`/collections/${c.slug}`}
-                className="collection-card relative aspect-square rounded-2xl overflow-hidden cursor-pointer group"
+                className="collection-card relative aspect-square rounded-none overflow-hidden cursor-pointer group"
                 style={{
                   display: 'block', textDecoration: 'none',
                   transition: 'transform 200ms',
@@ -262,8 +222,8 @@ export default async function Home() {
           <div style={{ textAlign: 'center', marginTop: '32px' }}>
             <Link
               href="/collections"
-              className="border border-[#1C3829] text-[#1C3829] px-6 py-2.5 rounded-lg hover:bg-[#1C3829] hover:text-white transition-colors duration-300"
-              style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}
+              className="border border-labelwink-green text-labelwink-green px-8 py-3 rounded-none hover:bg-labelwink-green hover:text-white transition-all duration-300 font-bold uppercase tracking-widest text-xs"
+              style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
             >
               View All Collections
             </Link>
@@ -273,8 +233,9 @@ export default async function Home() {
 
       {/* SECTION 3: Featured Products */}
       {featuredProducts && featuredProducts.length > 0 && (
-        <section style={{ padding: '64px 24px', background: '#FDF8F0' }}>
-          <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        <section style={{ padding: '64px 24px', background: '#FDF8F0', position: 'relative' }}>
+          <LeafPattern opacity={0.03} id="featured-pattern" />
+          <div style={{ maxWidth: '1400px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: '12px' }}>
               <div>
                 <h2 style={{ fontSize: '24px', fontWeight: 600, color: '#1C3829', marginBottom: '4px' }}>Featured Pieces</h2>
@@ -317,8 +278,9 @@ export default async function Home() {
 
       {/* SECTION 5: New Arrivals */}
       {newArrivals && newArrivals.length > 0 && (
-        <section style={{ padding: '64px 24px', background: '#FDF8F0' }}>
-          <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        <section style={{ padding: '64px 24px', background: '#FDF8F0', position: 'relative' }}>
+          <LeafPattern opacity={0.03} id="new-arrivals-pattern" />
+          <div style={{ maxWidth: '1400px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: '12px' }}>
               <div>
                 <h2 style={{ fontSize: '24px', fontWeight: 600, color: '#1C3829', marginBottom: '4px' }}>New Arrivals</h2>
@@ -346,7 +308,7 @@ export default async function Home() {
           </p>
           <Link href="/admin" style={{
             display: 'inline-flex', alignItems: 'center',
-            height: '44px', padding: '0 24px', borderRadius: '8px',
+            height: '44px', padding: '0 24px', borderRadius: '0',
             background: '#FAF5E9', color: '#1C3829',
             fontWeight: 500, fontSize: '14px', textDecoration: 'none',
             border: '1px solid #E8DFC8',

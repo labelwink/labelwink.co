@@ -37,7 +37,8 @@ export default async function SharedWishlistPage({ params }: SharedWishlistPageP
     .select(`
       *,
       products (
-        id, name, slug, price, compare_at_price, images,
+        id, name, slug, price, compare_at_price,
+        product_images (url, is_cover, sort_order),
         product_variants (size, stock_qty)
       )
     `)
@@ -72,9 +73,9 @@ export default async function SharedWishlistPage({ params }: SharedWishlistPageP
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
         {items.map((item) => {
           const p = item.product
-          const images = p.images || []
-          const image = images.length > 0 ? images[0] : ''
-          const hoverImage = images.length > 1 ? images[1] : undefined
+          const images = p.product_images || []
+          const image = images.find((img: any) => img.is_cover)?.url || images[0]?.url || ''
+          const hoverImage = images.length > 1 ? images[1]?.url : undefined
           
           // Total stock calculation
           const totalStock = Array.isArray(p.product_variants) 

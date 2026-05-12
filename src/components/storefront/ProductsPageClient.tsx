@@ -203,11 +203,11 @@ export function ProductsPageClient({ initialTitle }: { initialTitle?: string }) 
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
                 <button
                   onClick={() => setDrawerOpen(true)}
-                  className="lg:hidden"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', border: '1px solid #E8DFC8', borderRadius: '8px', fontSize: '13px', fontWeight: 500, color: '#6B6B5A', background: '#FAF5E9', cursor: 'pointer' }}
+                  className="lg:hidden border border-[#ccc] text-[#333] bg-white rounded-none text-xs font-bold uppercase tracking-widest hover:bg-[#f5f2ee] transition-colors"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '13px', fontWeight: 500, color: '#333', background: '#ffffff', cursor: 'pointer' }}
                 >
-                  <SlidersHorizontal size={14} style={{ color: '#c9a84c' }} />
-                  Filters {activeCount > 0 && <span style={{ background: '#c9a84c', color: '#FDF8F0', fontSize: '10px', width: '16px', height: '16px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{activeCount}</span>}
+                  <SlidersHorizontal size={14} style={{ color: '#1a1a1a' }} />
+                  Filters {activeCount > 0 && <span style={{ background: '#1B3A2D', color: '#FDF8F0', fontSize: '10px', width: '16px', height: '16px', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{activeCount}</span>}
                 </button>
 
                 {pills.map((pill, i) => (
@@ -225,18 +225,18 @@ export function ProductsPageClient({ initialTitle }: { initialTitle?: string }) 
                 <div style={{ position: 'relative' }}>
                   <button
                     onClick={() => setSortOpen(o => !o)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#FAF5E9', border: '1px solid #E8DFC8', borderRadius: '8px', fontSize: '13px', color: '#6B6B5A', cursor: 'pointer' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#ffffff', border: '1px solid #9ca3af', borderRadius: '8px', fontSize: '13px', color: '#1a1a1a', cursor: 'pointer' }}
                   >
                     {SORT_OPTIONS.find(s => s.value === sort)?.label ?? 'Sort'}
-                    <ChevronDown size={14} style={{ transform: sortOpen ? 'rotate(180deg)' : '', transition: 'transform 200ms' }} />
+                    <ChevronDown size={14} style={{ transform: sortOpen ? 'rotate(180deg)' : '', transition: 'transform 200ms', color: '#1a1a1a' }} />
                   </button>
                   {sortOpen && (
-                    <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: '4px', background: '#FAF5E9', border: '1px solid #E8DFC8', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', zIndex: 20, minWidth: '180px', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: '4px', background: '#ffffff', border: '1px solid #D1D5DB', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', zIndex: 20, minWidth: '180px', overflow: 'hidden' }}>
                       {SORT_OPTIONS.map(opt => (
                         <button
                           key={opt.value}
                           onClick={() => { setSort(opt.value); setSortOpen(false) }}
-                          style={{ width: '100%', textAlign: 'left', padding: '10px 16px', fontSize: '13px', background: sort === opt.value ? 'rgba(201,168,76,0.1)' : 'transparent', color: sort === opt.value ? '#c9a84c' : '#6B6B5A', fontWeight: sort === opt.value ? 500 : 400, border: 'none', cursor: 'pointer' }}
+                          style={{ width: '100%', textAlign: 'left', padding: '10px 16px', fontSize: '13px', background: sort === opt.value ? '#1B3A2D' : 'transparent', color: sort === opt.value ? '#ffffff' : '#1a1a1a', fontWeight: sort === opt.value ? 600 : 500, border: 'none', cursor: 'pointer' }}
                         >
                           {opt.label}
                         </button>
@@ -246,8 +246,8 @@ export function ProductsPageClient({ initialTitle }: { initialTitle?: string }) 
                 </div>
 
                 <div className="hidden sm:flex" style={{ border: '1px solid #E8DFC8', borderRadius: '8px', overflow: 'hidden' }}>
-                  <button onClick={() => setGridView('grid')} style={{ padding: '6px 10px', background: gridView === 'grid' ? '#c9a84c' : '#FAF5E9', color: gridView === 'grid' ? '#FDF8F0' : '#6B6B5A', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><LayoutGrid size={14} /></button>
-                  <button onClick={() => setGridView('list')} style={{ padding: '6px 10px', background: gridView === 'list' ? '#c9a84c' : '#FAF5E9', color: gridView === 'list' ? '#FDF8F0' : '#6B6B5A', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><List size={14} /></button>
+                  <button onClick={() => setGridView('grid')} style={{ padding: '6px 10px', background: gridView === 'grid' ? '#1B3A2D' : '#FAF5E9', color: gridView === 'grid' ? '#FDF8F0' : '#aaa', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><LayoutGrid size={14} /></button>
+                  <button onClick={() => setGridView('list')} style={{ padding: '6px 10px', background: gridView === 'list' ? '#1B3A2D' : '#FAF5E9', color: gridView === 'list' ? '#FDF8F0' : '#aaa', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><List size={14} /></button>
                 </div>
               </div>
             </div>
@@ -267,7 +267,7 @@ export function ProductsPageClient({ initialTitle }: { initialTitle?: string }) 
                 <div style={{ fontSize: '48px' }}>🪡</div>
                 <h3 style={{ fontSize: '18px', fontWeight: 500, color: '#1C3829' }}>No products found</h3>
                 <p style={{ fontSize: '14px', color: '#6B6B5A' }}>Try adjusting your filters or search term</p>
-                <button onClick={clearAll} style={{ padding: '8px 24px', border: '1px solid #c9a84c', color: '#c9a84c', borderRadius: '8px', fontSize: '14px', fontWeight: 500, background: 'none', cursor: 'pointer' }}>
+                <button onClick={clearAll} style={{ padding: '8px 24px', border: '1px solid #1B3A2D', color: '#1B3A2D', borderRadius: '8px', fontSize: '14px', fontWeight: 500, background: 'none', cursor: 'pointer' }}>
                   Clear All Filters
                 </button>
               </div>

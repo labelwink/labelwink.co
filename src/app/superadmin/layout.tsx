@@ -141,7 +141,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                 color: '#1C3829',
                 background: '#C9A84C',
                 padding: '2px 8px',
-                borderRadius: '4px',
+                borderRadius: '0',
               }}>
                 Super Admin
               </span>
@@ -155,7 +155,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
               border: 'none',
               color: '#ffffff',
               cursor: 'pointer',
-              borderRadius: '6px',
+              borderRadius: '0',
               padding: '6px 8px',
               fontSize: '12px',
               flexShrink: 0,
@@ -175,7 +175,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
               alignItems: 'center',
               height: '40px',
               padding: '0 12px',
-              borderRadius: '8px',
+              borderRadius: '0',
               fontSize: '14px',
               fontWeight: pathname === '/superadmin' ? 600 : 500,
               color: pathname === '/superadmin' ? '#C9A84C' : 'rgba(255,255,255,0.8)',
@@ -222,7 +222,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                       marginLeft: '8px',
                       marginRight: '8px',
                       marginBottom: '2px',
-                      borderRadius: '8px',
+                      borderRadius: '0',
                       fontSize: '13px',
                       fontWeight: isActive ? 600 : 400,
                       color: isActive ? '#C9A84C' : 'rgba(255,255,255,0.7)',
@@ -258,7 +258,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
           <Link
             href="/"
             prefetch
-            style={{ display: 'block', padding: '8px 12px', fontSize: '12px', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', borderRadius: '6px', transition: 'color 150ms' }}
+            style={{ display: 'block', padding: '8px 12px', fontSize: '12px', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', borderRadius: '0', transition: 'color 150ms' }}
             onMouseEnter={e => (e.currentTarget.style.color = '#C9A84C')}
             onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}
           >
@@ -271,7 +271,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
               display: 'block', width: '100%', textAlign: 'left',
               padding: '8px 12px', fontSize: '12px', color: 'rgba(255,255,255,0.5)',
               background: 'none', border: 'none', cursor: 'pointer',
-              borderRadius: '6px', transition: 'color 150ms',
+              borderRadius: '0', transition: 'color 150ms',
             }}
             onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
             onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}
@@ -313,7 +313,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
               fontSize: '10px',
               fontWeight: 700,
               padding: '3px 10px',
-              borderRadius: '20px',
+              borderRadius: '0',
               textTransform: 'uppercase' as const,
               letterSpacing: '0.08em',
             }}>

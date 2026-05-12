@@ -21,13 +21,15 @@ const COLUMNS = [
     title: 'CUSTOMER CARE',
     links: [
       { href: '/about', label: 'Our Story' },
-      { href: '/faq', label: 'FAQ' },
+      { href: '/faqs', label: 'FAQ' },
       { href: '/size-guide', label: 'Size Guide' },
+      { href: '/shipping-policy', label: 'Shipping Policy' },
+      { href: '/return-exchange-policy', label: 'Return & Exchanges' },
+      { href: '/refund-policy', label: 'Refund Policy' },
+      { href: '/cancellation-policy', label: 'Cancellations' },
+      { href: '/privacy-policy', label: 'Privacy Policy' },
+      { href: '/terms-conditions', label: 'Terms & Conditions' },
       { href: '/contact', label: 'Contact Us' },
-      { href: '/policies?tab=shipping', label: 'Shipping & Returns' },
-      { href: '/policies?tab=privacy', label: 'Privacy Policy' },
-      { href: '/policies?tab=returns', label: 'Return Policy' },
-      { href: '/policies?tab=terms', label: 'Terms of Service' },
     ],
   },
 ];
@@ -116,7 +118,11 @@ export function Footer(_props?: { columns?: any[]; social?: any; tagline?: strin
   }, []);
 
   const storeEmail = settings.store_email || 'hello@labelwink.in';
-  const socialLinks = settings.social_links || {};
+  const socialLinks = {
+    instagram: 'https://www.instagram.com/labelwink/',
+    facebook: settings.social_links?.facebook,
+    ...settings.social_links
+  };
 
   const handleNewsletter = (e: React.FormEvent) => {
     e.preventDefault();
@@ -195,11 +201,11 @@ export function Footer(_props?: { columns?: any[]; social?: any; tagline?: strin
                     placeholder="your@email.com"
                     style={{
                       flex: 1,
-                      height: '44px',
+                      height: '48px',
                       background: 'rgba(255,255,255,0.07)',
                       border: '1px solid rgba(255,255,255,0.12)',
                       borderRight: 'none',
-                      borderRadius: '6px 0 0 6px',
+                      borderRadius: '0',
                       padding: '0 16px',
                       fontSize: '13px',
                       color: '#ffffff',
@@ -209,11 +215,11 @@ export function Footer(_props?: { columns?: any[]; social?: any; tagline?: strin
                   <button
                     type="submit"
                     style={{
-                      width: '44px',
-                      height: '44px',
+                      width: '48px',
+                      height: '48px',
                       background: '#c9a84c',
                       border: 'none',
-                      borderRadius: '0 6px 6px 0',
+                      borderRadius: '0',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
@@ -269,20 +275,20 @@ export function Footer(_props?: { columns?: any[]; social?: any; tagline?: strin
               {/* Social icons */}
               <div className="mt-6 flex gap-3">
                 {socialLinks.instagram && (
-                  <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center">
+                  <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-none border border-white/15 bg-white/5 flex items-center justify-center">
                     <Instagram size={16} />
                   </a>
                 )}
                 {socialLinks.facebook && (
-                  <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center">
+                  <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-none border border-white/15 bg-white/5 flex items-center justify-center">
                     <Facebook size={16} />
                   </a>
                 )}
                 {/* Always show Instagram placeholder if no links configured */}
                 {!socialLinks.instagram && !socialLinks.facebook && (
                   <>
-                    <div className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center"><Instagram size={16} /></div>
-                    <div className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center"><Facebook size={16} /></div>
+                    <div className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-none border border-white/15 bg-white/5 flex items-center justify-center"><Instagram size={16} /></div>
+                    <div className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-none border border-white/15 bg-white/5 flex items-center justify-center"><Facebook size={16} /></div>
                   </>
                 )}
               </div>
@@ -305,7 +311,7 @@ export function Footer(_props?: { columns?: any[]; social?: any; tagline?: strin
               color: '#6a8a72',
               fontSize: '11px',
               padding: '4px 12px',
-              borderRadius: '4px',
+              borderRadius: '0',
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
             }}>
@@ -343,8 +349,22 @@ function ContactMobileSection({ email, socialLinks }: { email: string; socialLin
             {email}
           </a>
           <div className="mt-2 flex gap-3">
-            <div className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center"><Instagram size={16} /></div>
-            <div className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center"><Facebook size={16} /></div>
+            {socialLinks.instagram && (
+              <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center">
+                <Instagram size={16} />
+              </a>
+            )}
+            {socialLinks.facebook && (
+              <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center">
+                <Facebook size={16} />
+              </a>
+            )}
+            {!socialLinks.instagram && !socialLinks.facebook && (
+              <>
+                <div className="text-white/60 w-9 h-9 rounded-none border border-white/15 bg-white/5 flex items-center justify-center"><Instagram size={16} /></div>
+                <div className="text-white/60 w-9 h-9 rounded-none border border-white/15 bg-white/5 flex items-center justify-center"><Facebook size={16} /></div>
+              </>
+            )}
           </div>
         </div>
       )}

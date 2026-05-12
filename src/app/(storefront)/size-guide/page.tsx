@@ -4,12 +4,16 @@ export const metadata = {
 }
 
 const sizes = [
-  { size: 'XS', chest: '32"', waist: '25"', hip: '34"', length: '52"' },
-  { size: 'S',  chest: '34"', waist: '27"', hip: '36"', length: '53"' },
-  { size: 'M',  chest: '36"', waist: '29"', hip: '38"', length: '54"' },
-  { size: 'L',  chest: '38"', waist: '31"', hip: '40"', length: '55"' },
-  { size: 'XL', chest: '40"', waist: '33"', hip: '42"', length: '56"' },
-  { size: 'XXL',chest: '42"', waist: '35"', hip: '44"', length: '57"' },
+  { size: 'XXS', chest: '30"', waist: '23"', hip: '32"', length: '50"' },
+  { size: 'XS',  chest: '32"', waist: '25"', hip: '34"', length: '52"' },
+  { size: 'S',   chest: '34"', waist: '27"', hip: '36"', length: '53"' },
+  { size: 'M',   chest: '36"', waist: '29"', hip: '38"', length: '54"' },
+  { size: 'L',   chest: '38"', waist: '31"', hip: '40"', length: '55"' },
+  { size: 'XL',  chest: '40"', waist: '33"', hip: '42"', length: '56"' },
+  { size: 'XXL', chest: '42"', waist: '35"', hip: '44"', length: '57"' },
+  { size: '3XL', chest: '44"', waist: '37"', hip: '46"', length: '58"' },
+  { size: '4XL', chest: '46"', waist: '39"', hip: '48"', length: '59"' },
+  { size: '5XL', chest: '48"', waist: '41"', hip: '50"', length: '60"' },
 ]
 
 const howToMeasure = [

@@ -52,10 +52,11 @@ export async function POST(request) {
 
     // ── 3. Create a Razorpay order ────────────────────────────────────────────
     // amount must be in the smallest currency unit (paise for INR)
+    const receipt = `rcpt_${Date.now().toString(36)}`.slice(0, 40)
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(amount * 100), // convert ₹ → paise
       currency,
-      receipt: `receipt_${user.id}_${Date.now()}`,
+      receipt: receipt,  // ← max 40 chars guaranteed
       notes: {
         user_id: user.id,
         user_email: user.email,

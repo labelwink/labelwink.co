@@ -8,8 +8,8 @@ import { CartDrawer } from '@/components/cart/CartDrawer'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 import { AuthModalProvider } from '@/components/auth/OTPLoginModal'
 import { MobileBottomNav } from '@/components/storefront/MobileBottomNav'
-import { PWAInstallPrompt, ServiceWorkerRegistration } from '@/components/PWAInstallPrompt'
 import { AbandonedCartTracker } from '@/components/cart/AbandonedCartTracker'
+import ClearServiceWorker from '@/components/ClearServiceWorker'
 
 function getNavigation() {
   try {
@@ -41,10 +41,9 @@ async function getSettings(): Promise<ShopSettings> {
       .from('shop_settings')
       .select('*')
       .limit(1)
-      .single()
+      .maybeSingle()
     return data ?? {}
   } catch {
-    // Fallback to local JSON if DB not available
     try {
       const raw = readFileSync(join(process.cwd(), 'data', 'settings.json'), 'utf-8')
       return JSON.parse(raw)
@@ -57,28 +56,28 @@ async function getSettings(): Promise<ShopSettings> {
 export default async function StorefrontLayout({ children }: { children: React.ReactNode }) {
   const [settings, nav] = await Promise.all([getSettings(), Promise.resolve(getNavigation())])
 
-  // Support both old (announcement_bar_*) and new (announcement_*) columns
   const announcementEnabled = settings.announcement_enabled ?? settings.announcement_bar_enabled ?? false
   const announcementText    = settings.announcement_text    ?? settings.announcement_bar_text    ?? ''
   const announcementColor   = settings.announcement_bg      ?? settings.announcement_bar_color   ?? '#c9a84c'
 
   return (
     <AuthModalProvider>
-      <AnnouncementBar
-        enabled={announcementEnabled}
-        text={announcementText}
-        color={announcementColor}
-      />
-      <Navbar />
+      {/* Cleans up old service workers in browsers that cached them. Remove after 1 week. */}
+      <ClearServiceWorker />
+      <div className="sticky top-0 left-0 right-0 z-50 w-full">
+        <AnnouncementBar
+          enabled={announcementEnabled}
+          text={announcementText}
+          color={announcementColor}
+        />
+        <Navbar />
+      </div>
       <CartDrawer />
-      <main className="page-transition bg-[#FDF8F0] min-h-screen pb-20 md:pb-0 pt-16 md:pt-[72px]">{children}</main>
+      <main className="page-transition bg-[#FDF8F0] min-h-screen pb-20 md:pb-0">{children}</main>
       <Footer columns={nav.footer_columns} social={settings.social} tagline={settings.tagline} />
       <WhatsAppButton />
       <MobileBottomNav />
-      <PWAInstallPrompt />
-      <ServiceWorkerRegistration />
       <AbandonedCartTracker />
     </AuthModalProvider>
   )
 }
-

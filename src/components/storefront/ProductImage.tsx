@@ -13,8 +13,8 @@ interface Props {
   sizes?: string
 }
 
-export function ProductImage({ publicId, alt, width, height, className, priority, sizes }: Props) {
-  const src = getProductImageUrl(publicId, 'card')
+export function ProductImage({ publicId, alt, width, height, className, priority, sizes, size = 'card' }: Props & { size?: 'thumb' | 'card' | 'full' }) {
+  const src = getProductImageUrl(publicId, size)
 
   if (!width || !height) {
     return (

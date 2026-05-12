@@ -1,29 +1,22 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
 
 export function WhatsAppButton() {
   const [phone, setPhone] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
-    async function fetchWhatsApp() {
-      const { data } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'whatsapp_number')
-        .single();
-      
-      if (data?.value?.number) {
-        setPhone(data.value.number);
-      }
-      setLoading(false);
-    }
-    fetchWhatsApp();
+    fetch('/api/storefront/settings')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        // API returns flat object; value may be string or {number: '...'} JSONB
+        const raw = data?.whatsapp_number;
+        const num = raw && typeof raw === 'object' ? raw.number : raw;
+        if (num) setPhone(String(num));
+      })
+      .catch(() => {});
   }, []);
 
-  if (loading || !phone) return null;
+  if (!phone) return null;
 
   const message = encodeURIComponent('Hi Label Wink! I have a question about your collection.');
 

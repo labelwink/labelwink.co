@@ -10,7 +10,7 @@ import { useAuthModal } from '@/components/auth/OTPLoginModal';
 
 const navItems = [
   { name: 'My Orders',    href: '/account/orders',         icon: Package },
-  { name: 'Wishlist',     href: '/wishlist',               icon: Heart },
+  { name: 'Wishlist',     href: '/account/wishlist',       icon: Heart },
   { name: 'Profile',      href: '/account/profile',        icon: User },
   { name: 'Addresses',    href: '/account/addresses',      icon: MapPin },
   { name: 'Wink Points',  href: '/account/wink-points',    icon: Coins },
@@ -78,7 +78,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
       <div className="flex flex-col md:flex-row gap-8 lg:gap-16">
         {/* Desktop sidebar */}
         <aside className="hidden md:block w-64 flex-shrink-0">
-          <h2 className="font-heading text-2xl font-semibold mb-6 text-charcoal">My Account</h2>
+          <h2 className="font-heading text-2xl font-semibold mb-6 text-labelwink-green">My Account</h2>
           <nav className="flex flex-col space-y-1">
             {navItems.map((item) => {
               const active = isActive(item.href);
@@ -87,10 +87,10 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors rounded-md group",
+                    "flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors rounded-none group",
                     active
-                      ? "bg-[#c9a84c]/10 text-[#c9a84c] border-l-2 border-[#c9a84c]"
-                      : "text-muted-foreground hover:bg-sage/5 hover:text-charcoal"
+                      ? "bg-labelwink-gold/10 text-labelwink-gold border-l-2 border-labelwink-gold"
+                      : "text-labelwink-green/60 hover:bg-labelwink-cream-card hover:text-labelwink-green"
                   )}
                 >
                   <item.icon className="w-4 h-4" />
@@ -110,7 +110,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
         </aside>
 
         {/* Mobile horizontal tabs */}
-        <div className="md:hidden overflow-x-auto no-scrollbar border-b border-sage/20 -mx-4 px-4">
+        <div className="md:hidden overflow-x-auto no-scrollbar border-b border-labelwink-cream-border -mx-4 px-4">
           <div className="flex gap-1 min-w-max pb-2">
             {navItems.map((item) => {
               const active = isActive(item.href);
@@ -119,10 +119,10 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap rounded-full transition-colors",
+                    "flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider whitespace-nowrap rounded-none transition-colors",
                     active
-                      ? "bg-[#c9a84c] text-white"
-                      : "text-muted-foreground bg-sage/5 hover:bg-sage/10"
+                      ? "bg-labelwink-gold text-white"
+                      : "text-labelwink-green/60 bg-labelwink-cream-card hover:bg-labelwink-cream-border"
                   )}
                 >
                   <item.icon className="w-3.5 h-3.5" />

@@ -23,7 +23,7 @@
  *   onSuccess       {function} — optional callback after confirmed order (receives orderId)
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { loadRazorpay } from "@/lib/loadRazorpay";
 
@@ -43,6 +43,17 @@ export default function CheckoutButton({
   const router = useRouter();
   const [status, setStatus] = useState("idle"); // idle | loading | verifying | success | error
   const [errorMsg, setErrorMsg] = useState("");
+  const [userId, setUserId] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setUserId(user.id);
+    };
+    fetchUser();
+  }, []);
 
   const handlePayment = async () => {
     setStatus("loading");
@@ -109,6 +120,7 @@ export default function CheckoutButton({
                 customerName,
                 customerEmail,
                 customerPhone,
+                userId,
               }),
             });
 
@@ -123,7 +135,7 @@ export default function CheckoutButton({
             if (onSuccess) {
               onSuccess(verifyData.orderId);
             } else {
-              router.push(`/orders/${verifyData.orderId}`);
+              router.push(`/order-confirmation?order_id=${verifyData.orderId}`);
             }
           } catch (verifyError) {
             console.error("[CheckoutButton] Verify error:", verifyError);
@@ -181,10 +193,10 @@ export default function CheckoutButton({
           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
           ${
             status === "success"
-              ? "bg-green-600 cursor-default focus:ring-green-500"
+              ? "bg-[#059669] cursor-default focus:ring-green-500"
               : isLoading
-              ? "bg-gray-400 cursor-not-allowed"
-              : "bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] focus:ring-indigo-500"
+              ? "bg-[#9ca3af] cursor-not-allowed"
+              : "bg-[#1B3A2D] hover:bg-[#173129] active:scale-[0.98] focus:ring-[#1B3A2D]"
           }
         `
         }

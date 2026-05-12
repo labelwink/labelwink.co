@@ -8,7 +8,9 @@ export function toCloudinaryId(urlOrId: string): string {
   if (!urlOrId) return ''
   if (!urlOrId.includes('cloudinary.com')) return urlOrId
   const parts = urlOrId.split('/upload/')
-  return parts[1]?.replace(/^v\d+\//, '') ?? urlOrId
+  const id = parts[1]?.replace(/^v\d+\//, '') ?? urlOrId
+  // Remove file extension if present (Cloudinary doesn't need it in the public ID part)
+  return id.replace(/\.(jpg|jpeg|png|webp|gif|avif|HEIC)$/i, '')
 }
 
 // ── Base URL builder ───────────────────────────────────────────────────────
@@ -25,7 +27,7 @@ export function cloudinaryUrl(
   const cleanId = toCloudinaryId(publicId)
   const base = `https://res.cloudinary.com/${CLOUD_NAME}/image/upload`
   return transforms
-    ? `${base}/${transforms}/${cleanId}`
+    ? `${base}/${transforms},c_fill,g_auto/${cleanId}`
     : `${base}/${cleanId}`
 }
 
@@ -37,13 +39,14 @@ export function getCloudinaryUrl(
   if (!publicIdOrUrl) return '/placeholder-product.jpg'
   if (publicIdOrUrl.startsWith('/')) return publicIdOrUrl
 
-  const { width, height, quality = 80 } = options
-  const t: string[] = ['f_webp', `q_${quality}`]
+  const { width, height, quality = 'auto' } = options
+  const t: string[] = ['f_auto', `q_${quality}`]
   if (width) t.push(`w_${width}`)
-  if (height) t.push(`h_${height}`, 'c_fill')
+  if (height) t.push(`h_${height}`, 'c_fill', 'g_auto')
 
   const publicId = toCloudinaryId(publicIdOrUrl)
-  return `https://res.cloudinary.com/${CLOUD_NAME}/image/upload/${t.join(',')}/v1/${publicId}`
+  const cloud = CLOUD_NAME || 'dcmbwtreb'
+  return `https://res.cloudinary.com/${cloud}/image/upload/${t.join(',')}/${publicId}`
 }
 
 // ── Legacy size helper ────────────────────────────────────────────────────
@@ -53,9 +56,9 @@ export function getProductImageUrl(
 ): string {
   if (!image) return '/placeholder-product.jpg'
   const sizes = {
-    thumb: { width: 80,  height: 80  },
-    card:  { width: 400, height: 500 },
-    full:  { width: 800, height: 1000 },
+    thumb: { width: 400, height: 400 },
+    card:  { width: 600, height: 750 },
+    full:  { width: 1200, height: 1500 },
   }
   return getCloudinaryUrl(image, sizes[size])
 }

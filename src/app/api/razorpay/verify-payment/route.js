@@ -17,6 +17,7 @@ import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
 import { sendTelegramMessage } from "@/lib/telegram";
+import { sendOrderConfirmationEmail } from "@/lib/email";
 
 // Service-role client — bypasses RLS, only use server-side
 const supabaseAdmin = createSupabaseAdmin(
@@ -34,8 +35,8 @@ export async function POST(request) {
       error: authError,
     } = await supabase.auth.getUser();
 
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (authError) {
+      console.warn("[verify-payment] Session check error (non-fatal if userId passed):", authError);
     }
 
     // ── 2. Parse the request body ─────────────────────────────────────────────
@@ -55,7 +56,15 @@ export async function POST(request) {
       customerName,
       customerEmail,
       customerPhone,
+      userId,
     } = body;
+
+    // Determine the user ID (session user preferred, but fallback to passed userId)
+    const finalUserId = user?.id || userId;
+
+    if (!finalUserId) {
+      return NextResponse.json({ error: "Unauthorized or missing User ID" }, { status: 401 });
+    }
 
     // Validate required payment fields
     if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
@@ -88,11 +97,27 @@ export async function POST(request) {
       );
     }
 
+    console.log("[verify-payment] Inserting order payload:", JSON.stringify({
+      items,
+      total_amount: totalAmount,
+      subtotal,
+      shipping_amount: shippingFee,
+      discount_amount: discountAmount,
+      coupon_code: couponCode,
+      customer_name: customerName,
+      customer_email: customerEmail,
+      customer_phone: customerPhone,
+      user_id: finalUserId,
+      razorpay_order_id: razorpayOrderId,
+      razorpay_payment_id: razorpayPaymentId,
+      razorpay_signature: razorpaySignature
+    }, null, 2));
+
     // ── 4. Insert confirmed order into Supabase ───────────────────────────────
     const { data: order, error: insertError } = await supabaseAdmin
       .from("orders")
       .insert({
-        user_id: user.id,
+        user_id: finalUserId,
         status: "confirmed",
         payment_status: "paid",
         payment_method: "razorpay",
@@ -100,17 +125,17 @@ export async function POST(request) {
         razorpay_payment_id: razorpayPaymentId,
         razorpay_signature: razorpaySignature,
         items,                // JSONB snapshot of cart items (includes Cloudinary image URLs)
-        total: totalAmount,
+        total_amount: totalAmount,
         subtotal: subtotal ?? totalAmount,
-        shipping_fee: shippingFee ?? 0,
+        shipping_amount: shippingFee ?? 0,
         discount_amount: discountAmount ?? 0,
         coupon_code: couponCode ?? null,
         shipping_address: shippingAddress,
-        customer_name: customerName ?? user.email,
-        customer_email: customerEmail ?? user.email,
+        customer_name: customerName ?? customerEmail ?? "Customer",
+        customer_email: customerEmail,
         customer_phone: customerPhone ?? null,
       })
-      .select("id, status, total")
+      .select("id, order_number, invoice_number, status, total_amount, subtotal, shipping_amount, discount_amount, items, customer_name, customer_email, customer_phone, shipping_address, created_at")
       .single();
 
     if (insertError) {
@@ -125,8 +150,8 @@ export async function POST(request) {
     try {
       await sendTelegramMessage(
         `🛒 <b>New Order Placed</b>\n` +
-        `💰 Total: ₹${order.total}\n` +
-        `👤 Customer: ${customerName || user.email}\n` +
+        `💰 Total: ₹${order.total_amount}\n` +
+        `👤 Customer: ${customerName || customerEmail}\n` +
         `📦 Items: ${items.length}\n` +
         `🆔 Order ID: <code>${order.id}</code>`
       )
@@ -167,10 +192,25 @@ export async function POST(request) {
         shiprocketError)
     }
 
+    // ── 5. Send Email Confirmation ───────────────────────────────────────────
+    try {
+      await sendOrderConfirmationEmail({
+        to: order.customer_email,
+        customerName: order.customer_name,
+        orderNumber: order.order_number,
+        invoiceNumber: order.invoice_number,
+        items: order.items,
+        totalAmount: order.total_amount,
+        deliveryAddress: order.shipping_address,
+      });
+    } catch (emailError) {
+      console.error('[verify-payment] Email notification failed:', emailError);
+    }
+
     // ── 5. Return success ─────────────────────────────────────────────────────
     return NextResponse.json({
       success: true,
-      orderId: order.id,
+      orderId: order.order_number || order.id,
       message: "Payment verified and order confirmed.",
     });
   } catch (error) {

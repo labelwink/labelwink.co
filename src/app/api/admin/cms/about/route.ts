@@ -51,7 +51,7 @@ export async function PATCH(req: Request) {
         page: 'about', 
         content: fields, 
         updated_at: new Date().toISOString() 
-      })
+      }, { onConflict: 'page' })
       .select('content')
       .single();
 

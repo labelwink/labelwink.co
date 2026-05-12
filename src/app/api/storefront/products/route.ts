@@ -11,7 +11,7 @@ const PRODUCT_SELECT = `
   fabric, occasion, tags, created_at, status,
   collection_id,
   product_images (url, alt, is_cover, sort_order),
-  product_variants (id, size, color, stock_qty, price)
+  product_variants (id, size, color, stock_qty, price, compare_at_price, is_active)
 `
 
 export async function GET(req: NextRequest) {

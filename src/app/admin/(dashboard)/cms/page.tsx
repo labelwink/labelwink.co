@@ -1,5 +1,6 @@
 "use client";
 
+import { CloudinaryImagePicker } from '@/components/admin/CloudinaryImagePicker';
 import { useState, useEffect } from "react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -207,25 +208,6 @@ export default function CMSPage() {
     }
   };
 
-  const uploadCloudinary = (onSuccess: (url: string) => void) => {
-    if (typeof window !== "undefined" && (window as any).cloudinary) {
-      (window as any).cloudinary.openUploadWidget(
-        {
-          cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-          uploadPreset: "ml_default",
-          multiple: false,
-        },
-        (error: any, result: any) => {
-          if (!error && result && result.event === "success") {
-            onSuccess(result.info.secure_url);
-          }
-        },
-      );
-    } else {
-      toast.error("Cloudinary widget not loaded");
-    }
-  };
-
   // Drag and drop helper
   const handleDragStart = (e: any, index: number) => {
     e.dataTransfer.setData("dragIndex", index);
@@ -291,7 +273,7 @@ export default function CMSPage() {
               fetchData();
             } else toast.error("Error saving");
           }}
-          className="space-y-4"
+          className="space-y-5"
         >
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">
@@ -305,21 +287,26 @@ export default function CMSPage() {
               Cancel
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm mb-1">Title *</label>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="admin-field">
+              <label className="admin-label">Title *</label>
               <input
+                type="text"
                 required
                 value={editingBanner.title || ""}
                 onChange={(e) =>
                   setEditingBanner({ ...editingBanner, title: e.target.value })
                 }
-                className="w-full bg-white border border-gray-300 rounded p-2 text-gray-900"
+                placeholder="e.g. New Season Sale"
+                className="admin-input"
               />
             </div>
-            <div>
-              <label className="block text-sm mb-1">Subtitle</label>
+            
+            <div className="admin-field">
+              <label className="admin-label">Subtitle</label>
               <input
+                type="text"
                 value={editingBanner.subtitle || ""}
                 onChange={(e) =>
                   setEditingBanner({
@@ -327,12 +314,15 @@ export default function CMSPage() {
                     subtitle: e.target.value,
                   })
                 }
-                className="w-full bg-white border border-gray-300 rounded p-2 text-gray-900"
+                placeholder="e.g. Up to 40% off"
+                className="admin-input"
               />
             </div>
-            <div>
-              <label className="block text-sm mb-1">CTA Text</label>
+            
+            <div className="admin-field">
+              <label className="admin-label">CTA Text</label>
               <input
+                type="text"
                 value={editingBanner.cta_text || ""}
                 onChange={(e) =>
                   setEditingBanner({
@@ -340,12 +330,15 @@ export default function CMSPage() {
                     cta_text: e.target.value,
                   })
                 }
-                className="w-full bg-white border border-gray-300 rounded p-2 text-gray-900"
+                placeholder="e.g. Shop Now"
+                className="admin-input"
               />
             </div>
-            <div>
-              <label className="block text-sm mb-1">CTA URL</label>
+            
+            <div className="admin-field">
+              <label className="admin-label">CTA URL</label>
               <input
+                type="text"
                 value={editingBanner.cta_url || ""}
                 onChange={(e) =>
                   setEditingBanner({
@@ -353,75 +346,31 @@ export default function CMSPage() {
                     cta_url: e.target.value,
                   })
                 }
-                className="w-full bg-white border border-gray-300 rounded p-2 text-gray-900"
+                placeholder="e.g. /products?category=kurtis"
+                className="admin-input"
               />
             </div>
-            <div>
-              <label className="block text-sm mb-1">Desktop Image URL *</label>
-              <div className="flex gap-2">
-                <input
-                  required
-                  value={editingBanner.image_url || ""}
-                  onChange={(e) =>
-                    setEditingBanner({
-                      ...editingBanner,
-                      image_url: e.target.value,
-                    })
-                  }
-                  className="w-full bg-white border border-gray-300 rounded p-2 text-gray-900"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    uploadCloudinary((url) =>
-                      setEditingBanner({ ...editingBanner, image_url: url }),
-                    )
-                  }
-                  className="bg-gray-100 px-3 rounded hover:bg-gray-200"
-                >
-                  <UploadCloud className="w-4 h-4" />
-                </button>
-              </div>
-              {editingBanner.image_url && (
-                <img
-                  src={editingBanner.image_url}
-                  className="mt-2 h-20 object-cover rounded"
-                />
-              )}
-            </div>
-            <div>
-              <label className="block text-sm mb-1">
-                Mobile Image URL (Optional)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  value={editingBanner.mobile_image_url || ""}
-                  onChange={(e) =>
-                    setEditingBanner({
-                      ...editingBanner,
-                      mobile_image_url: e.target.value,
-                    })
-                  }
-                  className="w-full bg-white border border-gray-300 rounded p-2 text-gray-900"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    uploadCloudinary((url) =>
-                      setEditingBanner({
-                        ...editingBanner,
-                        mobile_image_url: url,
-                      }),
-                    )
-                  }
-                  className="bg-gray-100 px-3 rounded hover:bg-gray-200"
-                >
-                  <UploadCloud className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm mb-1">Position</label>
+          </div>
+          
+          <CloudinaryImagePicker
+            label="Desktop Image *"
+            value={editingBanner.image_url ?? ''}
+            onChange={url =>
+              setEditingBanner({ ...editingBanner, image_url: url })}
+            folder="labelwink/banners"
+          />
+          
+          <CloudinaryImagePicker
+            label="Mobile Image (Optional)"
+            value={editingBanner.mobile_image_url ?? ''}
+            onChange={url =>
+              setEditingBanner({ ...editingBanner, mobile_image_url: url })}
+            folder="labelwink/banners"
+          />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="admin-field">
+              <label className="admin-label">Position</label>
               <select
                 value={editingBanner.position || "hero"}
                 onChange={(e) =>
@@ -430,30 +379,62 @@ export default function CMSPage() {
                     position: e.target.value,
                   })
                 }
-                className="w-full bg-white border border-gray-300 rounded p-2 text-gray-900"
+                className="admin-select"
               >
                 <option value="hero">Hero</option>
-                <option value="promotional">Promotional</option>
+                <option value="banner">Banner</option>
+                <option value="strip">Strip</option>
+                <option value="popup">Popup</option>
               </select>
             </div>
-            <div className="flex items-center gap-4 mt-6">
-              <label className="flex items-center gap-2">
-                <Switch
-                  checked={editingBanner.is_active !== false}
-                  onCheckedChange={(v) =>
-                    setEditingBanner({ ...editingBanner, is_active: v })
-                  }
-                />
-                Active
-              </label>
+            
+            <div className="admin-field">
+              <label className="admin-label">Sort Order</label>
+              <input
+                type="number"
+                value={editingBanner.sort_order ?? 0}
+                onChange={(e) =>
+                  setEditingBanner({
+                    ...editingBanner,
+                    sort_order: parseInt(e.target.value),
+                  })
+                }
+                min="0"
+                className="admin-input"
+              />
             </div>
           </div>
-          <button
-            disabled={saving}
-            className="bg-[#c9a84c] text-[#ffffff] font-bold px-6 py-2 rounded mt-4"
-          >
-            {saving ? "Saving..." : "Save Banner"}
-          </button>
+          
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={editingBanner.is_active !== false}
+              onChange={(e) =>
+                setEditingBanner({ ...editingBanner, is_active: e.target.checked })
+              }
+              className="w-4 h-4 rounded accent-[#1C3829]"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Active immediately
+            </span>
+          </label>
+          
+          <div className="flex gap-3 pt-2">
+            <button
+              type="submit"
+              disabled={saving}
+              className="bg-[#c9a84c] text-[#ffffff] font-bold px-6 py-2.5 rounded-lg hover:bg-[#b8973b] transition-colors"
+            >
+              {saving ? "Saving..." : "Save Banner"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditingBanner(null)}
+              className="bg-transparent text-[#5a7060] font-bold px-4 py-2.5 rounded-lg hover:bg-[#5a7060]/10 border border-[#e8e2d6] transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
       );
     }
@@ -621,35 +602,11 @@ export default function CMSPage() {
                     className="w-full bg-white border border-gray-300 rounded p-2 text-gray-900"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm mb-1">Image URL</label>
-                  <div className="flex gap-2">
-                    <input
-                      value={editingSection.image_url || ""}
-                      onChange={(e) =>
-                        setEditingSection({
-                          ...editingSection,
-                          image_url: e.target.value,
-                        })
-                      }
-                      className="w-full bg-white border border-gray-300 rounded p-2 text-gray-900"
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        uploadCloudinary((url) =>
-                          setEditingSection({
-                            ...editingSection,
-                            image_url: url,
-                          }),
-                        )
-                      }
-                      className="bg-gray-100 px-3 rounded hover:bg-gray-200"
-                    >
-                      <UploadCloud className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                <CloudinaryImagePicker
+      label="Image URL"
+      value={editingSection.image_url ?? ""}
+      onChange={url => setEditingSection({ ...editingSection, image_url: url })}
+    />
                 <div>
                   <label className="block text-sm mb-1">CTA Text</label>
                   <input
@@ -853,36 +810,11 @@ export default function CMSPage() {
                     </div>
                     {editingCollection?.id === c.id && (
                       <div className="mt-3 bg-black/40 p-3 rounded space-y-3">
-                        <div>
-                          <label className="block text-xs mb-1">
-                            Banner Image URL
-                          </label>
-                          <div className="flex gap-2">
-                            <input
-                              value={editingCollection.banner_image_url || ""}
-                              onChange={(e) =>
-                                setEditingCollection({
-                                  ...editingCollection,
-                                  banner_image_url: e.target.value,
-                                })
-                              }
-                              className="w-full bg-white/5 border border-[#e8e2d6] rounded p-1 text-xs"
-                            />
-                            <button
-                              onClick={() =>
-                                uploadCloudinary((url) =>
-                                  setEditingCollection({
-                                    ...editingCollection,
-                                    banner_image_url: url,
-                                  }),
-                                )
-                              }
-                              className="bg-white/10 px-2 rounded text-xs"
-                            >
-                              <UploadCloud className="w-3 h-3" />
-                            </button>
-                          </div>
-                        </div>
+                        <CloudinaryImagePicker
+      label="Banner Image URL"
+      value={editingCollection.banner_image_url ?? ""}
+      onChange={url => setEditingCollection({ ...editingCollection, banner_image_url: url })}
+    />
                         <div>
                           <label className="block text-xs mb-1">Subtitle</label>
                           <input
@@ -1023,43 +955,11 @@ export default function CMSPage() {
                 className="w-full bg-white border border-gray-300 rounded p-2 text-gray-900 [color-scheme:dark]"
               />
             </div>
-            <div className="col-span-2">
-              <label className="block text-sm mb-1">
-                Banner Image URL (Optional)
-              </label>
-              <div className="flex gap-2">
-                <input
-                  value={editingFlashSale.banner_image_url || ""}
-                  onChange={(e) =>
-                    setEditingFlashSale({
-                      ...editingFlashSale,
-                      banner_image_url: e.target.value,
-                    })
-                  }
-                  className="w-full bg-white border border-gray-300 rounded p-2 text-gray-900"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    uploadCloudinary((url) =>
-                      setEditingFlashSale({
-                        ...editingFlashSale,
-                        banner_image_url: url,
-                      }),
-                    )
-                  }
-                  className="bg-gray-100 px-3 rounded hover:bg-gray-200"
-                >
-                  <UploadCloud className="w-4 h-4" />
-                </button>
-              </div>
-              {editingFlashSale.banner_image_url && (
-                <img
-                  src={editingFlashSale.banner_image_url}
-                  className="mt-2 h-20 object-cover rounded"
-                />
-              )}
-            </div>
+            <CloudinaryImagePicker
+      label="Banner Image URL (Optional)"
+      value={editingFlashSale.banner_image_url ?? ""}
+      onChange={url => setEditingFlashSale({ ...editingFlashSale, banner_image_url: url })}
+    />
             <div className="col-span-2">
               <label className="flex items-center gap-2">
                 <Switch
@@ -1257,41 +1157,11 @@ export default function CMSPage() {
                 placeholder="/products?occasion=slug"
               />
             </div>
-            <div>
-              <label className="block text-sm mb-1">Image URL</label>
-              <div className="flex gap-2">
-                <input
-                  value={editingOccasion.image_url || ""}
-                  onChange={(e) =>
-                    setEditingOccasion({
-                      ...editingOccasion,
-                      image_url: e.target.value,
-                    })
-                  }
-                  className="w-full bg-white border border-gray-300 rounded p-2 text-gray-900"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    uploadCloudinary((url) =>
-                      setEditingOccasion({
-                        ...editingOccasion,
-                        image_url: url,
-                      }),
-                    )
-                  }
-                  className="bg-gray-100 px-3 rounded hover:bg-gray-200"
-                >
-                  <UploadCloud className="w-4 h-4" />
-                </button>
-              </div>
-              {editingOccasion.image_url && (
-                <img
-                  src={editingOccasion.image_url}
-                  className="mt-2 w-12 h-12 rounded-full object-cover"
-                />
-              )}
-            </div>
+            <CloudinaryImagePicker
+      label="Image URL"
+      value={editingOccasion.image_url ?? ""}
+      onChange={url => setEditingOccasion({ ...editingOccasion, image_url: url })}
+    />
             <div className="col-span-2">
               <label className="flex items-center gap-2">
                 <Switch
@@ -1648,40 +1518,11 @@ export default function CMSPage() {
                 className="w-full bg-white border border-gray-300 rounded p-2 text-gray-900"
               />
             </div>
-            <div className="col-span-2">
-              <label className="block text-sm mb-1">
-                Hero Background Image
-              </label>
-              <div className="flex gap-2">
-                <input
-                  value={aboutPage.hero_image_url || ""}
-                  onChange={(e) =>
-                    setAboutPage({
-                      ...aboutPage,
-                      hero_image_url: e.target.value,
-                    })
-                  }
-                  className="w-full bg-white border border-gray-300 rounded p-2 text-gray-900"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    uploadCloudinary((url) =>
-                      setAboutPage({ ...aboutPage, hero_image_url: url }),
-                    )
-                  }
-                  className="bg-gray-100 px-3 rounded hover:bg-gray-200"
-                >
-                  <UploadCloud className="w-4 h-4" />
-                </button>
-              </div>
-              {aboutPage.hero_image_url && (
-                <img
-                  src={aboutPage.hero_image_url}
-                  className="mt-2 h-32 object-cover rounded border border-[#e8e2d6]"
-                />
-              )}
-            </div>
+            <CloudinaryImagePicker
+      label="Hero Background Image"
+      value={aboutPage.hero_image_url ?? ""}
+      onChange={url => setAboutPage({ ...aboutPage, hero_image_url: url })}
+    />
           </div>
         </div>
 

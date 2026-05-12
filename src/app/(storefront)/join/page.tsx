@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -71,52 +71,52 @@ function JoinContent() {
   const discountValue = Math.floor(referredPoints * ratio);
 
   return (
-    <div className="min-h-screen bg-white text-[#faf7f2] flex flex-col items-center justify-center px-4 py-20 relative overflow-hidden">
+    <div className="min-h-screen bg-labelwink-cream text-labelwink-green flex flex-col items-center justify-center px-4 py-20 relative overflow-hidden">
       {/* Decorative Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#c9a84c]/5 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#c9a84c]/5 rounded-full blur-[120px]"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-labelwink-gold/5 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-labelwink-gold/5 rounded-full blur-[120px]"></div>
       </div>
 
       <div className="max-w-xl w-full text-center space-y-12 relative z-10">
         {/* Header */}
         <div className="space-y-4">
-          <div className="inline-flex items-center justify-center p-3 bg-[#c9a84c]/10 rounded-full mb-4 border border-[#c9a84c]/20">
-            <Sparkles className="w-8 h-8 text-[#c9a84c]" />
+          <div className="inline-flex items-center justify-center p-3 bg-labelwink-gold/10 rounded-full mb-4 border border-labelwink-gold/20">
+            <Sparkles className="w-8 h-8 text-labelwink-gold" />
           </div>
           <h1 className="text-4xl md:text-5xl font-heading tracking-tight leading-tight">
             {referrer ? (
-              <span className="block text-[#c9a84c] mb-2">{referrer} thinks you'll love LabelWink!</span>
+              <span className="block text-labelwink-gold mb-2 font-semibold">{referrer} thinks you'll love LabelWink!</span>
             ) : (
-              <span className="block text-[#c9a84c] mb-2">Welcome to LabelWink!</span>
+              <span className="block text-labelwink-gold mb-2 font-semibold">Welcome to LabelWink!</span>
             )}
-            Join the Wink Club
+            <span className="text-labelwink-green font-bold">Join the Wink Club</span>
           </h1>
-          <p className="text-lg text-[#faf7f2]/60 italic max-w-md mx-auto">
+          <p className="text-lg text-labelwink-green/60 italic max-w-md mx-auto">
             Experience grace in every thread. Start your journey with an exclusive welcome gift.
           </p>
         </div>
 
         {/* Benefits Card */}
-        <div className="bg-white/5 border border-[#c9a84c]/20 rounded-3xl p-8 space-y-8 backdrop-blur-xl">
+        <div className="bg-white border border-labelwink-cream-border rounded-none p-8 space-y-8 shadow-xl">
           <div className="grid grid-cols-1 gap-6">
-            <div className="flex items-start gap-4 text-left p-4 rounded-2xl bg-[#c9a84c]/5 border border-[#c9a84c]/10 group hover:border-[#c9a84c]/30 transition-colors">
-              <div className="bg-[#c9a84c] p-2 rounded-lg">
-                <Gift className="w-5 h-5 text-[#ffffff]" />
+            <div className="flex items-start gap-4 text-left p-4 rounded-none bg-labelwink-cream-card border border-labelwink-cream-border group hover:border-labelwink-gold/30 transition-colors">
+              <div className="bg-labelwink-green p-2 rounded-none">
+                <Gift className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-[#faf7f2]">Instant Welcome Bonus</h3>
-                <p className="text-sm text-[#faf7f2]/60">Get {referredPoints} Wink Points immediately upon signup.</p>
+                <h3 className="font-bold text-labelwink-green">Instant Welcome Bonus</h3>
+                <p className="text-sm text-labelwink-green/60">Get {referredPoints} Wink Points immediately upon signup.</p>
               </div>
             </div>
 
-            <div className="flex items-start gap-4 text-left p-4 rounded-2xl bg-[#c9a84c]/5 border border-[#c9a84c]/10 group hover:border-[#c9a84c]/30 transition-colors">
-              <div className="bg-[#c9a84c] p-2 rounded-lg">
-                <Sparkles className="w-5 h-5 text-[#ffffff]" />
+            <div className="flex items-start gap-4 text-left p-4 rounded-none bg-labelwink-cream-card border border-labelwink-cream-border group hover:border-labelwink-gold/30 transition-colors">
+              <div className="bg-labelwink-gold p-2 rounded-none">
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-bold text-[#faf7f2]">Pure Savings</h3>
-                <p className="text-sm text-[#faf7f2]/60">Points worth ₹{discountValue} off your first order.</p>
+                <h3 className="font-bold text-labelwink-green">Pure Savings</h3>
+                <p className="text-sm text-labelwink-green/60">Points worth ₹{discountValue} off your first order.</p>
               </div>
             </div>
           </div>
@@ -126,7 +126,7 @@ function JoinContent() {
               <p className="text-[#c9a84c] font-medium">You're already a member!</p>
               <button
                 onClick={() => router.push('/shop')}
-                className="w-full bg-[#c9a84c] text-[#ffffff] font-bold py-5 rounded-xl hover:bg-[#b8973d] transition-all flex items-center justify-center gap-2 group"
+                className="w-full bg-labelwink-green text-white font-bold py-5 rounded-none hover:bg-labelwink-green-hover transition-all flex items-center justify-center gap-2 group shadow-md uppercase tracking-widest text-sm"
               >
                 Go to Shop <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
@@ -135,16 +135,16 @@ function JoinContent() {
             <div className="space-y-6 pt-4">
               <button
                 onClick={() => openModal()}
-                className="w-full bg-[#c9a84c] text-[#ffffff] font-bold py-5 rounded-xl hover:bg-[#b8973d] transition-all flex items-center justify-center gap-2 group text-lg"
+                className="w-full bg-labelwink-green text-white font-bold py-5 rounded-none hover:bg-labelwink-green-hover transition-all flex items-center justify-center gap-2 group text-lg uppercase tracking-widest shadow-md"
               >
                 Create My Account <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
               
               <div className="flex items-center justify-center gap-2 text-sm">
-                <span className="text-[#faf7f2]/40">Already have an account?</span>
+                <span className="text-labelwink-green/40 font-medium">Already have an account?</span>
                 <button 
                   onClick={() => openModal()}
-                  className="text-[#c9a84c] font-bold hover:underline"
+                  className="text-labelwink-gold font-bold hover:underline uppercase tracking-wider text-xs"
                 >
                   Sign in &rarr;
                 </button>
@@ -154,7 +154,7 @@ function JoinContent() {
         </div>
 
         {/* Footer */}
-        <p className="text-[10px] uppercase tracking-[0.4em] text-[#faf7f2]/30 font-bold">
+        <p className="text-[10px] uppercase tracking-[0.4em] text-labelwink-green/30 font-bold">
           Grace in Every Thread &bull; LabelWink
         </p>
       </div>

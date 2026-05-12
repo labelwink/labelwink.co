@@ -67,7 +67,7 @@ export function PincodeChecker() {
           <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5" />
           <div>
             <p className="text-xs font-bold text-charcoal">Estimated delivery by {estimate}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">Express Shipping Available | Cash on Delivery Available</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">Express Shipping Available</p>
           </div>
         </div>
       )}

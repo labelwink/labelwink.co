@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 import tailwindAnimate from "tailwindcss-animate";
+import typography from "@tailwindcss/typography";
 
 const config = {
   darkMode: 'media', // disabled effectively — use media, never class
@@ -126,7 +127,7 @@ const config = {
       },
     },
   },
-  plugins: [tailwindAnimate],
+  plugins: [tailwindAnimate, typography],
 } satisfies Config;
 
 export default config;

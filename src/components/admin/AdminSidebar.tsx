@@ -79,16 +79,18 @@ const navGroups: NavGroup[] = [
   {
     label: 'COMMERCE',
     items: [
-      { href: '/admin/orders',    label: 'Orders',     icon: ShoppingBag,  badge: 'pending_orders' },
-      { href: '/admin/products',  label: 'Products',   icon: Package },
-      { href: '/admin/inventory', label: 'Inventory',  icon: ClipboardList, badge: 'low_stock' },
-      { href: '/admin/customers', label: 'Customers',  icon: Users },
+      { href: '/admin/orders',     label: 'Orders',     icon: ShoppingBag,   badge: 'pending_orders' },
+      { href: '/admin/products',   label: 'Products',   icon: Package },
+      { href: '/admin/categories', label: 'Categories', icon: Tag },
+      { href: '/admin/inventory',  label: 'Inventory',  icon: ClipboardList, badge: 'low_stock' },
+      { href: '/admin/customers',  label: 'Customers',  icon: Users },
     ],
   },
   {
     label: 'CONTENT',
     items: [
       { href: '/admin/cms',         label: 'CMS',         icon: Layers },
+      { href: '/admin/cms/pages',   label: 'Pages',       icon: FileText },
       { href: '/admin/collections', label: 'Collections', icon: ImageIcon },
       { href: '/admin/media',       label: 'Media',       icon: Monitor },
     ],
@@ -145,13 +147,13 @@ function SidebarNavItem({
         marginLeft: '8px',
         marginRight: '8px',
         marginBottom: '2px',
-        borderRadius: '8px',
+        borderRadius: '0',
         fontSize: '14px',
         fontWeight: isActive ? 600 : 500,
-        color: isActive ? '#2d5a3d' : '#5a7060',
+        color: isActive ? '#1C3829' : '#5a7060',
         textDecoration: 'none',
         background: isActive ? '#eef5f1' : 'transparent',
-        borderLeft: isActive ? '3px solid #2d5a3d' : '3px solid transparent',
+        borderLeft: isActive ? '3px solid #1C3829' : '3px solid transparent',
         transition: 'all 150ms',
         cursor: 'pointer',
       }}
@@ -183,10 +185,10 @@ function SidebarNavItem({
           fontSize: '10px',
           fontWeight: 700,
           padding: '2px 6px',
-          borderRadius: '20px',
+          borderRadius: '0',
           minWidth: '18px',
           textAlign: 'center',
-          background: isActive ? '#2d5a3d' : '#fdf0ef',
+          background: isActive ? '#1C3829' : '#fdf0ef',
           color: isActive ? '#ffffff' : '#c0392b',
         }}>
           {badgeCount > 99 ? '99+' : badgeCount}
@@ -237,10 +239,10 @@ function SidebarContent({ badges, onNavClick, role }: { badges: BadgeCounts; onN
           fontWeight: 700,
           textTransform: 'uppercase' as const,
           letterSpacing: '0.08em',
-          color: '#2d5a3d',
+          color: '#1C3829',
           background: '#eef5f1',
           padding: '3px 8px',
-          borderRadius: '4px',
+          borderRadius: '0',
         }}>
           Admin
         </span>
@@ -300,7 +302,7 @@ function SidebarContent({ badges, onNavClick, role }: { badges: BadgeCounts; onN
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             margin: '0 8px 8px', padding: '8px 12px',
-            borderRadius: '8px',
+            borderRadius: '0',
             background: 'rgba(201,168,76,0.15)',
             border: '1px solid rgba(201,168,76,0.3)',
             fontSize: '13px', fontWeight: 600,
@@ -321,7 +323,7 @@ function SidebarContent({ badges, onNavClick, role }: { badges: BadgeCounts; onN
           rel="noopener noreferrer"
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
-            height: '36px', padding: '0 12px', borderRadius: '8px',
+            height: '36px', padding: '0 12px', borderRadius: '0',
             fontSize: '13px', color: '#9aab9e', textDecoration: 'none',
             transition: 'color 150ms, background 150ms',
           }}
@@ -335,7 +337,7 @@ function SidebarContent({ badges, onNavClick, role }: { badges: BadgeCounts; onN
           onClick={handleLogout}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
-            height: '36px', padding: '0 12px', borderRadius: '8px',
+            height: '36px', padding: '0 12px', borderRadius: '0',
             fontSize: '13px', color: '#9aab9e',
             background: 'none', border: 'none', cursor: 'pointer', width: '100%',
             transition: 'color 150ms, background 150ms',

@@ -16,11 +16,10 @@ const SIZE_CHART = [
   { size: 'M', chest: '36"', waist: '30"', hips: '38"', length: '54"' },
   { size: 'L', chest: '38"', waist: '32"', hips: '40"', length: '55"' },
   { size: 'XL', chest: '40"', waist: '34"', hips: '42"', length: '56"' },
-  { size: '2XL', chest: '42"', waist: '36"', hips: '44"', length: '57"' },
+  { size: 'XXL', chest: '42"', waist: '36"', hips: '44"', length: '57"' },
   { size: '3XL', chest: '44"', waist: '38"', hips: '46"', length: '58"' },
   { size: '4XL', chest: '46"', waist: '40"', hips: '48"', length: '59"' },
   { size: '5XL', chest: '48"', waist: '42"', hips: '50"', length: '60"' },
-  { size: '6XL', chest: '50"', waist: '44"', hips: '52"', length: '61"' },
 ]
 
 export function SizeGuideModal({ sizeGuide, productName }: SizeGuideModalProps) {

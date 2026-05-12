@@ -44,8 +44,8 @@ const nextConfig = {
 
     // connect-src: add HMR WebSocket in dev
     const connectSrc = isDev
-      ? "connect-src 'self' https://*.supabase.co https://api.brevo.com wss://*.supabase.co https://accounts.google.com ws://localhost:3000"
-      : "connect-src 'self' https://*.supabase.co https://api.brevo.com wss://*.supabase.co https://accounts.google.com";
+      ? "connect-src 'self' https://*.supabase.co https://api.brevo.com https://api.cloudinary.com wss://*.supabase.co https://accounts.google.com ws://localhost:3000"
+      : "connect-src 'self' https://*.supabase.co https://api.brevo.com https://api.cloudinary.com wss://*.supabase.co https://accounts.google.com";
 
     return [
       {

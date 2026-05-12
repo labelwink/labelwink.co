@@ -17,7 +17,7 @@ export default function AdminSetupWizard() {
     name: 'Label Wink',
     email: '',
     whatsapp: '',
-    shippingThreshold: 999
+    shippingThreshold: 3499
   });
 
   const [categoryData, setCategoryData] = useState({

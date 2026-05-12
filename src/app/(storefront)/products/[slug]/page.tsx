@@ -7,7 +7,6 @@ import { PincodeChecker } from '@/components/storefront/PincodeChecker';
 import { ProductImageGallery } from '@/components/storefront/ProductImageGallery';
 import { ProductActions } from '@/components/storefront/ProductActions';
 import { WishlistButton } from '@/components/storefront/WishlistButton';
-import { WhatsAppShare } from '@/components/storefront/WhatsAppShare';
 import { ProductInfoTabs } from '@/components/storefront/ProductInfoTabs';
 import WriteReviewForm from '@/components/storefront/WriteReviewForm';
 import { generateProductSchema, generateBreadcrumbSchema } from '@/lib/json-ld';
@@ -69,7 +68,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       product_images (*)
     `)
     .eq('slug', resolvedParams.slug)
-    .eq('visible', true)
+    .eq('is_active', true)
     .single();
 
   if (error || !product) notFound();
@@ -120,6 +119,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
     : 0;
 
   const firstVariant = product.product_variants?.[0];
+  const allOutOfStock = product.product_variants && product.product_variants.length > 0
+    ? product.product_variants.every((v: any) => (v.stock_qty ?? v.stock ?? 0) === 0 || v.is_active === false)
+    : false;
   // Fall back to product-level price/mrp if variant price is 0 or missing
   const displayPrice = firstVariant?.price || product.price || product.selling_price || null;
   const displayMrp = firstVariant?.mrp || product.mrp || product.compare_at_price || null;
@@ -202,7 +204,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
         <div className="w-full md:w-1/2 flex flex-col space-y-10 px-0 md:px-0">
           <div className="space-y-4">
-            <h1 className="font-heading text-4xl md:text-5xl text-[#1A1A1A] font-medium">{product.name}</h1>
+            <h1 className="font-heading text-4xl md:text-5xl text-[#1A1A1A] font-semibold">{product.name}</h1>
             <div className="flex items-center gap-6">
               <div className="flex text-[#c9a84c]">
                 {[1,2,3,4,5].map(i => <Star key={i} className={`w-4 h-4 ${i <= Number(avgRating) ? 'fill-current' : 'text-[#E8DFC8]'}`} />)}
@@ -211,28 +213,33 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </div>
           </div>
 
-          <div className="flex items-baseline gap-4 border-b border-[#E8DFC8] pb-6">
-            <span className="text-4xl font-heading font-bold text-[#1A1A1A]">
+          <div className="flex flex-wrap items-center gap-3 border-b border-[#E8DFC8] pb-6">
+            <span className="text-4xl font-heading font-bold text-[#1B3A2D]">
               {displayPrice
                 ? `₹${Number(displayPrice).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                 : 'Price not available'}
             </span>
             {displayMrp && displayPrice && displayMrp > displayPrice && (
-              <span className="text-xl text-muted-foreground line-through opacity-50">₹{Number(displayMrp).toLocaleString('en-IN')}</span>
+              <span className="text-xl text-[#6B6B5A] line-through">₹{Number(displayMrp).toLocaleString('en-IN')}</span>
+            )}
+            {product.product_variants && product.product_variants.length > 0 && (
+              <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${allOutOfStock ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                {allOutOfStock ? 'Out of Stock' : 'In Stock'}
+              </span>
             )}
           </div>
 
           {product.short_description && product.short_description.length > 3 && (
-            <p className="text-[#6B6B5A] text-sm leading-relaxed">{product.short_description}</p>
+            <p className="text-[#444] text-sm leading-relaxed">{product.short_description}</p>
           )}
           {product.description && product.description.length > 3 && (
-            <div className="text-[#6B6B5A] leading-relaxed font-medium">{product.description}</div>
+            <div className="text-[#444] leading-relaxed font-medium">{product.description}</div>
           )}
 
           {/* Stock status */}
           {(() => {
             const hasVariants = product.product_variants && product.product_variants.length > 0
-            const allOutOfStock = hasVariants && product.product_variants.every((v: any) => v.stock_qty === 0)
+            const allOutOfStock = hasVariants && product.product_variants.every((v: any) => (v.stock_qty ?? v.stock ?? 0) === 0 || v.is_active === false)
             if (!hasVariants) return <p className="text-sm text-gray-500">Contact us for availability</p>
             if (allOutOfStock) return <p className="text-sm text-red-500 font-medium">Currently out of stock</p>
             return null
@@ -253,17 +260,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               productName={product.name}
               productSlug={product.slug}
               variants={product.product_variants ?? []}
-              publicId={product.product_images?.[0]?.cloudinary_public_id}
+              publicId={product.product_images?.[0]?.url}
               sizeGuide={product.size_guide ?? null}
             />
-            <div className="mt-4 border-t border-[#E8DFC8] pt-4">
-              <WhatsAppShare
-                productName={product.name}
-                productUrl={`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/products/${product.slug}`}
-                price={displayPrice || 0}
-                size="md"
-              />
-            </div>
+
           </div>
 
           {/* Mobile ProductActions */}
@@ -281,17 +281,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               productName={product.name}
               productSlug={product.slug}
               variants={product.product_variants ?? []}
-              publicId={product.product_images?.[0]?.cloudinary_public_id}
+              publicId={product.product_images?.[0]?.url}
               sizeGuide={product.size_guide ?? null}
             />
-            <div className="mt-4 border-t border-[#E8DFC8] pt-4">
-              <WhatsAppShare
-                productName={product.name}
-                productUrl={`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/products/${product.slug}`}
-                price={displayPrice || 0}
-                size="md"
-              />
-            </div>
           </div>
 
           <PincodeChecker />
@@ -314,6 +306,8 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         occasionTags={product.occasion ? [product.occasion] : (product.tags ?? null)}
         careInstructions={null}
         sizeGuide={product.size_chart_data ?? null}
+        weight={product.weight}
+        hsnCode={product.hsn_code}
       />
 
         {/* Reviews Section */}
@@ -459,7 +453,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
 
 export async function generateStaticParams() {
   // Cannot use createClient() here as it reads cookies — use direct fetch instead
-  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/products?select=slug&visible=eq.true`;
+  const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/products?select=slug&is_active=eq.true`;
   const res = await fetch(url, {
     headers: {
       apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',

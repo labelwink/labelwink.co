@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/server'
+import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/requireAdmin'
 import { sendOrderDeliveredSMS } from '@/lib/sms-notifications'
 
@@ -8,7 +8,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (guard instanceof NextResponse) return guard
 
   const { id } = await params
-  const supabase = createAdminClient()
+  const supabase = createAdminSupabaseClient()
 
   try {
     const body = await req.json()
@@ -16,7 +16,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const { data: order, error: fetchError } = await supabase
       .from('orders')
-      .select('id, status, customer_phone, customer_email, customer_name, total, invoices(invoice_number)')
+      .select('id, status')
       .eq('id', id)
       .single()
 

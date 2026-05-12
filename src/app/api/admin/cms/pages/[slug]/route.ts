@@ -10,7 +10,7 @@ export async function GET(
     const supabase = createAdminClient()
 
     const { data, error } = await supabase
-      .from('site_pages')
+      .from('pages')
       .select('*')
       .eq('slug', slug)
       .limit(1)
@@ -42,13 +42,14 @@ export async function PATCH(
     const { title, content } = await req.json()
 
     const { data, error } = await supabase
-      .from('site_pages')
-      .update({
+      .from('pages')
+      .upsert({
+        slug,
         title,
         content,
+        is_published: true,
         updated_at: new Date().toISOString(),
-      })
-      .eq('slug', slug)
+      }, { onConflict: 'slug' })
       .select('*')
       .single()
 

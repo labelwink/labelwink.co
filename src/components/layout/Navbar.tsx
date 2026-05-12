@@ -68,7 +68,7 @@ export function Navbar() {
 
   const iconBtnStyle: React.CSSProperties = {
     background: 'none', border: 'none', cursor: 'pointer',
-    padding: '8px', borderRadius: '8px',
+    padding: '8px', borderRadius: '0',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     transition: 'color 150ms',
     position: 'relative',
@@ -76,7 +76,7 @@ export function Navbar() {
 
   return (
     <>
-      <header className="relative bg-[#1C3829] text-white sticky top-0 z-50 shadow-md">
+      <header className="bg-[#1C3829] text-white shadow-md w-full">
         <LeafPattern opacity={0.05} id="header" />
         <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between gap-6">
           {/* LEFT: Logo */}
@@ -84,10 +84,10 @@ export function Navbar() {
             <div className="flex items-center gap-2">
               <Image
                 src="/logo.png"
-                alt="Label Wink — Wear Wink"
+                alt="LabelWink"
                 width={140}
-                height={48}
-                className="h-12 w-auto object-contain"
+                height={40}
+                className="h-10 w-auto object-contain"
                 priority
               />
             </div>
@@ -100,8 +100,8 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 prefetch
-                className={`text-white/80 hover:text-[#c9a84c] transition-colors duration-200 text-sm font-medium ${
-                  isActive(link.href) ? 'text-[#c9a84c] underline underline-offset-4' : ''
+                className={`text-white/80 hover:text-labelwink-gold transition-colors duration-200 text-xs font-bold uppercase tracking-widest ${
+                  isActive(link.href) ? 'text-labelwink-gold underline underline-offset-8 decoration-2' : ''
                 }`}
               >
                 {link.label}
@@ -115,7 +115,7 @@ export function Navbar() {
             <button
               onClick={() => setSearchOpen(true)}
               aria-label="Search"
-              className="text-white hover:text-[#c9a84c] transition-colors duration-200 relative p-2"
+              className="text-white hover:text-labelwink-gold transition-colors duration-200 relative p-2"
             >
               <Search size={20} />
             </button>
@@ -128,7 +128,7 @@ export function Navbar() {
             >
               <Heart size={20} />
               {mounted && wishlistCount > 0 && (
-                <span className="absolute top-0 right-0 bg-[#c9a84c] text-[#1a2e1e] text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                <span className="absolute top-0 right-0 bg-labelwink-gold text-labelwink-green text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                   {wishlistCount > 9 ? '9+' : wishlistCount}
                 </span>
               )}
@@ -142,7 +142,7 @@ export function Navbar() {
             >
               <ShoppingBag size={20} />
               {mounted && totalQuantity > 0 && (
-                <span className="absolute top-0 right-0 bg-[#c9a84c] text-[#1a2e1e] text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                <span className="absolute top-0 right-0 bg-labelwink-gold text-labelwink-green text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                   {totalQuantity > 9 ? '9+' : totalQuantity}
                 </span>
               )}
@@ -160,7 +160,7 @@ export function Navbar() {
 
             {/* Mobile Hamburger */}
             <button
-              className="md:hidden text-white hover:text-[#c9a84c] transition-colors duration-200 relative p-2"
+              className="md:hidden text-white hover:text-labelwink-gold transition-colors duration-200 relative p-2"
               onClick={() => setMobileOpen(true)}
               aria-label="Open menu"
             >
@@ -199,8 +199,8 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`flex items-center h-12 px-5 text-sm font-medium transition-colors ${
-                    isActive(link.href) ? 'bg-white/10 text-[#c9a84c]' : 'text-white/80 hover:bg-white/5'
+                  className={`flex items-center h-14 px-6 text-xs font-bold uppercase tracking-widest transition-colors ${
+                    isActive(link.href) ? 'bg-white/10 text-labelwink-gold border-l-4 border-labelwink-gold' : 'text-white/80 hover:bg-white/5'
                   }`}
                 >
                   {link.label}
@@ -228,7 +228,7 @@ export function Navbar() {
               ) : (
                 <Link
                   href="/account/login"
-                  className="bg-[#c9a84c] text-[#1C3829] font-semibold px-4 py-2 rounded-md hover:bg-[#d4b76a] transition-colors duration-200 flex items-center justify-center h-10 w-full"
+                  className="bg-labelwink-gold text-labelwink-green font-bold px-4 py-3 rounded-none hover:bg-labelwink-gold/90 transition-colors duration-200 flex items-center justify-center h-12 w-full uppercase tracking-widest text-xs shadow-lg"
                 >
                   Login / Sign Up
                 </Link>

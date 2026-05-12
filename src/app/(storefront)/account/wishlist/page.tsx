@@ -16,31 +16,37 @@ export default async function AccountWishlistPage() {
     redirect('/account/login');
   }
 
-  const { data: items } = await supabase
+  const { data: items, error } = await supabase
     .from('wishlists')
-    .select('id, product_id, added_at, products(id, name, slug, price, mrp, images)')
+    .select(`
+      id, 
+      product_id, 
+      created_at, 
+      products (
+        id, 
+        name, 
+        slug, 
+        price, 
+        compare_at_price,
+        product_images (url, is_cover, sort_order)
+      )
+    `)
     .eq('user_id', user.id)
-    .order('added_at', { ascending: false });
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Wishlist fetch error:', error);
+  }
 
   const wishlistItems = items ?? [];
 
   const getImageUrl = (product: any) => {
-    // images is a JSONB array of Cloudinary public IDs or URLs
-    const images = product?.images;
+    const images = product?.product_images;
     if (!images || !Array.isArray(images) || images.length === 0) return null;
-    const firstImage = images[0];
-    // If it's a full URL, return as-is
-    if (typeof firstImage === 'string' && firstImage.startsWith('http')) return firstImage;
-    // If it's a Cloudinary public ID
-    if (typeof firstImage === 'string') {
-      return `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/w_400,h_533,c_fill/${firstImage}`;
-    }
-    // If it's an object with url or public_id
-    if (firstImage?.url) return firstImage.url;
-    if (firstImage?.public_id) {
-      return `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/w_400,h_533,c_fill/${firstImage.public_id}`;
-    }
-    return null;
+    
+    // Find cover image or first image
+    const coverImage = images.find((img: any) => img.is_cover)?.url || images[0]?.url;
+    return coverImage;
   };
 
   return (
@@ -55,8 +61,8 @@ export default async function AccountWishlistPage() {
           {wishlistItems.map((item: any) => {
             const product = item.products;
             if (!product) return null;
-            const discount = product.mrp && product.price
-              ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
+            const discount = product.compare_at_price && product.price
+              ? Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)
               : 0;
             const imgUrl = getImageUrl(product);
 
@@ -95,8 +101,8 @@ export default async function AccountWishlistPage() {
                   </Link>
                   <div className="flex items-center gap-3 text-sm">
                     <span className="font-bold text-charcoal">₹{product.price?.toLocaleString() ?? '—'}</span>
-                    {product.mrp > product.price && (
-                      <span className="text-muted-foreground line-through text-[11px] font-medium opacity-60">₹{product.mrp.toLocaleString()}</span>
+                    {product.compare_at_price > product.price && (
+                      <span className="text-muted-foreground line-through text-[11px] font-medium opacity-60">₹{product.compare_at_price.toLocaleString()}</span>
                     )}
                   </div>
                 </div>

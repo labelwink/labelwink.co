@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
@@ -33,21 +33,19 @@ export function SortDropdown({ value, onChange }: SortDropdownProps) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-xl text-sm text-gray-700 hover:border-[#1b3a34] bg-white min-w-[180px] justify-between"
+        className="flex items-center gap-2 px-6 py-3 border border-[#ccc] rounded-none text-xs font-bold uppercase tracking-widest text-[#1a1a1a] hover:border-[#1B3A2D] bg-white min-w-[200px] justify-between transition-all"
       >
-        <span>Sort: <span className="font-medium text-[#1b3a34]">{current.label}</span></span>
-        <ChevronDown size={16} className={`text-[#5a7060] transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span>Sort: <span className="text-[#1a1a1a]">{current.label}</span></span>
+        <ChevronDown size={14} className={`text-[#1a1a1a] transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-30 min-w-[200px] py-1">
+        <div className="absolute right-0 top-full mt-2 bg-white border border-[#D1D5DB] rounded-none shadow-xl z-30 min-w-[200px] py-2 overflow-hidden">
           {OPTIONS.map(opt => (
             <button
               key={opt.value}
               onClick={() => { onChange(opt.value); setOpen(false) }}
-              className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-gray-50 ${
-                opt.value === value ? 'text-[#1b3a34] font-medium' : 'text-gray-700'
-              }`}
+              className={`w-full text-left px-5 py-3 text-[11px] font-bold uppercase tracking-widest transition-all ${opt.value === value ? 'text-white bg-[#1B3A2D]' : 'text-[#4b5563] hover:bg-[#f5f2ee]'}`}
             >
               {opt.label}
             </button>

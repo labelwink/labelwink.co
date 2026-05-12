@@ -29,8 +29,7 @@ interface Product {
   product_images: ProductImage[]
 }
 
-const CATEGORIES = ['Kurtis', 'Co-ord Sets', 'Festive', 'Casual', 'Dresses', 'Tops', 'Bottoms', 'Sets']
-const PAGE_SIZE   = 25
+const PAGE_SIZE = 25
 
 function totalStock(v: ProductVariant[]) {
   return (v ?? []).reduce((s, x) => s + (x.stock_qty ?? 0), 0)
@@ -57,7 +56,12 @@ export default function ProductsPage() {
   const [deleteId,   setDeleteId]   = useState<string | null>(null)
   const [deleteName, setDeleteName] = useState('')
   const [selected,   setSelected]   = useState<Set<string>>(new Set())
+  const [categories, setCategories] = useState<{id:string;name:string;slug:string}[]>([])
   const [toggling,   setToggling]   = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    fetch('/api/storefront/categories').then(r => r.json()).then(d => setCategories(d.categories ?? []))
+  }, [])
 
   // Derive state from URL
   const search   = searchParams.get('search')   ?? ''
@@ -235,7 +239,7 @@ export default function ProductsPage() {
           className="px-3 py-2 border border-[#e5e7eb] rounded-lg text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#1b3a34]/20"
         >
           <option value="">All Categories</option>
-          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          {categories.map(c => <option key={c.id} value={c.slug}>{c.name}</option>)}
         </select>
 
         {/* Visibility */}

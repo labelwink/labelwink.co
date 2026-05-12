@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -58,7 +58,7 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[#e8e2d6] md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-labelwink-green border-t border-labelwink-gold/20 md:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.1)]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex items-center justify-around h-16">
@@ -67,27 +67,26 @@ export function MobileBottomNav() {
           const Icon = item.icon
           const isCartItem = 'isCart' in item && item.isCart
 
-          // Cart opens the drawer instead of navigating
           if (isCartItem) {
             return (
               <button
                 key={item.label}
                 onClick={() => setIsOpen(true)}
-                className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative"
+                className="flex flex-col items-center justify-center gap-1 flex-1 h-full relative group"
               >
                 <div className="relative">
                   <Icon
-                    size={22}
-                    className={`transition-colors ${active ? 'text-[#c9a84c]' : 'text-white/40'}`}
+                    size={20}
+                    className={`transition-all duration-300 ${active ? 'text-labelwink-gold scale-110' : 'text-white/60 group-hover:text-white'}`}
                     strokeWidth={active ? 2.5 : 1.5}
                   />
                   {totalQuantity > 0 && (
-                    <span className="absolute -top-1.5 -right-2.5 bg-[#c9a84c] text-[#ffffff] text-[8px] font-bold h-4 min-w-[16px] rounded-full flex items-center justify-center px-0.5">
+                    <span className="absolute -top-1.5 -right-2.5 bg-labelwink-gold text-labelwink-green text-[8px] font-bold h-4 min-w-[16px] rounded-full flex items-center justify-center px-1 border border-labelwink-green shadow-sm">
                       {totalQuantity > 9 ? '9+' : totalQuantity}
                     </span>
                   )}
                 </div>
-                <span className={`text-[10px] tracking-wide ${active ? 'text-[#c9a84c] font-semibold' : 'text-white/40'}`}>
+                <span className={`text-[9px] uppercase tracking-widest font-bold transition-colors duration-300 ${active ? 'text-labelwink-gold' : 'text-white/40'}`}>
                   {item.label}
                 </span>
               </button>
@@ -100,22 +99,22 @@ export function MobileBottomNav() {
             <Link
               key={item.label}
               href={item.href}
-              className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full relative"
+              className="flex flex-col items-center justify-center gap-1 flex-1 h-full relative group"
             >
               <div className="relative">
                 <Icon
-                  size={22}
-                  className={`transition-colors ${active ? 'text-[#c9a84c]' : 'text-white/40'}`}
+                  size={20}
+                  className={`transition-all duration-300 ${active ? 'text-labelwink-gold scale-110' : 'text-white/60 group-hover:text-white'}`}
                   strokeWidth={active ? 2.5 : 1.5}
-                  fill={isWishlist && active ? '#c9a84c' : 'none'}
+                  fill={isWishlist && active ? 'currentColor' : 'none'}
                 />
                 {isWishlist && wishlistCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2.5 bg-[#c9a84c] text-[#ffffff] text-[8px] font-bold h-4 min-w-[16px] rounded-full flex items-center justify-center px-0.5">
+                  <span className="absolute -top-1.5 -right-2.5 bg-labelwink-gold text-labelwink-green text-[8px] font-bold h-4 min-w-[16px] rounded-full flex items-center justify-center px-1 border border-labelwink-green shadow-sm">
                     {wishlistCount > 9 ? '9+' : wishlistCount}
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] tracking-wide ${active ? 'text-[#c9a84c] font-semibold' : 'text-white/40'}`}>
+              <span className={`text-[9px] uppercase tracking-widest font-bold transition-colors duration-300 ${active ? 'text-labelwink-gold' : 'text-white/40'}`}>
                 {item.label}
               </span>
             </Link>

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
@@ -25,9 +25,14 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchProduct[]>([])
   const [loading, setLoading] = useState(false)
+  const [categories, setCategories] = useState<{id:string;name:string;slug:string}[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    fetch('/api/storefront/categories').then(r => r.json()).then(d => setCategories(d.categories ?? []))
+  }, [])
 
   // Auto-focus input when modal opens
   useEffect(() => {
@@ -181,14 +186,14 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
           <div className="container mx-auto px-4 pb-6 border-t border-gray-200">
             <p className="text-xs font-semibold tracking-widest text-gray-500 uppercase mb-3">Popular Categories</p>
             <div className="flex flex-wrap gap-2">
-              {['Kurtis', 'Co-ord Sets', 'Festive', 'Casual', 'New Arrivals'].map(cat => (
+              {categories.slice(0, 6).map(cat => (
                 <Link
-                  key={cat}
-                  href={`/products?category=${cat.toLowerCase().replace(/ /g, '-')}`}
+                  key={cat.id}
+                  href={`/products?category=${cat.slug}`}
                   onClick={onClose}
                   className="px-4 py-1.5 rounded-full border border-[#E8DFC8] bg-white text-gray-700 text-sm font-medium hover:border-[#1C3829] hover:text-[#1C3829] transition-colors cursor-pointer whitespace-nowrap"
                 >
-                  {cat}
+                  {cat.name}
                 </Link>
               ))}
             </div>

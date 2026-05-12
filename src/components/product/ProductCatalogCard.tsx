@@ -10,6 +10,7 @@ import { useCartStore } from '@/store/useCartStore'
 interface Variant {
   id: string; size: string; color: string | null; stock_qty: number
   price: number; compare_at_price: number | null; is_active: boolean
+  stock?: number // Legacy support
 }
 
 interface Product {
@@ -40,11 +41,14 @@ export function ProductCatalogCard({ product, listView = false }: { product: Pro
   const discount = mrp && mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0
 
   // Variants
-  const activeVariants = (product.product_variants ?? []).filter(v => v.is_active)
-  const inStockVariants = activeVariants.filter(v => v.stock_qty > 0)
+  const activeVariants = (product.product_variants ?? []).filter(v => v.is_active !== false)
+  const inStockVariants = activeVariants.filter(v => (v.stock_qty ?? (v as any).stock ?? 0) > 0)
   const sizes = [...new Set(inStockVariants.map(v => v.size))].filter(Boolean)
-  const totalStock = activeVariants.reduce((s, v) => s + v.stock_qty, 0)
-  const lowStock = inStockVariants.find(v => v.stock_qty > 0 && v.stock_qty <= 5)
+  const totalStock = activeVariants.reduce((s, v) => s + (v.stock_qty ?? (v as any).stock ?? 0), 0)
+  const lowStock = inStockVariants.find(v => {
+    const q = (v.stock_qty ?? (v as any).stock ?? 0)
+    return q > 0 && q <= 5
+  })
 
   const isNew = Date.now() - new Date(product.created_at).getTime() < 30 * 86400_000
   const isSale = discount > 0
@@ -153,7 +157,7 @@ export function ProductCatalogCard({ product, listView = false }: { product: Pro
         <div style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 20 }}>
           <WishlistButton
             productId={product.id}
-            className="p-1.5 rounded-full bg-black/50 backdrop-blur-sm text-white/60 hover:text-red-400 transition-all"
+            className="p-1.5 rounded-full bg-white/90 text-labelwink-green hover:text-labelwink-gold transition-all shadow-sm border border-[#E8DFC8]"
           />
         </div>
 
@@ -196,7 +200,7 @@ export function ProductCatalogCard({ product, listView = false }: { product: Pro
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                   width: '100%', padding: '10px',
-                  background: 'rgba(10,10,10,0.9)',
+                  background: '#1B3A2D',
                   color: '#ffffff', fontSize: '12px', fontWeight: 600,
                   border: 'none', cursor: 'pointer',
                   transition: 'background 150ms',

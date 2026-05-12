@@ -1,17 +1,17 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Trash2, ChevronUp, ChevronDown } from 'lucide-react'
+import { Trash2, ChevronUp, ChevronDown, Plus, Pencil, Check, X } from 'lucide-react'
 
 const ATTRIBUTE_TYPES = [
-  { key: 'size', label: 'Sizes' },
-  { key: 'color', label: 'Colors' },
-  { key: 'fabric', label: 'Fabrics' },
+  { key: 'size',        label: 'Sizes' },
+  { key: 'color',       label: 'Colors' },
+  { key: 'fabric',      label: 'Fabrics' },
   { key: 'sleeve_type', label: 'Sleeve Types' },
-  { key: 'occasion', label: 'Occasions' },
-  { key: 'fit', label: 'Fits' },
-  { key: 'pattern', label: 'Patterns' },
-  { key: 'custom', label: 'Custom' },
+  { key: 'occasion',    label: 'Occasions' },
+  { key: 'fit',         label: 'Fits' },
+  { key: 'pattern',     label: 'Patterns' },
+  { key: 'custom',      label: 'Custom' },
 ]
 
 interface Attribute {
@@ -19,9 +19,8 @@ interface Attribute {
   type: string
   value: string
   label: string
-  display_order: number
+  sort_order: number
   is_active: boolean
-  metadata: Record<string, any>
 }
 
 export default function MasterDataPage() {
@@ -29,118 +28,122 @@ export default function MasterDataPage() {
   const [attributes, setAttributes] = useState<Attribute[]>([])
   const [loading, setLoading] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [editLabel, setEditLabel] = useState('')
   const [newLabel, setNewLabel] = useState('')
   const [newActive, setNewActive] = useState(true)
+  const [addingNew, setAddingNew] = useState(false)
 
-  useEffect(() => {
-    fetchAttributes(activeTab)
-  }, [activeTab])
-
-  const fetchAttributes = async (type: string) => {
+  const fetchAttributes = useCallback(async (type: string) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/superadmin/master-data?type=${type}`)
+      const res = await fetch(`/api/admin/attributes?type=${type}`, { credentials: 'include' })
       const data = await res.json()
-      setAttributes(data.attributes || [])
-    } catch (error) {
+      // Include inactive too for admin view — fetch all
+      const res2 = await fetch(`/api/superadmin/master-data?type=${type}`, { credentials: 'include' })
+      const data2 = await res2.json()
+      setAttributes(data2.attributes || [])
+    } catch {
       toast.error('Failed to fetch attributes')
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const generateValue = (label: string) => {
-    return label.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
-  }
+  useEffect(() => { fetchAttributes(activeTab) }, [activeTab, fetchAttributes])
+
+  const generateValue = (label: string) =>
+    label.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
 
   const handleAddAttribute = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newLabel.trim()) {
-      toast.error('Label cannot be empty')
-      return
-    }
+    if (!newLabel.trim()) { toast.error('Label cannot be empty'); return }
 
-    const value = generateValue(newLabel)
-    const maxOrder = Math.max(...attributes.map(a => a.display_order || 0), -1)
-
+    const maxOrder = Math.max(...attributes.map(a => a.sort_order || 0), -1)
     try {
-      const res = await fetch('/api/superadmin/master-data', {
+      const res = await fetch('/api/admin/attributes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           type: activeTab,
-          value,
           label: newLabel,
-          display_order: maxOrder + 1,
-          is_active: newActive,
+          sort_order: maxOrder + 1,
         }),
       })
-
       if (res.ok) {
         toast.success('Attribute added')
         setNewLabel('')
         setNewActive(true)
+        setAddingNew(false)
         fetchAttributes(activeTab)
       } else {
-        toast.error('Failed to add attribute')
+        const err = await res.json().catch(() => ({}))
+        toast.error(err.error || 'Failed to add attribute')
       }
-    } catch (error) {
+    } catch {
       toast.error('Error adding attribute')
     }
   }
 
-  const handleUpdateAttribute = async (id: string, field: string, value: any) => {
+  const handleUpdateLabel = async (id: string) => {
+    if (!editLabel.trim()) return
     try {
-      const res = await fetch(`/api/superadmin/master-data/${id}`, {
+      const res = await fetch(`/api/admin/attributes/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: value }),
+        credentials: 'include',
+        body: JSON.stringify({ label: editLabel }),
       })
-
-      if (res.ok) {
-        fetchAttributes(activeTab)
-        setEditingId(null)
-      } else {
-        toast.error('Failed to update attribute')
-      }
-    } catch (error) {
-      toast.error('Error updating attribute')
-    }
+      if (res.ok) { toast.success('Updated'); setEditingId(null); fetchAttributes(activeTab) }
+      else toast.error('Failed to update')
+    } catch { toast.error('Error updating') }
   }
 
-  const handleDeleteAttribute = async (id: string) => {
-    if (!confirm('Delete this attribute?')) return
-
+  const handleToggleActive = async (attr: Attribute) => {
     try {
-      const res = await fetch(`/api/superadmin/master-data/${id}`, {
-        method: 'DELETE',
+      const res = await fetch(`/api/admin/attributes/${attr.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ is_active: !attr.is_active }),
       })
-
-      if (res.ok) {
-        toast.success('Attribute deleted')
-        fetchAttributes(activeTab)
-      } else {
-        toast.error('Failed to delete attribute')
-      }
-    } catch (error) {
-      toast.error('Error deleting attribute')
-    }
+      if (res.ok) { fetchAttributes(activeTab) }
+      else toast.error('Failed to update')
+    } catch { toast.error('Error') }
   }
 
-  const handleReorderAttribute = async (id: string, direction: 'up' | 'down') => {
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this attribute? It will be soft-deleted (set inactive).')) return
+    try {
+      const res = await fetch(`/api/admin/attributes/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      if (res.ok) { toast.success('Attribute removed'); fetchAttributes(activeTab) }
+      else toast.error('Failed to delete')
+    } catch { toast.error('Error deleting') }
+  }
+
+  const handleReorder = async (id: string, direction: 'up' | 'down') => {
     const attr = attributes.find(a => a.id === id)
     if (!attr) return
+    const newOrder = direction === 'up' ? attr.sort_order - 1 : attr.sort_order + 1
+    const other = attributes.find(a => a.sort_order === newOrder)
 
-    const newOrder = direction === 'up' ? attr.display_order - 1 : attr.display_order + 1
-    const otherAttr = attributes.find(a => a.display_order === newOrder)
-
-    if (otherAttr) {
-      await handleUpdateAttribute(otherAttr.id, 'display_order', attr.display_order)
-      await handleUpdateAttribute(id, 'display_order', newOrder)
+    if (other) {
+      await fetch(`/api/admin/attributes/${other.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ sort_order: attr.sort_order }),
+      })
     }
+    await fetch(`/api/admin/attributes/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ sort_order: newOrder }),
+    })
+    fetchAttributes(activeTab)
   }
 
-  const sorted = [...attributes].sort((a, b) => a.display_order - b.display_order)
+  const sorted = [...attributes].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
 
   return (
     <div>
@@ -155,7 +158,7 @@ export default function MasterDataPage() {
             className={`px-4 py-3 border-b-2 transition-colors text-sm font-medium whitespace-nowrap ${
               activeTab === type.key
                 ? 'border-[#c9a84c] text-[#c9a84c]'
-                : 'border-transparent text-[#5a7060] hover:text-white'
+                : 'border-transparent text-[#5a7060] hover:text-[#c9a84c]'
             }`}
           >
             {type.label}
@@ -164,73 +167,77 @@ export default function MasterDataPage() {
       </div>
 
       {/* Attributes List */}
-      <div className="space-y-2 mb-8">
+      <div className="space-y-2 mb-6">
         {loading ? (
-          <p className="text-[#5a7060]">Loading...</p>
+          <p className="text-[#5a7060]">Loading…</p>
         ) : sorted.length === 0 ? (
-          <p className="text-[#5a7060]">No attributes yet</p>
+          <div className="text-center py-12 text-[#5a7060]">
+            <p>No attributes yet for {ATTRIBUTE_TYPES.find(t => t.key === activeTab)?.label}.</p>
+            <p className="text-sm mt-1">Add the first one below.</p>
+          </div>
         ) : (
           sorted.map((attr) => (
             <div
               key={attr.id}
-              className="bg-[#faf8f4] rounded-lg p-4 flex items-center justify-between hover:bg-white transition-colors"
+              className={`bg-[#faf8f4] rounded-lg p-4 flex items-center justify-between hover:bg-white transition-colors ${!attr.is_active ? 'opacity-50' : ''}`}
             >
               <div className="flex-1">
                 {editingId === attr.id ? (
-                  <input
-                    type="text"
-                    value={attr.label}
-                    onChange={(e) => setEditingId('editing')}
-                    onBlur={() => handleUpdateAttribute(attr.id, 'label', attr.label)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleUpdateAttribute(attr.id, 'label', attr.label)
-                    }}
-                    className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 w-full focus:outline-none focus:ring-2 focus:ring-[#1C3829]"
-                    autoFocus
-                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={editLabel}
+                      onChange={e => setEditLabel(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleUpdateLabel(attr.id); if (e.key === 'Escape') setEditingId(null) }}
+                      className="bg-white border border-gray-300 rounded px-3 py-1.5 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-[#1C3829]"
+                      autoFocus
+                    />
+                    <button onClick={() => handleUpdateLabel(attr.id)} className="p-1.5 bg-[#1C3829] text-white rounded hover:bg-[#24472F]">
+                      <Check size={14} />
+                    </button>
+                    <button onClick={() => setEditingId(null)} className="p-1.5 border border-gray-200 rounded text-gray-500 hover:bg-gray-50">
+                      <X size={14} />
+                    </button>
+                  </div>
                 ) : (
-                  <div
-                    onClick={() => setEditingId(attr.id)}
-                    className="cursor-pointer hover:text-[#c9a84c]"
-                  >
-                    <p className="text-gray-900 font-medium">{attr.label}</p>
+                  <div className="cursor-pointer" onClick={() => { setEditingId(attr.id); setEditLabel(attr.label) }}>
+                    <p className="text-gray-900 font-medium text-sm">{attr.label}</p>
                     <p className="text-[#9aab9e] text-xs">{attr.value}</p>
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center gap-3 ml-4">
+              <div className="flex items-center gap-2 ml-4">
                 <button
-                  onClick={() => handleUpdateAttribute(attr.id, 'is_active', !attr.is_active)}
-                  className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${
-                    attr.is_active
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-[#f5f2ec] text-[#5a7060]'
+                  onClick={() => handleToggleActive(attr)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${
+                    attr.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                   }`}
                 >
                   {attr.is_active ? 'Active' : 'Inactive'}
                 </button>
 
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => handleReorderAttribute(attr.id, 'up')}
-                    className="p-1 hover:bg-white rounded text-[#5a7060] hover:text-white"
-                  >
-                    <ChevronUp size={18} />
+                <div className="flex gap-0.5">
+                  <button onClick={() => handleReorder(attr.id, 'up')} className="p-1 hover:bg-white rounded text-[#9aab9e] hover:text-gray-700">
+                    <ChevronUp size={16} />
                   </button>
-                  <button
-                    onClick={() => handleReorderAttribute(attr.id, 'down')}
-                    className="p-1 hover:bg-white rounded text-[#5a7060] hover:text-white"
-                  >
-                    <ChevronDown size={18} />
+                  <button onClick={() => handleReorder(attr.id, 'down')} className="p-1 hover:bg-white rounded text-[#9aab9e] hover:text-gray-700">
+                    <ChevronDown size={16} />
                   </button>
                 </div>
 
                 <button
-                  onClick={() => handleDeleteAttribute(attr.id)}
-                  className="p-1 hover:bg-red-500/20 rounded text-[#5a7060] hover:text-red-400"
+                  onClick={() => { setEditingId(attr.id); setEditLabel(attr.label) }}
+                  className="p-1 hover:bg-white rounded text-[#9aab9e] hover:text-[#1C3829]"
                 >
-                  <Trash2 size={18} />
+                  <Pencil size={15} />
+                </button>
+
+                <button
+                  onClick={() => handleDelete(attr.id)}
+                  className="p-1 hover:bg-red-50 rounded text-[#9aab9e] hover:text-red-500"
+                >
+                  <Trash2 size={15} />
                 </button>
               </div>
             </div>
@@ -238,45 +245,44 @@ export default function MasterDataPage() {
         )}
       </div>
 
-      {/* Add New Form */}
-      <div className="bg-[#faf8f4] rounded-lg p-6">
-        <h3 className="text-white font-semibold mb-4">Add New {ATTRIBUTE_TYPES.find(t => t.key === activeTab)?.label}</h3>
-        <form onSubmit={handleAddAttribute} className="space-y-4">
-          <div>
-            <label className="block text-[#5a7060] text-sm mb-2">Label</label>
-            <input
-              type="text"
-              value={newLabel}
-              onChange={(e) => setNewLabel(e.target.value)}
-              placeholder="e.g., Extra Large"
-              className="w-full bg-white border border-[#e8e2d6] rounded px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#c9a84c]"
-            />
-            {newLabel && (
-              <p className="text-[#9aab9e] text-xs mt-1">Value: {generateValue(newLabel)}</p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="new-active"
-              checked={newActive}
-              onChange={(e) => setNewActive(e.target.checked)}
-              className="rounded"
-            />
-            <label htmlFor="new-active" className="text-[#5a7060] text-sm">
-              Active immediately
-            </label>
-          </div>
-
-          <button
-            type="submit"
-            className="bg-[#c9a84c] text-black font-bold px-6 py-2 rounded hover:bg-[#d4b66a] transition-colors"
-          >
-            Add Attribute
-          </button>
-        </form>
-      </div>
+      {/* Add New */}
+      {addingNew ? (
+        <div className="bg-[#faf8f4] rounded-xl p-6 border border-[#e8e2d6]">
+          <h3 className="text-gray-900 font-semibold mb-4">
+            Add New {ATTRIBUTE_TYPES.find(t => t.key === activeTab)?.label}
+          </h3>
+          <form onSubmit={handleAddAttribute} className="flex items-end gap-4">
+            <div className="flex-1">
+              <label className="block text-[#5a7060] text-sm mb-2">Label</label>
+              <input
+                type="text"
+                value={newLabel}
+                onChange={e => setNewLabel(e.target.value)}
+                placeholder="e.g., Bell Sleeve"
+                className="w-full bg-white border border-[#e8e2d6] rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1C3829] text-sm"
+                autoFocus
+              />
+              {newLabel && (
+                <p className="text-[#9aab9e] text-xs mt-1">Value: {generateValue(newLabel)}</p>
+              )}
+            </div>
+            <button type="submit" className="bg-[#1C3829] text-white font-semibold px-5 py-2.5 rounded-lg hover:bg-[#24472F] transition-colors text-sm">
+              Add
+            </button>
+            <button type="button" onClick={() => { setAddingNew(false); setNewLabel('') }} className="border border-gray-200 text-gray-600 px-4 py-2.5 rounded-lg hover:bg-gray-50 text-sm">
+              Cancel
+            </button>
+          </form>
+        </div>
+      ) : (
+        <button
+          onClick={() => setAddingNew(true)}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#1C3829] text-white rounded-xl text-sm font-semibold hover:bg-[#24472F] transition-colors"
+        >
+          <Plus size={16} />
+          Add {ATTRIBUTE_TYPES.find(t => t.key === activeTab)?.label?.replace(/s$/, '')}
+        </button>
+      )}
     </div>
   )
 }

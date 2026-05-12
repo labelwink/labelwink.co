@@ -51,13 +51,13 @@ const SLEEVE_OPTIONS = [
 function Section({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="border-b border-[#c9a84c]/15 pb-4 mb-4 last:border-0 last:mb-0">
+    <div className="border-b border-[#E8DFC8] pb-4 mb-4 last:border-0 last:mb-0">
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center justify-between w-full text-xs font-semibold uppercase tracking-widest text-[#ffffff]/70 mb-3"
+        className="flex items-center justify-between w-full text-xs font-semibold uppercase tracking-widest text-[#1a1a1a] mb-3"
       >
         {title}
-        <ChevronDown size={14} className={`text-[#c9a84c] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`text-[#1a1a1a] transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && children}
     </div>
@@ -70,8 +70,8 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
       onClick={onClick}
       className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-all duration-150 ${
         active
-          ? 'bg-[#c9a84c] border-[#c9a84c] text-white shadow-sm'
-          : 'border-[#ffffff]/20 text-[#ffffff]/70 hover:border-[#c9a84c] hover:text-[#c9a84c]'
+          ? 'bg-[#1B3A2D] border-[#1B3A2D] text-white shadow-sm'
+          : 'border-[#ccc] text-[#333] bg-white hover:border-[#ccc] hover:bg-[#f0ece6]'
       }`}
     >
       {children}
@@ -114,14 +114,14 @@ export function CatalogFilterSidebar({
   }
 
   return (
-    <div>
+    <div className="bg-white border border-[#E8DFC8] p-4 rounded-none text-[#1C3829]">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-[#ffffff]">
-          <SlidersHorizontal size={14} className="text-[#c9a84c]" /> Filters
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-[#1C3829]">
+          <SlidersHorizontal size={14} className="text-[#1a1a1a]" /> Filters
         </h2>
         {activeCount > 0 && (
-          <button onClick={onClear} className="text-[10px] uppercase tracking-wider text-[#c9a84c] hover:underline">
+          <button onClick={onClear} className="text-[10px] uppercase tracking-wider text-[#1a1a1a] hover:text-[#1C3829] transition-colors">
             Clear ({activeCount})
           </button>
         )}
@@ -142,7 +142,7 @@ export function CatalogFilterSidebar({
       <Section title="Price Range">
         <div className="flex items-center gap-2 mb-3">
           <div className="relative flex-1">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#ffffff]/40 text-xs">₹</span>
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6b7280] text-xs">₹</span>
             <input
               type="number"
               value={localMin}
@@ -150,12 +150,12 @@ export function CatalogFilterSidebar({
               onBlur={applyPrice}
               onKeyDown={e => e.key === 'Enter' && applyPrice()}
               placeholder={String(options?.price_range.min ?? 0)}
-              className="w-full pl-6 pr-2 py-2 border border-[#c9a84c]/30 rounded-lg text-xs text-[#ffffff] focus:outline-none focus:border-[#c9a84c] bg-white"
+              className="w-full pl-6 pr-2 py-2 border border-[#ccc] rounded-lg text-xs text-[#333] focus:outline-none focus:border-[#1B3A2D] bg-white"
             />
           </div>
-          <span className="text-[#ffffff]/30 text-xs">–</span>
+          <span className="text-[#6b7280] text-xs">–</span>
           <div className="relative flex-1">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#ffffff]/40 text-xs">₹</span>
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#6b7280] text-xs">₹</span>
             <input
               type="number"
               value={localMax}
@@ -163,11 +163,11 @@ export function CatalogFilterSidebar({
               onBlur={applyPrice}
               onKeyDown={e => e.key === 'Enter' && applyPrice()}
               placeholder={String(options?.price_range.max ?? 10000)}
-              className="w-full pl-6 pr-2 py-2 border border-[#c9a84c]/30 rounded-lg text-xs text-[#ffffff] focus:outline-none focus:border-[#c9a84c] bg-white"
+              className="w-full pl-6 pr-2 py-2 border border-[#ccc] rounded-lg text-xs text-[#333] focus:outline-none focus:border-[#1B3A2D] bg-white"
             />
           </div>
         </div>
-        <button onClick={applyPrice} className="w-full py-2 text-xs font-medium border border-[#c9a84c] text-[#c9a84c] rounded-lg hover:bg-[#c9a84c] hover:text-white transition-colors">
+        <button onClick={applyPrice} className="w-full py-2 text-xs font-medium rounded-lg bg-[#1B3A2D] text-white hover:bg-[#163227] transition-colors border-none">
           Apply
         </button>
       </Section>
@@ -220,9 +220,9 @@ export function CatalogFilterSidebar({
                   type="checkbox"
                   checked={fabrics.includes(fab)}
                   onChange={() => onFabrics(toggle(fabrics, fab))}
-                  className="w-3.5 h-3.5 rounded border-[#c9a84c]/40 accent-[#c9a84c]"
+                  className="w-3.5 h-3.5 rounded border-[#6b7280] accent-[#1a1a1a]"
                 />
-                <span className="text-xs text-[#ffffff]/70 capitalize">{fab}</span>
+                <span className="text-xs text-[#1a1a1a] capitalize">{fab}</span>
               </label>
             ))}
           </div>
@@ -250,9 +250,9 @@ export function CatalogFilterSidebar({
                   type="checkbox"
                   checked={occasions.includes(occ)}
                   onChange={() => onOccasions(toggle(occasions, occ))}
-                  className="w-3.5 h-3.5 rounded border-[#c9a84c]/40 accent-[#c9a84c]"
+                  className="w-3.5 h-3.5 rounded border-[#6b7280] accent-[#1a1a1a]"
                 />
-                <span className="text-xs text-[#ffffff]/70 capitalize">{occ}</span>
+                <span className="text-xs text-[#1a1a1a] capitalize">{occ}</span>
               </label>
             ))}
           </div>

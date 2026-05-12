@@ -15,8 +15,8 @@ export async function GET(
   const { data, error } = await supabase
     .from('orders')
     .select(`
-      id, status, total, subtotal,
-      shipping_amount, shipping_fee, discount_amount,
+      id, order_number, invoice_number, status, total_amount, subtotal,
+      shipping_amount, discount_amount,
       loyalty_points_used, wink_points_awarded,
       customer_name, customer_email, customer_phone,
       payment_status, payment_method, razorpay_payment_id,
@@ -35,7 +35,7 @@ export async function GET(
         status, note, created_at
       )
     `)
-    .eq('id', id)
+    .or(`id.eq.${id},order_number.eq.${id}`)
     .eq('user_id', user.id)
     .order('created_at', { referencedTable: 'order_status_history', ascending: true })
     .single()

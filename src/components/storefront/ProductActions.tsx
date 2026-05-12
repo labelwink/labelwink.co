@@ -1,13 +1,13 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useCartStore } from '@/store/useCartStore'
 import { Share2 } from 'lucide-react'
 import { SizeGuideModal } from '@/components/storefront/SizeGuideModal'
 import { StockAlertButton } from '@/components/storefront/StockAlertButton'
-import { createClient } from '@/lib/supabase/client'
 
-const SIZE_ORDER = ['XXS','XS','S','M','L','XL','2XL','3XL','4XL','5XL','6XL']
+const SIZE_ORDER = ['XXS','XS','S','M','L','XL','XXL','3XL','4XL','5XL']
 
 interface Variant {
   id: string
@@ -15,8 +15,10 @@ interface Variant {
   price: number
   compare_at_price?: number
   stock_qty: number
+  stock?: number // Legacy support
   color?: string
   color_hex?: string
+  is_active?: boolean
 }
 
 interface ProductActionsProps {
@@ -46,9 +48,24 @@ export function ProductActions({ productId, productName, productSlug, variants, 
     fetchSettings()
   }, [])
 
+  // Auto-select first in-stock size
+  useEffect(() => {
+    if (!selectedSize && variants.length > 0) {
+      const firstAvailable = variants.find(v => (v.stock_qty ?? (v as any).stock ?? 0) > 0 && v.is_active !== false)
+      if (firstAvailable) {
+        setSelectedSize(firstAvailable.size)
+      } else {
+        // If all out of stock, select the first active one, or just the first one
+        const firstActive = variants.find(v => v.is_active !== false)
+        setSelectedSize(firstActive ? firstActive.size : variants[0].size)
+      }
+    }
+  }, [variants, selectedSize])
+
+  const router = useRouter()
   const selectedVariant = variants.find(v => v.size === selectedSize)
-  const totalStock = variants.reduce((sum, v) => sum + (v.stock_qty ?? 0), 0)
-  const isOutOfStock = selectedVariant ? selectedVariant.stock_qty === 0 : false
+  const totalStock = variants.reduce((sum, v) => sum + (v.stock_qty ?? (v as any).stock ?? 0), 0)
+  const isOutOfStock = selectedVariant ? (selectedVariant.stock_qty ?? (selectedVariant as any).stock ?? 0) === 0 : false
   const isDisabled = !selectedSize || isOutOfStock
 
   const handleAddToCart = () => {
@@ -60,12 +77,30 @@ export function ProductActions({ productId, productName, productSlug, variants, 
       slug: productSlug,
       price: selectedVariant.price,
       compareAtPrice: selectedVariant.compare_at_price ?? null,
-      image: '',
+      image: publicId || '',
       size: selectedVariant.size,
       color: selectedVariant.color ?? '',
       quantity: 1,
       publicId: publicId,
     })
+  }
+
+  const handleBuyNow = () => {
+    if (!selectedVariant || isOutOfStock) return
+    addItem({
+      id: selectedVariant.id,
+      productId,
+      name: productName,
+      slug: productSlug,
+      price: selectedVariant.price,
+      compareAtPrice: selectedVariant.compare_at_price ?? null,
+      image: publicId || '',
+      size: selectedVariant.size,
+      color: selectedVariant.color ?? '',
+      quantity: 1,
+      publicId: publicId,
+    })
+    router.push('/checkout')
   }
 
   const handleShare = () => {
@@ -86,20 +121,20 @@ export function ProductActions({ productId, productName, productSlug, variants, 
         </div>
         <div className="flex flex-wrap gap-3">
           {variants.map((v) => {
-            const outOfStock = v.stock_qty === 0
+            const outOfStock = v.stock_qty === 0 || v.is_active === false
             const isSelected = selectedSize === v.size
             return (
               <button
                 key={v.id}
                 disabled={outOfStock}
                 onClick={() => setSelectedSize(v.size)}
-                title={outOfStock ? 'Out of stock' : `Size ${v.size}`}
-                className={`min-w-[44px] min-h-[44px] flex items-center justify-center text-xs font-bold transition-all border relative
+                title={v.is_active === false ? 'Not available' : outOfStock ? 'Out of stock' : `Size ${v.size}`}
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center text-xs font-bold transition-all border relative rounded-lg px-3 py-2
                   ${isSelected
-                    ? 'border-charcoal bg-charcoal text-cream'
+                    ? 'border-[#1B3A2D] bg-[#1B3A2D] text-white shadow-sm scale-105 z-10'
                     : outOfStock
-                      ? 'border-sage/20 text-sage/40 cursor-not-allowed line-through'
-                      : 'border-sage/30 text-charcoal/70 hover:border-charcoal'
+                      ? 'border-[#E8E2D9] bg-[#F5F5F5] text-[#999] cursor-not-allowed line-through'
+                      : 'border-[#E8E2D9] bg-white text-[#333] hover:border-[#1B3A2D] hover:text-[#1B3A2D] hover:bg-[#F7F5EF]'
                   }`}
               >
                 <div className="flex flex-col items-center">
@@ -110,7 +145,7 @@ export function ProductActions({ productId, productName, productSlug, variants, 
                 </div>
                 {outOfStock && !isSelected && (
                   <span className="absolute inset-0 flex items-center justify-center">
-                    <span className="block w-full h-px bg-sage/30 rotate-45 absolute" />
+                    <span className="block w-full h-px bg-[#D8D0C4] rotate-45 absolute" />
                   </span>
                 )}
               </button>
@@ -122,33 +157,33 @@ export function ProductActions({ productId, productName, productSlug, variants, 
         {selectedVariant && (() => {
           const qty = selectedVariant.stock_qty
           if (qty === 0) return (
-            <p className="text-sm font-medium text-[#5a7060]">Out of stock in this size</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-red-700">Out of stock in this size</p>
           )
           if (qty <= 5) return (
-            <p className="text-sm font-medium text-red-600 flex items-center gap-1.5">
+            <p className="text-sm font-semibold text-[#1B3A2D] flex items-center gap-1.5">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
               </span>
               Only {qty} left!
             </p>
           )
           if (qty <= 9) return (
-            <p className="text-sm font-medium text-amber-600">Only {qty} left — order soon!</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-amber-600">Only {qty} left — order soon!</p>
           )
           return null
         })()}
       </div>
 
       {/* CTA row — sticky on mobile */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 p-4 bg-white border-t border-sage/20 shadow-lg md:relative md:bottom-auto md:left-auto md:right-auto md:p-0 md:bg-transparent md:border-0 md:shadow-none flex gap-3">
+      <div className="fixed bottom-0 left-0 right-0 z-30 p-4 bg-white border-t border-[#E8E2D9] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] md:relative md:bottom-auto md:left-auto md:right-auto md:p-0 md:bg-transparent md:border-0 md:shadow-none flex flex-col gap-3">
         <button
           onClick={handleAddToCart}
           disabled={isDisabled}
-          className={`flex-1 h-14 md:h-16 rounded-none text-xs font-bold tracking-[0.3em] uppercase transition-colors
+          className={`w-full h-14 md:h-16 rounded-none text-xs font-bold tracking-[0.3em] uppercase transition-colors
             ${isDisabled
-              ? 'bg-gray-300 text-[#9aab9e] cursor-not-allowed'
-              : 'bg-charcoal text-cream hover:bg-charcoal/90 active:scale-[0.98]'
+              ? 'bg-[#F5F5F5] text-[#999] cursor-not-allowed opacity-80'
+              : 'bg-[#1B3A2D] text-white hover:bg-[#173129] active:scale-[0.98] shadow-sm'
             }`}
         >
           {isOutOfStock
@@ -159,8 +194,19 @@ export function ProductActions({ productId, productName, productSlug, variants, 
           }
         </button>
         <button
+          onClick={handleBuyNow}
+          disabled={isDisabled}
+          className={`w-full h-14 md:h-16 rounded-none text-xs font-bold tracking-[0.3em] uppercase transition-colors
+            ${isDisabled
+              ? 'bg-[#F5F5F5] text-[#999] cursor-not-allowed opacity-80'
+              : 'bg-[#1B3A2D] text-white hover:bg-[#173129] active:scale-[0.98] shadow-sm'
+            }`}
+        >
+          Buy Now
+        </button>
+        <button
           onClick={handleShare}
-          className="w-14 h-14 md:w-16 md:h-16 border border-sage/30 text-charcoal rounded-none hover:border-charcoal transition-colors flex items-center justify-center flex-shrink-0"
+          className="w-14 h-14 md:w-16 md:h-16 border border-[#E8E2D9] text-[#1B3A2D] rounded-none hover:border-[#1B3A2D] hover:text-[#1B3A2D] transition-colors flex items-center justify-center flex-shrink-0 bg-white"
           aria-label="Share product"
         >
           <Share2 className="w-5 h-5" />

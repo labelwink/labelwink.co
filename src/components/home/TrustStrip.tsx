@@ -4,7 +4,7 @@ interface TrustStripProps {
   threshold?: number;
 }
 
-export function TrustStrip({ threshold = 999 }: TrustStripProps) {
+export function TrustStrip({ threshold = 3499 }: TrustStripProps) {
   const features = [
     { icon: Truck, title: "Fast Delivery", description: "Quick dispatch & delivery" },
     { icon: HeartHandshake, title: "Easy Returns", description: "7-day return policy" },

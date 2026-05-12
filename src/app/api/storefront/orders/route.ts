@@ -22,7 +22,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from('orders')
       .select(`
-        id, order_number, status, total, created_at,
+        id, order_number, status, total_amount, created_at,
         tracking_number, tracking_url, shipping_carrier,
         order_items (
           id,

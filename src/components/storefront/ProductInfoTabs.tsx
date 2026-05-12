@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 
@@ -26,6 +26,8 @@ interface Props {
   occasionTags?: string[] | null
   careInstructions?: string | null
   sizeGuide?: SizeGuide | null
+  weight?: string | number | null
+  hsnCode?: string | null
 }
 
 const TABS = ['Description', 'Product Details', 'Size & Fit', 'Care Instructions'] as const
@@ -43,6 +45,7 @@ function Row({ label, value }: { label: string; value: string }) {
 export function ProductInfoTabs({
   description, additionalInfo, fabricMaterial, sleeveType,
   fitType, occasionTags, careInstructions, sizeGuide,
+  weight, hsnCode,
 }: Props) {
   const [tab, setTab] = useState<Tab>('Description')
 
@@ -86,6 +89,8 @@ export function ProductInfoTabs({
               {sleeveType && <Row label="Sleeve" value={SLEEVE_LABELS[sleeveType] ?? sleeveType} />}
               {fitType && <Row label="Fit" value={FIT_LABELS[fitType] ?? fitType} />}
               {occasionTags?.length && <Row label="Occasion" value={occasionTags.join(', ')} />}
+              {weight && <Row label="Weight" value={`${weight}${typeof weight === 'number' ? 'g' : ''}`} />}
+              {hsnCode && <Row label="HSN Code" value={hsnCode} />}
             </div>
             <div>
               {additionalInfo && Object.entries(additionalInfo).map(([k, v]) => (

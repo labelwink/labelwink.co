@@ -113,7 +113,6 @@
     font-size: 14px;
     font-weight: 400;
     line-height: 1.6;
-    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -528,11 +527,32 @@
     margin-top: 4px;
   }
 
-  /* ─── ADMIN LEGACY OVERRIDES ────────── */
+  /* ─── ADMIN FORM UTILITIES ──────────── */
   .admin-input {
-    @apply bg-white border border-[#e8e2d6] text-[#1a2e1e] rounded-lg
-           px-3 py-2 w-full focus:outline-none focus:border-[#2d5a3d]
-           placeholder-[#9aab9e] text-sm;
+    @apply w-full px-3 py-2.5 text-sm text-gray-900 bg-white
+           border border-gray-200 rounded-xl
+           placeholder:text-gray-400
+           focus:outline-none focus:ring-2 focus:ring-[#1C3829]
+           focus:border-transparent transition-colors;
+  }
+  .admin-label {
+    @apply block text-sm font-medium text-gray-700 mb-1.5;
+  }
+  .admin-select {
+    @apply w-full px-3 py-2.5 text-sm text-gray-900 bg-white
+           border border-gray-200 rounded-xl
+           focus:outline-none focus:ring-2 focus:ring-[#1C3829]
+           focus:border-transparent transition-colors cursor-pointer;
+  }
+  .admin-textarea {
+    @apply w-full px-3 py-2.5 text-sm text-gray-900 bg-white
+           border border-gray-200 rounded-xl
+           placeholder:text-gray-400 resize-none
+           focus:outline-none focus:ring-2 focus:ring-[#1C3829]
+           focus:border-transparent transition-colors;
+  }
+  .admin-field {
+    @apply flex flex-col gap-1.5;
   }
   .admin-card {
     @apply bg-white border border-[#e8e2d6] rounded-xl p-6;
@@ -569,7 +589,7 @@
 
 img { -webkit-backface-visibility: hidden; }
 
-html, body { overflow-x: hidden; }
+html, body { }
 
 /* ─── ANIMATIONS ────────────────────────────────────────────── */
 @keyframes marquee {

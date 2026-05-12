@@ -87,11 +87,24 @@ export interface Category {
   id: string
   name: string
   slug: string
-  parent_id: string | null
+  description: string | null
   image_url: string | null
+  parent_id: string | null
   sort_order: number
+  is_active: boolean
   created_at: string
+  updated_at: string
   children?: Category[]
+}
+
+export interface ProductAttribute {
+  id: string
+  label: string
+  type: 'size' | 'color' | 'sleeve_type' | 'occasion' | 'fabric' | 'fit' | 'pattern' | 'custom'
+  value: string
+  sort_order: number
+  is_active: boolean
+  created_at: string
 }
 
 export interface Collection {

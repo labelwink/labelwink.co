@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useRef, createContext, useContext, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
@@ -304,54 +304,54 @@ export default function OTPLoginModal({
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white border border-[#c9a84c]/20 rounded-2xl p-8 w-full max-w-md relative">
+      <div className="bg-white border border-labelwink-cream-border rounded-none p-8 w-full max-w-md relative shadow-2xl">
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 text-[#faf7f2]/50 hover:text-[#faf7f2]"
+          className="absolute top-4 right-4 text-labelwink-green/30 hover:text-labelwink-green"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
 
         {step === 'PHONE' && (
           <div>
-            <h2 className="text-2xl font-bold text-[#faf7f2] mb-1">Sign in to LabelWink</h2>
-            <p className="text-[#faf7f2]/70 mb-6 text-sm">Enter your mobile number to continue</p>
+            <h2 className="text-2xl font-bold text-labelwink-green mb-1 font-heading">Sign in to LabelWink</h2>
+            <p className="text-labelwink-green/60 mb-6 text-xs uppercase tracking-widest">Enter your mobile number to continue</p>
             
             <form onSubmit={handlePhoneSubmit}>
-              <div className="flex border border-[#e8e2d6] rounded-lg bg-white/5 focus-within:border-[#c9a84c] focus-within:ring-1 focus-within:ring-[#c9a84c] mb-4 overflow-hidden">
-                <div className="flex items-center px-4 border-r border-[#e8e2d6]">
+              <div className="flex border border-labelwink-cream-border rounded-none bg-labelwink-cream-card focus-within:border-labelwink-gold focus-within:ring-1 focus-within:ring-labelwink-gold mb-4 overflow-hidden">
+                <div className="flex items-center px-4 border-r border-labelwink-cream-border">
                   <span className="text-lg mr-2">🇮🇳</span>
-                  <span className="text-[#faf7f2]">+91</span>
+                  <span className="text-labelwink-green/60 font-medium">+91</span>
                 </div>
                 <input
                   type="tel"
                   maxLength={10}
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
-                  className="flex-1 bg-transparent border-none text-[#faf7f2] px-4 py-3 outline-none w-full"
+                  className="flex-1 bg-transparent border-none text-labelwink-green px-4 py-3 outline-none w-full font-medium"
                   placeholder="Mobile Number"
                   required
                 />
               </div>
-              {error && <p className="text-red-400 text-sm mt-1 mb-3">{error}</p>}
+              {error && <p className="text-red-600 text-xs mt-1 mb-3 font-medium">{error}</p>}
               <button 
                 type="submit" 
                 disabled={loading || phone.length !== 10}
-                className="w-full bg-[#c9a84c] text-[#ffffff] font-bold py-3 rounded-lg hover:bg-[#b8973d] transition disabled:opacity-50"
+                className="w-full bg-labelwink-green text-white font-bold py-4 rounded-none hover:bg-labelwink-green-hover transition disabled:opacity-50 uppercase tracking-widest text-xs shadow-md"
               >
                 {loading ? 'Sending...' : 'Get OTP'}
               </button>
             </form>
 
             <div className="flex items-center my-6">
-              <div className="flex-1 border-t border-[#e8e2d6]"></div>
-              <span className="px-4 text-[#faf7f2]/50 text-sm">or</span>
-              <div className="flex-1 border-t border-[#e8e2d6]"></div>
+              <div className="flex-1 border-t border-labelwink-cream-border"></div>
+              <span className="px-4 text-labelwink-green/30 text-xs font-bold uppercase tracking-widest">or</span>
+              <div className="flex-1 border-t border-labelwink-cream-border"></div>
             </div>
 
             <button 
               onClick={handleGoogleLogin}
-              className="w-full border border-[#e8e2d6] text-[#faf7f2] font-medium py-3 rounded-lg hover:bg-white/5 transition flex items-center justify-center gap-2"
+              className="w-full border border-labelwink-cream-border text-labelwink-green font-bold py-4 rounded-none hover:bg-labelwink-cream-card transition flex items-center justify-center gap-3 uppercase tracking-widest text-[10px]"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
               Continue with Google
@@ -361,8 +361,8 @@ export default function OTPLoginModal({
 
         {step === 'OTP' && (
           <div>
-            <h2 className="text-2xl font-bold text-[#faf7f2] mb-1">Enter OTP</h2>
-            <p className="text-[#faf7f2]/70 mb-6 text-sm">
+            <h2 className="text-2xl font-bold text-labelwink-green mb-1 font-heading">Enter OTP</h2>
+            <p className="text-labelwink-green/60 mb-6 text-xs uppercase tracking-widest">
               Sent to +91 {phone.substring(0, 2)}XXXX{phone.substring(6)}
             </p>
             
@@ -379,25 +379,25 @@ export default function OTPLoginModal({
                   value={digit}
                   onChange={(e) => handleOtpChange(i, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                  className="w-12 h-14 bg-white/5 border border-[#e8e2d6] text-[#faf7f2] rounded-lg text-center text-xl focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c] outline-none"
+                  className="w-12 h-14 bg-labelwink-cream-card border border-labelwink-cream-border text-labelwink-green rounded-none text-center text-xl focus:border-labelwink-gold focus:ring-1 focus:ring-labelwink-gold outline-none font-bold"
                   disabled={loading}
                 />
               ))}
             </div>
-            {error && <p className="text-red-400 text-sm mt-1 mb-3">{error}</p>}
+            {error && <p className="text-red-600 text-xs mt-1 mb-3 font-medium">{error}</p>}
             
-            <div className="flex flex-col gap-3 mt-6 text-sm text-center">
+            <div className="flex flex-col gap-3 mt-6 text-xs text-center font-bold uppercase tracking-[0.2em]">
               <button 
                 onClick={resendOtp} 
                 disabled={countdown > 0 || loading}
-                className="text-[#c9a84c] hover:underline disabled:opacity-50 disabled:hover:no-underline disabled:text-[#faf7f2]/50"
+                className="text-labelwink-gold hover:underline disabled:opacity-50 disabled:hover:no-underline disabled:text-labelwink-green/30"
               >
                 {countdown > 0 ? `Resend in 0:${countdown.toString().padStart(2, '0')}` : 'Resend OTP'}
               </button>
               
               <button 
                 onClick={() => setStep('PHONE')}
-                className="text-[#faf7f2]/50 hover:text-[#faf7f2]"
+                className="text-labelwink-green/40 hover:text-labelwink-green"
               >
                 &larr; Change number
               </button>
@@ -407,15 +407,15 @@ export default function OTPLoginModal({
 
         {step === 'EXISTING' && (
           <div className="text-center py-8">
-            <h2 className="text-xl font-bold text-[#faf7f2] mb-4">Welcome back! Signing you in...</h2>
-            <div className="w-8 h-8 border-4 border-[#c9a84c] border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <h2 className="text-xl font-bold text-labelwink-green mb-4 font-heading">Welcome back! Signing you in...</h2>
+            <div className="w-8 h-8 border-4 border-labelwink-gold border-t-transparent rounded-full animate-spin mx-auto"></div>
           </div>
         )}
 
         {step === 'REGISTER' && (
           <div>
-            <h2 className="text-2xl font-bold text-[#faf7f2] mb-1">Create Your Account</h2>
-            <p className="text-[#faf7f2]/70 mb-6 text-sm">Just a few details to get started</p>
+            <h2 className="text-2xl font-bold text-labelwink-green mb-1 font-heading">Create Your Account</h2>
+            <p className="text-labelwink-green/60 mb-6 text-xs uppercase tracking-widest">Just a few details to get started</p>
             
             <form onSubmit={handleRegisterSubmit} className="space-y-4">
               <div className="flex gap-4">
@@ -424,7 +424,7 @@ export default function OTPLoginModal({
                   placeholder="First Name*"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full bg-white/5 border border-[#e8e2d6] text-[#faf7f2] rounded-lg px-4 py-3 focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c] outline-none"
+                  className="w-full bg-labelwink-cream-card border border-labelwink-cream-border text-labelwink-green rounded-none px-4 py-3 focus:border-labelwink-gold focus:ring-1 focus:ring-labelwink-gold outline-none font-medium"
                   required
                 />
                 <input
@@ -432,7 +432,7 @@ export default function OTPLoginModal({
                   placeholder="Last Name"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full bg-white/5 border border-[#e8e2d6] text-[#faf7f2] rounded-lg px-4 py-3 focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c] outline-none"
+                  className="w-full bg-labelwink-cream-card border border-labelwink-cream-border text-labelwink-green rounded-none px-4 py-3 focus:border-labelwink-gold focus:ring-1 focus:ring-labelwink-gold outline-none font-medium"
                 />
               </div>
               <input
@@ -440,7 +440,7 @@ export default function OTPLoginModal({
                 placeholder="Email ID*"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-white/5 border border-[#e8e2d6] text-[#faf7f2] rounded-lg px-4 py-3 focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c] outline-none"
+                className="w-full bg-labelwink-cream-card border border-labelwink-cream-border text-labelwink-green rounded-none px-4 py-3 focus:border-labelwink-gold focus:ring-1 focus:ring-labelwink-gold outline-none font-medium"
                 required
               />
               <input
@@ -449,14 +449,14 @@ export default function OTPLoginModal({
                 value={altPhone}
                 onChange={(e) => setAltPhone(e.target.value.replace(/[^0-9]/g, ''))}
                 maxLength={10}
-                className="w-full bg-white/5 border border-[#e8e2d6] text-[#faf7f2] rounded-lg px-4 py-3 focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c] outline-none"
+                className="w-full bg-labelwink-cream-card border border-labelwink-cream-border text-labelwink-green rounded-none px-4 py-3 focus:border-labelwink-gold focus:ring-1 focus:ring-labelwink-gold outline-none font-medium"
               />
-              {error && <p className="text-red-400 text-sm mt-1">{error}</p>}
+              {error && <p className="text-red-600 text-xs mt-1 font-medium">{error}</p>}
               
               <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full bg-[#c9a84c] text-[#ffffff] font-bold py-3 rounded-lg hover:bg-[#b8973d] transition disabled:opacity-50 mt-4"
+                className="w-full bg-labelwink-green text-white font-bold py-4 rounded-none hover:bg-labelwink-green-hover transition disabled:opacity-50 mt-4 uppercase tracking-widest text-xs shadow-md"
               >
                 {loading ? 'Creating Account...' : 'Create Account & Continue'}
               </button>
@@ -464,7 +464,7 @@ export default function OTPLoginModal({
             
             <button 
               onClick={() => setStep('PHONE')}
-              className="text-[#faf7f2]/50 hover:text-[#faf7f2] mt-6 w-full text-center text-sm"
+              className="text-labelwink-green/40 hover:text-labelwink-green mt-6 w-full text-center text-xs font-bold uppercase tracking-widest"
             >
               &larr; Back
             </button>

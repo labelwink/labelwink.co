@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -46,8 +46,8 @@ export default function OrdersPage() {
       const { data } = await supabase
         .from('orders')
         .select(`
-          id, status, total, created_at, shipping_carrier, tracking_number, tracking_url, items,
-          order_items (id, product_name, product_image),
+          id, order_number, status, total_amount, created_at, shipping_carrier, tracking_number, tracking_url, items,
+          order_items (id, product_name, image_url),
           invoices (invoice_number)
         `)
         .eq('user_id', user.id)
@@ -116,8 +116,8 @@ export default function OrdersPage() {
               className={cn(
                 "px-4 py-2 text-xs font-bold uppercase tracking-widest rounded-full whitespace-nowrap transition-colors",
                 filter === tab.id
-                  ? "bg-white text-white"
-                  : "bg-sage/5 text-muted-foreground hover:bg-sage/10"
+                  ? "bg-[#1B3A2D] text-white"
+                  : "bg-sage/5 text-[#5a7060] hover:bg-sage/10"
               )}
             >
               {tab.label} {count > 0 && <span className="ml-1 text-[10px] opacity-60">({count})</span>}
@@ -137,7 +137,7 @@ export default function OrdersPage() {
           const itemCount = order.order_items?.length || 0;
           const images = (order.order_items || [])
             .slice(0, 2)
-            .map((i: any) => i.product_image)
+            .map((i: any) => i.image_url)
             .filter(Boolean);
           const moreCount = Math.max(0, itemCount - 2);
 
@@ -163,8 +163,8 @@ export default function OrdersPage() {
                   </div>
                   <div className="w-px h-8 bg-sage/20 hidden md:block" />
                   <div>
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground mb-0.5">Total</p>
-                    <p className="font-bold text-sm text-charcoal">₹{Number(order.total).toLocaleString('en-IN')}</p>
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-[#5a7060] mb-0.5">Total</p>
+                    <p className="font-bold text-sm text-[#1A1A1A]">₹{Number(order.total_amount).toLocaleString('en-IN')}</p>
                   </div>
                 </div>
                 <span className={`text-[10px] uppercase tracking-wider font-bold px-3 py-1 rounded-full self-start md:self-center ${STATUS_BADGE[order.status] || 'bg-gray-100 text-gray-700'}`}>
@@ -211,7 +211,7 @@ export default function OrdersPage() {
                 <div className="flex flex-wrap gap-3 mt-2">
                   <Link
                     href={`/account/orders/${order.id}`}
-                    className="flex items-center gap-1.5 bg-white text-white px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] rounded hover:bg-black transition-colors"
+                    className="flex items-center gap-1.5 bg-[#1B3A2D] text-white px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] rounded hover:bg-black transition-colors"
                   >
                     <Eye className="w-3.5 h-3.5" /> View Details
                   </Link>

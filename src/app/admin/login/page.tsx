@@ -27,7 +27,6 @@ export default function AdminLoginPage() {
       })
 
       if (res.ok) {
-        const data = await res.json()
         const profileRes = await fetch('/api/admin/profile')
         const profileData = await profileRes.json()
         
@@ -72,30 +71,32 @@ export default function AdminLoginPage() {
         .card-shake { animation: shake 0.6s ease-in-out; }
       `}</style>
 
-      <div className={`relative z-10 bg-white rounded-2xl shadow-xl max-w-[400px] w-full p-8 ${shake ? 'card-shake' : ''}`}>
+      <div className={`relative z-10 bg-[#FAF9F6] rounded-none shadow-2xl max-w-[400px] w-full p-10 border border-white/10 ${shake ? 'card-shake' : ''}`}>
         {/* Logo */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-10">
           <p
-            className="font-bold text-2xl bg-gradient-to-r from-[#e8c97a] to-[#b8862a] bg-clip-text text-transparent tracking-widest"
+            className="font-bold text-3xl bg-gradient-to-r from-[#e8c97a] to-[#b8862a] bg-clip-text text-transparent tracking-[0.2em]"
             style={{ fontFamily: 'var(--font-cinzel, Georgia, serif)' }}
           >
             LABEL WINK
           </p>
-          <p className="italic text-sm text-[#5a7060] mt-1">Wear Wink</p>
+          <p className="italic text-xs text-[#5a7060] mt-2 uppercase tracking-[0.3em]">Wear Wink</p>
         </div>
 
-        <h1 className="text-xl font-semibold text-gray-800 text-center mt-6 mb-6">Admin Panel</h1>
+        <h1 className="text-sm font-bold text-[#1C3829] text-center uppercase tracking-[0.2em] mb-8 border-b border-[#1C3829]/10 pb-4">
+          Administrative Portal
+        </h1>
 
         {error && (
-          <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4 text-center font-medium">
+          <div className="bg-red-50 text-red-600 text-xs p-4 rounded-none mb-6 text-center font-medium border border-red-100">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label htmlFor="admin-email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
+            <label htmlFor="admin-email" className="block text-[10px] font-bold text-[#1C3829]/60 uppercase tracking-widest mb-2">
+              Credential ID
             </label>
             <input
               id="admin-email"
@@ -104,12 +105,12 @@ export default function AdminLoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="admin@labelwink.co"
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] focus:border-transparent"
+              className="w-full border border-gray-200 rounded-none px-4 py-3 text-sm focus:outline-none focus:ring-0 focus:border-[#1C3829] transition-colors placeholder:text-gray-300 bg-white"
             />
           </div>
           <div>
-            <label htmlFor="admin-password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
+            <label htmlFor="admin-password" className="block text-[10px] font-bold text-[#1C3829]/60 uppercase tracking-widest mb-2">
+              Access Token
             </label>
             <div className="relative">
               <input
@@ -118,16 +119,16 @@ export default function AdminLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                placeholder="Enter admin password"
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-[#1b3a34] focus:border-transparent"
+                placeholder="••••••••"
+                className="w-full border border-gray-200 rounded-none px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-0 focus:border-[#1C3829] transition-colors placeholder:text-gray-300 bg-white"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5a7060] hover:text-gray-600 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5a7060] hover:text-[#1C3829] transition-colors"
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
@@ -135,15 +136,16 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#1b3a34] hover:bg-[#234d44] text-white rounded-xl py-3 font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full bg-[#1C3829] hover:bg-[#234d44] text-[#E8C97A] rounded-none py-4 font-bold text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg active:scale-[0.98]"
           >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : null}
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? <Loader2 size={16} className="animate-spin" /> : null}
+            {loading ? 'Authenticating...' : 'Establish Session'}
           </button>
         </form>
 
-        <p className="text-center text-xs text-[#6B6B5A] mt-6">
-          Protected area · Authorized access only
+        <p className="text-center text-[9px] text-[#6B6B5A] mt-10 uppercase tracking-widest leading-loose opacity-60">
+          Secured by LabelWink Cloud · Authorized Personnel Only<br/>
+          Unauthorized access attempts are logged
         </p>
       </div>
     </div>

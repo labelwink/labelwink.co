@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/requireAdmin'
+import { generateUniqueSKU } from '@/lib/sku'
 import { z } from 'zod/v4'
 
 export const runtime = 'nodejs'
@@ -30,14 +31,26 @@ const CreateProductSchema = z.object({
   price: z.coerce.number().min(0, 'Price must be ≥ 0'),
   compare_at_price: z.coerce.number().min(0).optional().nullable(),
   visible: z.boolean().optional().default(true),
-  status: z.string().optional().default('active'),
+  status: z.string().optional().default('draft'),
   fabric: z.string().optional().nullable(),
-  occasion: z.string().optional().nullable(),
+  occasion: z.union([
+    z.string(),
+    z.array(z.string()),
+  ]).optional().nullable().transform(val =>
+    Array.isArray(val) ? val.join(',') : (val ?? null)
+  ),
   fit: z.string().optional().nullable(),
   season: z.string().optional().nullable(),
   tags: z.array(z.string()).optional().nullable(),
   is_featured: z.boolean().optional(),
   weight: z.coerce.number().min(0).optional().nullable(),
+  weight_grams: z.coerce.number().min(0).optional().nullable(),
+  mrp: z.coerce.number().min(0).optional().nullable(),
+  first_order_discount: z.any().optional().nullable(),
+  short_description: z.string().optional().nullable(),
+  specifications: z.any().optional().nullable(),
+  collection: z.string().optional().nullable(),
+  colour: z.string().optional().nullable(),
   hsn_code: z.string().optional().nullable(),
   meta_title: z.string().optional().nullable(),
   meta_description: z.string().optional().nullable(),
@@ -92,6 +105,29 @@ export async function GET(req: NextRequest) {
 }
 
 
+// ── Helper: Collision-safe Slug Generation ─────────────────────────────────────
+async function generateUniqueSlug(supabase: any, name: string): Promise<string> {
+  const base = name
+    .toLowerCase().trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+
+  let slug = base
+  let counter = 1
+  while (true) {
+    const { data } = await supabase
+      .from('products')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle()
+    if (!data) return slug
+    slug = `${base}-${counter++}`
+  }
+}
+
+
+
 export async function POST(req: NextRequest) {
   const guard = await requireAdmin()
   if (guard instanceof NextResponse) return guard
@@ -121,22 +157,62 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { variants, images, ...productData } = result.data
+  const { variants = [], images = [], ...productData } = (body as any)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminSupabaseClient() as any
 
-  // Auto-generate slug if missing
-  if (!productData.slug && productData.name) {
-    productData.slug = (productData.name as string)
-      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+  // Status Guard
+  const ALLOWED_STATUSES = ['draft', 'published', 'archived']
+  const safeStatus = ALLOWED_STATUSES.includes((body as any).status) 
+    ? (body as any).status 
+    : 'draft'
+
+  // Collision-safe Slug
+  const slug = await generateUniqueSlug(supabase, productData.name)
+
+  // Whitelist approach: Only pick fields that actually exist in the products table
+  const allowedFields: Record<string, any> = {
+    name:               productData.name,
+    slug,
+    description:        productData.description,
+    price:              Number(productData.price) || 0,
+    compare_at_price:   productData.mrp !== undefined ? Number(productData.mrp) : (productData.compare_at_price !== undefined ? Number(productData.compare_at_price) : null),
+    collection_id:      productData.collection_id,
+    category_id:        productData.category_id,
+    visible:            productData.visible ?? true,
+    status:             safeStatus,
+    fabric:             productData.fabric,
+    fit:                productData.fit,
+    season:             productData.season,
+    tags:               productData.tags,
+    hsn_code:           productData.hsn_code,
+    weight:             productData.weight_grams !== undefined ? Number(productData.weight_grams) : (productData.weight !== undefined ? Number(productData.weight) : null),
+    size_chart_data:    productData.size_chart_data,
+    meta_title:         productData.meta_title,
+    meta_description:   productData.meta_description,
+    is_featured:        productData.is_featured,
+    fabric_material:    productData.fabric_material,
+    sleeve_type:        productData.sleeve_type,
+    fit_type:           productData.fit_type,
+    additional_info:    productData.additional_info,
+    base_price:         productData.base_price !== undefined ? Number(productData.base_price) : null,
+    is_active:          productData.visible ?? true,
+    created_at:         new Date().toISOString(),
+    updated_at:         new Date().toISOString(),
   }
 
-  // Sync is_active with visible
-  const insertData: Record<string, unknown> = { ...productData }
-  if (typeof productData.visible === 'boolean') {
-    insertData.is_active = productData.visible
+  // Transform occasion if present
+  if (productData.occasion !== undefined) {
+    allowedFields.occasion = Array.isArray(productData.occasion) 
+      ? productData.occasion.join(',') 
+      : productData.occasion
   }
+
+  // Filter out undefined to avoid issues with null defaults
+  const insertData = Object.fromEntries(
+    Object.entries(allowedFields).filter(([_, v]) => v !== undefined)
+  )
 
   const { data: product, error } = await supabase
     .from('products')
@@ -145,25 +221,57 @@ export async function POST(req: NextRequest) {
     .single()
 
   if (error) {
+    if (error?.code === '23505' && error.message.includes('products_slug_key')) {
+      return NextResponse.json(
+        { error: 'A product with this name already exists. Please rename it.' },
+        { status: 409 }
+      )
+    }
     return NextResponse.json(
       { error: error.message, hint: error.hint, details: error.details },
       { status: 500 }
     )
   }
 
-  // Insert variants
+  // Insert variants with retry logic
   if (variants.length > 0) {
-    const variantRows = variants.map((v) => ({
-      product_id: product.id,
-      size: v.size,
-      color: v.color || '',
-      stock_qty: v.stock_qty,
-      sku: v.sku || null,
-      price: Number(productData.price) || 0,
-      low_stock_threshold: v.low_stock_threshold ?? 5,
-    }))
-    const { error: varErr } = await supabase.from('product_variants').insert(variantRows)
-    if (varErr) return NextResponse.json({ error: varErr.message }, { status: 500 })
+    let retryCount = 0
+    const MAX_RETRIES = 3
+    let success = false
+    let lastError: any = null
+
+    while (retryCount < MAX_RETRIES && !success) {
+      const variantRows = await Promise.all(variants.map(async (v) => ({
+        product_id: product.id,
+        size: v.size,
+        color: v.color || '',
+        stock_qty: v.stock_qty,
+        sku: (v.sku && retryCount === 0) ? v.sku : await generateUniqueSKU(supabase, slug, v.size),
+        price: Number(productData.price) || 0,
+        low_stock_threshold: v.low_stock_threshold ?? 5,
+      })))
+
+      const { error: varErr } = await supabase.from('product_variants').insert(variantRows)
+      
+      if (!varErr) {
+        success = true
+      } else {
+        lastError = varErr
+        if (varErr.code === '23505' && (varErr.message.includes('sku') || varErr.message.includes('SKU'))) {
+          retryCount++
+          await new Promise(resolve => setTimeout(resolve, 100 * retryCount))
+          continue
+        }
+        break
+      }
+    }
+
+    if (!success) {
+      return NextResponse.json(
+        { error: lastError?.message || 'Failed to insert variants', code: lastError?.code },
+        { status: lastError?.code === '23505' ? 409 : 500 }
+      )
+    }
   }
 
   // Insert images

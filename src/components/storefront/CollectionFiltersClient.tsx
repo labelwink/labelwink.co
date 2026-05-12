@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useMemo } from 'react'
 import { FilterSidebar, ActiveFilters } from '@/components/storefront/FilterSidebar'
@@ -182,28 +182,28 @@ export function CollectionFiltersClient({
         {activePills.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-5">
             {activePills.map((pill, i) => (
-              <span key={i} className="flex items-center gap-1.5 bg-[#f0fdf4] border border-[#1b3a34] text-[#1b3a34] text-sm rounded-full px-3 py-1">
+              <span key={i} className="flex items-center gap-1.5 bg-labelwink-cream border border-labelwink-gold/30 text-labelwink-green text-xs font-bold uppercase tracking-wider rounded-none px-3 py-1.5 shadow-sm">
                 {pill.label}
-                <button onClick={pill.remove} className="hover:text-[#9b1c4a] transition-colors">
+                <button onClick={pill.remove} className="hover:text-labelwink-gold transition-colors ml-1">
                   <X size={14} />
                 </button>
               </span>
             ))}
-            <button onClick={clearAll} className="text-sm text-[#9aab9e] hover:text-[#1b3a34] hover:underline ml-1">
+            <button onClick={clearAll} className="text-xs font-bold uppercase tracking-widest border border-[#1B3A2D] text-[#1B3A2D] px-3 py-2 rounded hover:bg-[#1B3A2D] hover:text-white transition-colors ml-1">
               Clear All
             </button>
           </div>
         )}
 
         {/* Result count */}
-        <p className="text-sm text-[#9aab9e] mb-4">{filtered.length} product{filtered.length !== 1 ? 's' : ''} found</p>
+        <p className="text-xs uppercase tracking-[0.2em] font-bold text-labelwink-muted mb-6">{filtered.length} product{filtered.length !== 1 ? 's' : ''} found</p>
 
         {/* Grid */}
         {filtered.length === 0 ? (
-          <div className="py-20 text-center">
-            <p className="text-4xl mb-4">👗</p>
-            <p className="text-[#9aab9e] text-sm">No products match your filters.</p>
-            <button onClick={clearAll} className="mt-4 text-sm text-[#1b3a34] hover:underline">Clear all filters</button>
+          <div className="py-24 text-center">
+            <p className="text-5xl mb-6 opacity-30">👗</p>
+            <p className="text-labelwink-muted text-sm font-medium">No products match your filters.</p>
+            <button onClick={clearAll} className="mt-6 text-xs font-bold uppercase tracking-[0.2em] border border-[#1B3A2D] text-[#1B3A2D] px-4 py-3 rounded hover:bg-[#1B3A2D] hover:text-white transition-colors">Clear all filters</button>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-x-4 gap-y-10 sm:gap-x-6">

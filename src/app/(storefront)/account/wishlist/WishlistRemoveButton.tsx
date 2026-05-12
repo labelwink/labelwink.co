@@ -17,11 +17,10 @@ export function WishlistRemoveButton({ productId }: WishlistRemoveButtonProps) {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/storefront/wishlist', {
+      const res = await fetch(`/api/storefront/wishlist?product_id=${productId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ product_id: productId }),
       });
 
       if (res.ok) {
