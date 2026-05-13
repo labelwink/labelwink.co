@@ -2,11 +2,11 @@
   "crons": [
     {
       "path": "/api/admin/abandoned-carts/send-recovery",
-      "schedule": "0 * * * *"
+      "schedule": "0 0 * * *"
     },
     {
       "path": "/api/admin/seasonal-sales/cron",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
