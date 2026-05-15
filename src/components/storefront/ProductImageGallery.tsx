@@ -1,7 +1,8 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { ProductImageZoom } from '@/components/storefront/ProductImageZoom'
+import { cloudinaryOptimize } from '@/lib/utils/cloudinary'
 
 interface ProductImage {
   cloudinary_public_id?: string | null
@@ -16,16 +17,9 @@ interface Props {
 }
 
 function buildUrl(img: ProductImage, cloudName: string): string {
-  // Prefer direct Cloudinary URL (secure_url stored in `url` column)
-  if (img.url && img.url.startsWith('http')) {
-    return img.url
-  }
-  // Build from public_id if it's a real Cloudinary public ID (not a URL)
-  if (img.cloudinary_public_id && !img.cloudinary_public_id.startsWith('http')) {
-    return `https://res.cloudinary.com/${cloudName}/image/upload/f_auto,q_auto:best/${img.cloudinary_public_id}`
-  }
-  // Last resort: use cloudinary_public_id if it's a full URL
-  return img.cloudinary_public_id || img.url || ''
+  const source = img.cloudinary_public_id || img.url || ''
+  if (!source) return ''
+  return cloudinaryOptimize(source, 'f_auto,q_auto:best')
 }
 
 export function ProductImageGallery({ images, cloudName }: Props) {

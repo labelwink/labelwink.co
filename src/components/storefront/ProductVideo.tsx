@@ -8,7 +8,7 @@ interface Props {
 export function ProductVideo({ publicId, posterPublicId }: Props) {
   const videoSrc = publicId.startsWith('http')
     ? publicId
-    : `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/f_auto,q_auto/${publicId}`
+    : `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/f_auto,q_auto:best/${publicId}`
 
   const posterSrc = posterPublicId
     ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/so_0,w_400,f_jpg/${posterPublicId}`

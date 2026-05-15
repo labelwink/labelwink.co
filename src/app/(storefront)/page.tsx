@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Truck, RotateCcw, Lock, Sparkles } from 'lucide-react';
 import { LeafPattern } from '@/components/ui/LeafPattern';
+import { cloudinaryOptimize } from '@/lib/utils/cloudinary';
 
 export const revalidate = 3600;
 
@@ -74,7 +75,7 @@ function ProductCard({ product }: { product: any }) {
       <div style={{ position: 'relative', aspectRatio: '3/4', background: '#FAF5E9', overflow: 'hidden' }}>
         {product.product_images?.[0]?.url ? (
           <Image
-            src={product.product_images[0].url}
+            src={cloudinaryOptimize(product.product_images[0].url)}
             alt={product.product_images[0].alt || product.name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -153,7 +154,7 @@ export default async function Home() {
       {/* SECTION 1: Hero Banner */}
       <section className="w-full">
         <img
-          src="https://res.cloudinary.com/dcmbwtreb/image/upload/v1778707316/new_Landscape_Poster_1_a3dxgc.png"
+          src={cloudinaryOptimize("https://res.cloudinary.com/dcmbwtreb/image/upload/v1778707316/new_Landscape_Poster_1_a3dxgc.png", "f_auto,q_auto:best,w_1920")}
           alt="Better Together - LabelWink Hero Banner"
           className="w-full h-auto block"
           style={{ display: 'block' }}

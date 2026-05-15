@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Search, X, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { cloudinaryOptimize } from '@/lib/utils/cloudinary'
 
 interface SearchProduct {
   id: string
@@ -128,10 +129,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 const coverImg =
                   product.product_images?.find(i => i.is_cover) ||
                   product.product_images?.[0]
-                const imgSrc = coverImg?.url ||
-                  (coverImg?.cloudinary_public_id && !coverImg.cloudinary_public_id.startsWith('http')
-                    ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/${coverImg.cloudinary_public_id}`
-                    : coverImg?.cloudinary_public_id) || null
+                const imgSrc = cloudinaryOptimize(coverImg?.url || coverImg?.cloudinary_public_id || '', "f_auto,q_auto:best,w_400")
 
                 const variantPrice = product.product_variants?.[0]?.price
                 const displayPrice = variantPrice || product.price || null

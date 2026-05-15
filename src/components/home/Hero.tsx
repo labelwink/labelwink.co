@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { cloudinaryOptimize } from '@/lib/utils/cloudinary';
 
 interface Banner {
   id: string;
@@ -50,13 +51,9 @@ export function Hero({ banners }: HeroProps) {
           className={`absolute inset-0 transition-opacity duration-700 ${i === currentIndex ? 'opacity-100' : 'opacity-0'}`}
         >
           <div className="relative w-full h-full">
-            {slide.cloudinary_public_id ? (
+            {(slide.cloudinary_public_id || slide.image_url) ? (
               <Image
-                src={
-                  slide.cloudinary_public_id.startsWith('http')
-                    ? slide.cloudinary_public_id
-                    : `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${slide.cloudinary_public_id}`
-                }
+                src={cloudinaryOptimize(slide.cloudinary_public_id || slide.image_url || '', "f_auto,q_auto:best,w_1920")}
                 alt={slide.title || 'Hero'}
                 fill
                 sizes="100vw"

@@ -5,6 +5,7 @@ import { FilterSidebar, ActiveFilters } from '@/components/storefront/FilterSide
 import { SortDropdown } from '@/components/storefront/SortDropdown'
 import { ProductCard } from '@/components/product/ProductCard'
 import { X } from 'lucide-react'
+import { cloudinaryOptimize } from '@/lib/utils/cloudinary'
 
 interface Variant {
   size: string
@@ -222,9 +223,7 @@ export function CollectionFiltersClient({
                   : null
 
               // Pass whichever we have — ProductImage handles both cases
-              const resolvedImage = directUrl || (imgPublicId
-                ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto/${imgPublicId}`
-                : '')
+              const resolvedImage = cloudinaryOptimize(directUrl || imgPublicId || '', "f_auto,q_auto:best,w_800")
 
               return (
                 <ProductCard

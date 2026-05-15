@@ -13,6 +13,7 @@ import { generateProductSchema, generateBreadcrumbSchema } from '@/lib/json-ld';
 import Script from 'next/script';
 import Link from 'next/link';
 import Image from 'next/image';
+import { cloudinaryOptimize } from '@/lib/utils/cloudinary';
 
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -40,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     openGraph: {
       title: product.name,
       description: product.description || undefined,
-      images: product.og_image_cloudinary_id ? [{ url: `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${product.og_image_cloudinary_id}` }] : [],
+      images: product.og_image_cloudinary_id ? [{ url: cloudinaryOptimize(product.og_image_cloudinary_id, "f_auto,q_auto:best,w_1200,h_630,c_fill") }] : [],
     }
   };
 }
@@ -409,9 +410,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
               const rpPrice = rpVariant?.price || 0
               const rpMrp = rpVariant?.mrp || null
               const rpDiscount = rpMrp && rpMrp > rpPrice ? Math.round(((rpMrp - rpPrice) / rpMrp) * 100) : 0
-              const rpImg1 = rpImg?.url || (rpImg?.cloudinary_public_id
-                ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/f_auto,q_auto,w_300/${rpImg.cloudinary_public_id}`
-                : null)
+              const rpImg1 = rpImg?.url || rpImg?.cloudinary_public_id
+                ? cloudinaryOptimize(rpImg.url || rpImg.cloudinary_public_id, "f_auto,q_auto:best,w_400")
+                : null
               return (
                 <Link
                   key={rp.id}
