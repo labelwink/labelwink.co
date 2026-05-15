@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { Tag, Plus, Search, Trash2, Copy, AlertTriangle, CheckCircle, Clock, XCircle, MoreVertical, X, Settings2, Percent, DollarSign, Truck } from 'lucide-react'
+import { Tag, Plus, Search, Trash2, Copy, AlertTriangle, CheckCircle, Clock, XCircle, MoreVertical, X, Settings2, Percent, DollarSign } from 'lucide-react'
 import { formatIndianCurrency } from '@/lib/invoice-helpers'
 
 export default function DiscountsPage() {
@@ -159,8 +159,6 @@ export default function DiscountsPage() {
     previewDiscount = (previewOrderVal * (Number(form.value) || 0)) / 100
   } else if (form.type === 'flat') {
     previewDiscount = Math.min(Number(form.value) || 0, previewOrderVal)
-  } else if (form.type === 'free_shipping') {
-    previewDiscount = 0 // Represents free shipping visually
   }
   const pays = Math.max(previewOrderVal - previewDiscount, 0)
 
@@ -240,7 +238,6 @@ export default function DiscountsPage() {
                       <td className="px-4 py-3">
                         {d.type === 'percentage' && `${d.value}% Off`}
                         {d.type === 'flat' && `${formatIndianCurrency(d.value)} Off`}
-                        {d.type === 'free_shipping' && `Free Shipping`}
                       </td>
                       <td className="px-4 py-3 text-gray-600">{d.min_order_amount ? formatIndianCurrency(d.min_order_amount) : 'None'}</td>
                       <td className="px-4 py-3">
@@ -351,13 +348,9 @@ export default function DiscountsPage() {
               <div className="bg-[#faf7f2] p-4 rounded-lg border border-[#c9a84c]/30 text-center">
                 <span className="text-sm text-gray-600">Customer applies </span>
                 <strong className="font-mono text-[#c9a84c]">{form.code || '[CODE]'}</strong>
-                <span className="text-sm text-gray-600"> on ?1,500 order ? </span>
+                <span className="text-sm text-gray-600"> on ₹1,500 order </span>
                 <span className="text-sm">
-                  {form.type === 'free_shipping' ? (
-                    <strong className="text-green-600">Free Shipping</strong>
-                  ) : (
-                    <>saves <strong className="text-green-600">?{previewDiscount}</strong> | pays <strong>?{pays}</strong></>
-                  )}
+                  saves <strong className="text-green-600">₹{previewDiscount}</strong> | pays <strong>₹{pays}</strong>
                 </span>
               </div>
 
@@ -387,7 +380,6 @@ export default function DiscountsPage() {
                   {[
                     { id: 'percentage', label: 'Percentage', icon: Percent },
                     { id: 'flat', label: 'Flat Amount', icon: DollarSign },
-                    { id: 'free_shipping', label: 'Free Shipping', icon: Truck },
                   ].map(t => (
                     <button
                       key={t.id}
@@ -403,25 +395,23 @@ export default function DiscountsPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {form.type !== 'free_shipping' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1">Discount Value</label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#ffffff]/40">{form.type === 'flat' ? '?' : '%'}</span>
-                      <input
-                        type="number"
-                        required
-                        min="1"
-                        max={form.type === 'percentage' ? 100 : undefined}
-                        value={form.value}
-                        onChange={e => setForm({ ...form, value: e.target.value })}
-                        className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:border-[#c9a84c] focus:outline-none"
-                      />
-                    </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Discount Value</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{form.type === 'flat' ? '₹' : '%'}</span>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      max={form.type === 'percentage' ? 100 : undefined}
+                      value={form.value}
+                      onChange={e => setForm({ ...form, value: e.target.value })}
+                      className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md focus:border-[#c9a84c] focus:outline-none"
+                    />
                   </div>
-                )}
-                <div className={form.type === 'free_shipping' ? 'col-span-2' : ''}>
-                  <label className="block text-sm font-medium text-gray-900 mb-1">Min Order Amount (?)</label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Min Order Amount (₹)</label>
                   <input
                     type="number"
                     min="0"

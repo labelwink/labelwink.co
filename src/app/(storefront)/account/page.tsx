@@ -14,8 +14,9 @@ interface Profile {
 
 interface Order {
   id: string;
+  order_number: string;
   status: string;
-  total: number;
+  total_amount: number;
   created_at: string;
 }
 
@@ -78,15 +79,11 @@ export default function AccountDashboard() {
     const [profileRes, ordersRes, wishlistRes, settingsRes] = await Promise.all([
       supabase
         .from('profiles')
-        .select('full_name, phone, wink_points, lifetime_earned')
+        .select('full_name, phone, wink_points')
         .eq('id', user.id)
         .single(),
-      supabase
-        .from('orders')
-        .select('id, status, total, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(3),
+      // Fetch orders via API route (uses admin client, bypasses RLS)
+      fetch('/api/storefront/orders').then(r => r.ok ? r.json() : { orders: [] }),
       supabase
         .from('wishlists')
         .select('id', { count: 'exact', head: true })
@@ -101,7 +98,7 @@ export default function AccountDashboard() {
       setProfile(profileRes.data);
       setEditName(profileRes.data.full_name || '');
       setEditPhone(profileRes.data.phone || '');
-      setLifetime(profileRes.data.lifetime_earned || 0);
+      setLifetime(profileRes.data.wink_points || 0);
     } else {
       // Upsert empty profile on first visit
       await supabase.from('profiles').upsert({
@@ -114,7 +111,9 @@ export default function AccountDashboard() {
       setEditName(user.user_metadata?.full_name || '');
     }
 
-    setOrders(ordersRes.data || []);
+    // ordersRes is now { orders: [...] } from API route
+    const ordersArray = Array.isArray(ordersRes?.orders) ? ordersRes.orders.slice(0, 3) : [];
+    setOrders(ordersArray);
     setWishlistCount(wishlistRes.count || 0);
     setTiers(settingsRes.data?.loyalty_tiers || []);
     setLoading(false);
@@ -152,7 +151,7 @@ export default function AccountDashboard() {
     return (
       <div className="text-center py-16">
         <p className="text-lg font-semibold text-labelwink-green mb-4">Please sign in to view your account</p>
-        <Link href="/account/login" className="bg-labelwink-green text-white px-8 py-3 rounded-none text-xs font-bold uppercase tracking-widest hover:bg-labelwink-green-hover transition-all shadow-md">
+        <Link href="/account/login" className="bg-labelwink-green text-white px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-labelwink-green-hover transition-all shadow-md">
           Sign In
         </Link>
       </div>
@@ -168,10 +167,10 @@ export default function AccountDashboard() {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       {/* Profile Card */}
-      <div className="bg-white border border-labelwink-cream-border rounded-none p-6 shadow-sm">
+      <div className="bg-white border border-labelwink-cream-border rounded-2xl p-6 shadow-sm">
         <div className="flex items-start gap-5">
           {/* Avatar */}
-          <div className="w-16 h-16 rounded-none bg-labelwink-green text-labelwink-gold flex items-center justify-center text-2xl font-bold font-serif flex-shrink-0">
+          <div className="w-16 h-16 rounded-xl bg-labelwink-green text-labelwink-gold flex items-center justify-center text-2xl font-bold font-serif flex-shrink-0">
             {initials}
           </div>
           <div className="flex-1 min-w-0">
@@ -182,7 +181,7 @@ export default function AccountDashboard() {
                   <input
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
-                    className="w-full border border-labelwink-cream-border bg-labelwink-cream-card rounded-none px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-labelwink-gold"
+                    className="w-full border border-labelwink-cream-border bg-labelwink-cream-card rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-labelwink-gold"
                   />
                 </div>
                 <div>
@@ -190,21 +189,21 @@ export default function AccountDashboard() {
                   <input
                     value={editPhone}
                     onChange={e => setEditPhone(e.target.value)}
-                    className="w-full border border-labelwink-cream-border bg-labelwink-cream-card rounded-none px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-labelwink-gold"
+                    className="w-full border border-labelwink-cream-border bg-labelwink-cream-card rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-labelwink-gold"
                   />
                 </div>
                 <div className="flex gap-3">
                   <button
                     onClick={handleSaveProfile}
                     disabled={saving}
-                    className="flex items-center gap-2 bg-labelwink-green text-white text-[10px] uppercase tracking-widest font-bold px-4 py-2 rounded-none hover:bg-labelwink-green-hover transition-all shadow-sm disabled:opacity-60"
+                    className="flex items-center gap-2 bg-labelwink-green text-white text-[10px] uppercase tracking-widest font-bold px-4 py-2 rounded-lg hover:bg-labelwink-green-hover transition-all shadow-sm disabled:opacity-60"
                   >
                     {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
                     Save Changes
                   </button>
                   <button
                     onClick={() => setEditing(false)}
-                    className="text-[10px] uppercase tracking-widest font-bold px-4 py-2 rounded-none border border-labelwink-cream-border hover:bg-labelwink-cream-card transition-all"
+                    className="text-[10px] uppercase tracking-widest font-bold px-4 py-2 rounded-lg border border-labelwink-cream-border hover:bg-labelwink-cream-card transition-all"
                   >
                     Cancel
                   </button>
@@ -214,7 +213,7 @@ export default function AccountDashboard() {
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-xl font-semibold text-labelwink-green font-heading">{displayName}</h1>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-none border uppercase tracking-wider ${tier.bg} ${tier.color}`}>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border uppercase tracking-wider ${tier.bg} ${tier.color}`}>
                     {tier.emoji} {tier.name}
                   </span>
                 </div>
@@ -257,7 +256,7 @@ export default function AccountDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
         {/* Wink Points */}
-        <div className={`border rounded-none p-5 relative overflow-hidden ${tier.bg}`}>
+        <div className={`border rounded-2xl p-5 relative overflow-hidden ${tier.bg}`}>
           <div className="flex items-start justify-between mb-3">
             <div>
               <p className="text-[10px] uppercase tracking-widest font-bold text-labelwink-green/60">Wink Points</p>
@@ -277,8 +276,8 @@ export default function AccountDashboard() {
             const progress = Math.min(100, Math.round((lifetime / nextTier.min) * 100));
             return (
               <div className="mt-3">
-                <div className="w-full bg-white/50 rounded-none h-1.5">
-                  <div className={`h-1.5 rounded-none ${tier.color.replace('text-', 'bg-')}`} style={{ width: `${progress}%` }} />
+                <div className="w-full bg-white/50 rounded-full h-1.5">
+                  <div className={`h-1.5 rounded-full ${tier.color.replace('text-', 'bg-')}`} style={{ width: `${progress}%` }} />
                 </div>
                 <p className="text-[9px] text-labelwink-green/40 mt-1">{nextTier.min - lifetime} pts to next tier</p>
               </div>
@@ -287,7 +286,7 @@ export default function AccountDashboard() {
         </div>
 
         {/* Total Orders */}
-        <div className="border border-labelwink-cream-border bg-white rounded-none p-5">
+        <div className="border border-labelwink-cream-border bg-white rounded-2xl p-5">
           <div className="flex items-start justify-between mb-3">
             <div>
               <p className="text-[10px] uppercase tracking-widest font-bold text-labelwink-green/60">Total Orders</p>
@@ -301,7 +300,7 @@ export default function AccountDashboard() {
         </div>
 
         {/* Wishlist */}
-        <div className="border border-labelwink-cream-border bg-white rounded-none p-5">
+        <div className="border border-labelwink-cream-border bg-white rounded-2xl p-5">
           <div className="flex items-start justify-between mb-3">
             <div>
               <p className="text-[10px] uppercase tracking-widest font-bold text-labelwink-green/60">Saved Items</p>
@@ -325,7 +324,7 @@ export default function AccountDashboard() {
         </div>
 
         {orders.length > 0 ? (
-          <div className="bg-white border border-labelwink-cream-border rounded-none overflow-hidden divide-y divide-labelwink-cream-border/50">
+          <div className="bg-white border border-labelwink-cream-border rounded-2xl overflow-hidden divide-y divide-labelwink-cream-border/50">
             {orders.map(order => (
               <Link
                 key={order.id}
@@ -333,12 +332,12 @@ export default function AccountDashboard() {
                 className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-labelwink-cream-card transition-colors group"
               >
                 <div className="flex gap-4 items-center">
-                  <div className="w-10 h-10 bg-labelwink-cream-card rounded-none flex items-center justify-center text-labelwink-green font-bold text-xs font-mono flex-shrink-0">
+                  <div className="w-10 h-10 bg-labelwink-cream-card rounded-lg flex items-center justify-center text-labelwink-green font-bold text-xs font-mono flex-shrink-0">
                     #{order.id.slice(0, 4).toUpperCase()}
                   </div>
                   <div>
                     <p className="font-bold text-sm tracking-tight group-hover:text-labelwink-gold transition-colors">
-                      Order #{order.id.slice(0, 8).toUpperCase()}
+                      {order.order_number || `Order #${order.id.slice(0, 8).toUpperCase()}`}
                     </p>
                     <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
                       {new Date(order.created_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
@@ -347,7 +346,7 @@ export default function AccountDashboard() {
                 </div>
                 <div className="flex items-center gap-4 self-end sm:self-auto">
                   <div className="text-right">
-                    <p className="font-bold text-sm">₹{Number(order.total || 0).toLocaleString('en-IN')}</p>
+                    <p className="font-bold text-sm">₹{Number(order.total_amount || 0).toLocaleString('en-IN')}</p>
                     <span className={`text-[9px] px-2 py-0.5 rounded-full uppercase tracking-tighter font-bold ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-700'}`}>
                       {order.status}
                     </span>
@@ -358,12 +357,12 @@ export default function AccountDashboard() {
             ))}
           </div>
         ) : (
-          <div className="bg-white border-2 border-dashed border-labelwink-cream-border rounded-none p-12 text-center shadow-inner">
+          <div className="bg-white border-2 border-dashed border-labelwink-cream-border rounded-2xl p-12 text-center shadow-inner">
             <Package className="w-10 h-10 mx-auto text-labelwink-green/20 mb-3" />
             <p className="text-sm font-medium text-muted-foreground mb-6">You haven&apos;t placed any orders yet.</p>
             <Link
               href="/products"
-              className="inline-block bg-labelwink-green text-white px-10 py-4 rounded-none text-xs font-bold uppercase tracking-widest hover:bg-labelwink-green-hover transition-all shadow-md"
+              className="inline-block bg-labelwink-green text-white px-10 py-4 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-labelwink-green-hover transition-all shadow-md"
             >
               Start Your Collection
             </Link>

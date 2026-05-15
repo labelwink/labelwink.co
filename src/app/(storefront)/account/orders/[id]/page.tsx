@@ -1,9 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import Image from 'next/image';
-import { ChevronLeft, Download, Package, MapPin, ExternalLink, CreditCard, Star } from 'lucide-react';
+import { ChevronLeft, Download, Package, MapPin, CreditCard, Star } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ReturnModal } from '@/components/storefront/ReturnModal';
@@ -22,52 +21,46 @@ const STATUS_BADGE: Record<string, string> = {
 
 export default function OrderDetailsPage() {
   const { id } = useParams();
-  const supabase = createClient();
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showReturnModal, setShowReturnModal] = useState(false);
-  const [returnWindowDays, setReturnWindowDays] = useState(7);
-  
+
   useEffect(() => {
-    async function fetchOrder() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const [orderRes, settingsRes] = await Promise.all([
-        supabase
-          .from('orders')
-          .select(`
-            *,
-            order_items (*),
-            invoices (invoice_number),
-            order_status_history (status, created_at, notes)
-          `)
-          .eq('id', id)
-          .eq('user_id', user.id)
-          .single(),
-        supabase.from('shop_settings').select('return_window_days').single()
-      ]);
-
-      if (orderRes.data) setOrder(orderRes.data);
-      if (settingsRes.data?.return_window_days) setReturnWindowDays(settingsRes.data.return_window_days);
-      setLoading(false);
-    }
-    fetchOrder();
-  }, [id, supabase]);
-
-  // Check for #return hash on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash === '#return' && order?.status === 'delivered') {
-      setShowReturnModal(true);
-    }
-  }, [order]);
+    if (!id) return;
+    fetch(`/api/storefront/orders/${encodeURIComponent(String(id))}`)
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then(data => {
+        if (data?.error) throw new Error(data.error);
+        setOrder(data);
+      })
+      .catch(err => {
+        console.error('[order-detail] fetch error', err);
+        setError(err.message ?? 'Order not found.');
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
 
   if (loading) {
-    return <div className="h-[40vh] flex items-center justify-center"><div className="w-8 h-8 border-4 border-[#c9a84c] border-t-transparent rounded-full animate-spin"></div></div>;
+    return (
+      <div className="h-[40vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#c9a84c] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
-  if (!order) {
-    return <div className="text-center py-20 text-muted-foreground">Order not found or unauthorized.</div>;
+  if (error || !order) {
+    return (
+      <div className="text-center py-20 space-y-4">
+        <p className="text-muted-foreground">{error ?? 'Order not found or unauthorized.'}</p>
+        <Link href="/account/orders" className="inline-flex items-center gap-2 text-sm text-[#1B3A2D] underline">
+          ← Back to My Orders
+        </Link>
+      </div>
+    );
   }
 
   const steps = ['pending', 'confirmed', 'packed', 'shipped', 'delivered'];
@@ -77,11 +70,15 @@ export default function OrderDetailsPage() {
     if (order.status === 'order_ready') currentStepIdx = 2;
   }
 
-  const invoiceNum = order.invoices?.[0]?.invoice_number || 'Pending';
   const isDelivered = order.status === 'delivered';
-  const daysSinceOrder = Math.floor((Date.now() - new Date(order.created_at).getTime()) / (1000 * 3600 * 24));
-  const canReturn = isDelivered && daysSinceOrder <= returnWindowDays;
   const isDispatched = ['dispatched', 'shipped'].includes(order.status);
+  const daysSinceOrder = Math.floor((Date.now() - new Date(order.created_at).getTime()) / (1000 * 3600 * 24));
+  const canReturn = isDelivered && daysSinceOrder <= 7;
+
+  // Build tracking URL from Shiprocket AWB if present
+  const trackingUrl = order.shiprocket_awb_code
+    ? `https://shiprocket.co/tracking/${order.shiprocket_awb_code}`
+    : null;
 
   return (
     <div className="space-y-6 animate-in fade-in">
@@ -91,12 +88,20 @@ export default function OrderDetailsPage() {
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-xl font-heading font-bold text-charcoal">Order #{order.id.slice(0,8).toUpperCase()}</h1>
-          <div className="flex items-center gap-3 mt-1">
-            <span className="text-xs text-muted-foreground">Invoice: <span className="font-mono text-[#c9a84c] font-bold">{invoiceNum}</span></span>
-            <span className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+          <h1 className="text-xl font-heading font-bold text-charcoal">
+            Order #{order.order_number || order.id?.slice(0, 8).toUpperCase()}
+          </h1>
+          <div className="flex items-center gap-3 mt-1 flex-wrap">
+            {order.invoice_number && (
+              <span className="text-xs text-muted-foreground">
+                Invoice: <span className="font-mono text-[#c9a84c] font-bold">{order.invoice_number}</span>
+              </span>
+            )}
+            <span className="text-xs text-muted-foreground">
+              {new Date(order.created_at).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
+            </span>
             <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-0.5 rounded-full ${STATUS_BADGE[order.status] || 'bg-gray-100 text-gray-700'}`}>
-              {order.status.replace(/_/g, ' ')}
+              {order.status?.replace(/_/g, ' ')}
             </span>
           </div>
         </div>
@@ -106,29 +111,20 @@ export default function OrderDetailsPage() {
       {order.status !== 'cancelled' ? (
         <div className="bg-white border border-sage/20 rounded-xl p-6 overflow-x-auto">
           <div className="min-w-[500px] flex justify-between items-center relative px-4">
-            <div className="absolute top-4 left-8 right-8 h-1 bg-sage/20 -z-10"></div>
-            <div className="absolute top-4 left-8 h-1 bg-[#c9a84c] -z-10 transition-all duration-500" style={{ width: `calc(${Math.max(0, currentStepIdx) * (100 / (steps.length - 1))}%)` }}></div>
-            
+            <div className="absolute top-4 left-8 right-8 h-1 bg-sage/20 -z-10" />
+            <div
+              className="absolute top-4 left-8 h-1 bg-[#c9a84c] -z-10 transition-all duration-500"
+              style={{ width: `calc(${Math.max(0, currentStepIdx) * (100 / (steps.length - 1))}%)` }}
+            />
             {steps.map((step, idx) => {
               const isCompleted = idx <= currentStepIdx;
               const isCurrent = idx === currentStepIdx;
-              const historyLog = order.order_status_history?.find((h: any) => 
-                h.status === step || 
-                (step === 'shipped' && h.status === 'dispatched') || 
-                (step === 'packed' && h.status === 'order_ready')
-              );
-              
               return (
                 <div key={step} className="flex flex-col items-center gap-2">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center border-4 border-white transition-colors duration-500 ${isCompleted ? 'bg-[#c9a84c] text-white' : 'bg-sage/30'} ${isCurrent ? 'ring-4 ring-[#c9a84c]/20' : ''}`}>
-                    {isCompleted ? <div className="w-2 h-2 rounded-full bg-white"></div> : null}
+                    {isCompleted ? <div className="w-2 h-2 rounded-full bg-white" /> : null}
                   </div>
-                  <div className="text-center">
-                    <p className={`text-[10px] uppercase tracking-widest font-bold ${isCompleted ? 'text-charcoal' : 'text-muted-foreground'}`}>{step}</p>
-                    {historyLog && (
-                      <p className="text-[9px] text-muted-foreground">{new Date(historyLog.created_at).toLocaleDateString('en-IN', {month:'short', day:'numeric'})}</p>
-                    )}
-                  </div>
+                  <p className={`text-[10px] uppercase tracking-widest font-bold ${isCompleted ? 'text-charcoal' : 'text-muted-foreground'}`}>{step}</p>
                 </div>
               );
             })}
@@ -143,33 +139,36 @@ export default function OrderDetailsPage() {
       {/* Items */}
       <div className="bg-white border border-sage/20 rounded-xl overflow-hidden">
         <div className="bg-sage/5 px-6 py-3 border-b border-sage/10">
-          <h3 className="text-xs uppercase tracking-widest font-bold text-charcoal/60">Items ({order.order_items?.length || 0})</h3>
+          <h3 className="text-xs uppercase tracking-widest font-bold text-charcoal/60">
+            Items ({order.order_items?.length || 0})
+          </h3>
         </div>
         <div className="divide-y divide-sage/10">
-          {order.order_items.map((item: any) => (
+          {(order.order_items ?? []).map((item: any) => (
             <div key={item.id} className="p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
               <div className="w-16 h-16 bg-sage/10 rounded-lg overflow-hidden flex-shrink-0 relative">
-                {item.product_image && (
-                  <Image 
-                    src={item.product_image} 
-                    alt={item.product_name} 
+                {item.image_url && (
+                  <Image
+                    src={item.image_url}
+                    alt={item.product_name ?? 'Product'}
                     fill
                     sizes="64px"
-                    className="object-cover" 
+                    className="object-cover"
                   />
                 )}
               </div>
               <div className="flex-1">
                 <p className="font-bold text-charcoal text-sm mb-1">{item.product_name}</p>
-                <div className="flex gap-3 text-xs text-muted-foreground">
+                <div className="flex gap-3 text-xs text-muted-foreground flex-wrap">
                   {item.size && <span className="bg-sage/10 px-2 py-0.5 rounded font-medium">Size: {item.size}</span>}
                   {item.color && <span>Color: {item.color}</span>}
                   <span>Qty: {item.quantity}</span>
+                  {item.sku && <span className="font-mono text-[10px]">SKU: {item.sku}</span>}
                 </div>
               </div>
               <div className="text-right">
-                <p className="font-bold text-charcoal">₹{Number(item.total_price).toLocaleString('en-IN')}</p>
-                <p className="text-[10px] text-muted-foreground">₹{item.unit_price} each</p>
+                <p className="font-bold text-charcoal">₹{Number(item.total_price ?? (item.unit_price ?? item.price ?? 0) * item.quantity).toLocaleString('en-IN')}</p>
+                <p className="text-[10px] text-muted-foreground">₹{item.unit_price ?? item.price ?? 0} each</p>
               </div>
             </div>
           ))}
@@ -178,8 +177,8 @@ export default function OrderDetailsPage() {
 
       {/* Info cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Shipping info */}
-        {order.tracking_number && (
+        {/* Shiprocket tracking */}
+        {order.shiprocket_awb_code && (
           <div className="bg-white border border-sage/20 rounded-xl p-5">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-[#1a1a1a] rounded-full flex items-center justify-center text-[#c9a84c]">
@@ -187,13 +186,16 @@ export default function OrderDetailsPage() {
               </div>
               <div>
                 <h3 className="text-xs uppercase tracking-widest font-bold text-charcoal/60">Shipping</h3>
-                <p className="font-bold text-charcoal text-sm">{order.shipping_carrier}</p>
+                <p className="font-bold text-charcoal text-sm">{order.shiprocket_courier_name ?? 'Courier'}</p>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground mb-3">AWB: <span className="font-mono text-charcoal bg-sage/10 px-1.5 py-0.5 rounded">{order.tracking_number}</span></p>
-            {order.tracking_url && (
-              <a href={order.tracking_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#c9a84c] uppercase tracking-widest hover:underline">
-                Track Package <ExternalLink className="w-3 h-3" />
+            <p className="text-sm text-muted-foreground mb-3">
+              AWB: <span className="font-mono text-charcoal bg-sage/10 px-1.5 py-0.5 rounded">{order.shiprocket_awb_code}</span>
+            </p>
+            {trackingUrl && (
+              <a href={trackingUrl} target="_blank" rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#c9a84c] uppercase tracking-widest hover:underline">
+                Track Package →
               </a>
             )}
           </div>
@@ -205,14 +207,15 @@ export default function OrderDetailsPage() {
             <MapPin className="w-5 h-5 text-muted-foreground" />
             <h3 className="text-xs uppercase tracking-widest font-bold text-charcoal/60">Delivery Address</h3>
           </div>
-          <p className="font-bold text-sm text-charcoal">{order.shipping_address?.first_name} {order.shipping_address?.last_name}</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            {order.shipping_address?.line1}<br/>
-            {order.shipping_address?.line2 && <>{order.shipping_address.line2}<br/></>}
-            {order.shipping_address?.city}, {order.shipping_address?.state} - {order.shipping_address?.pincode}
+          <p className="font-bold text-sm text-charcoal">
+            {order.shipping_name || `${order.shipping_address?.first_name ?? ''} ${order.shipping_address?.last_name ?? ''}`.trim()}
           </p>
-          {(order.shipping_address?.phone || order.customer_phone) && (
-            <p className="text-sm text-muted-foreground mt-1">📞 {order.shipping_address?.phone || order.customer_phone}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {order.shipping_address?.line1 || order.shipping_address?.address_line1}<br />
+            {order.shipping_city}, {order.shipping_state} - {order.shipping_pincode}
+          </p>
+          {(order.shipping_phone || order.customer_phone) && (
+            <p className="text-sm text-muted-foreground mt-1">📞 {order.shipping_phone || order.customer_phone}</p>
           )}
         </div>
 
@@ -223,80 +226,62 @@ export default function OrderDetailsPage() {
             <h3 className="text-xs uppercase tracking-widest font-bold text-charcoal/60">Payment</h3>
           </div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="bg-green-100 text-green-700 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">✅ Paid</span>
-            <span className="text-sm text-charcoal font-medium">Razorpay</span>
+            <span className="bg-green-100 text-green-700 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+              ✅ {order.payment_status ?? 'Paid'}
+            </span>
+            <span className="text-sm text-charcoal font-medium capitalize">{order.payment_method ?? 'Razorpay'}</span>
           </div>
           {order.razorpay_payment_id && (
             <p className="text-xs text-muted-foreground">TXN: <span className="font-mono">{order.razorpay_payment_id}</span></p>
+          )}
+          {order.coupon_code && (
+            <p className="text-xs text-muted-foreground mt-1">Coupon: <span className="font-mono text-[#1B3A2D]">{order.coupon_code}</span></p>
           )}
         </div>
       </div>
 
       {/* Price breakdown */}
       <div className="bg-white border border-sage/20 rounded-xl p-6 max-w-sm ml-auto space-y-3">
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Subtotal</span>
-          <span className="font-bold">₹{Number(order.subtotal).toLocaleString('en-IN')}</span>
-        </div>
+        {order.subtotal != null && (
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Subtotal</span>
+            <span className="font-bold">₹{Number(order.subtotal).toLocaleString('en-IN')}</span>
+          </div>
+        )}
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Shipping</span>
-          <span className="font-bold">{order.shipping_amount === 0 ? 'FREE' : `₹${order.shipping_amount}`}</span>
+          <span className="font-bold">{Number(order.shipping_amount) === 0 ? 'FREE' : `₹${order.shipping_amount}`}</span>
         </div>
-        {order.discount_amount > 0 && (
+        {Number(order.discount_amount) > 0 && (
           <div className="flex justify-between text-sm text-green-600">
             <span>Discount</span>
             <span className="font-bold">-₹{order.discount_amount}</span>
           </div>
         )}
-        {order.tax_amount > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">GST</span>
-            <span className="font-bold">₹{order.tax_amount}</span>
+        {Number(order.points_redeemed) > 0 && (
+          <div className="flex justify-between text-sm text-purple-600">
+            <span>Wink Points</span>
+            <span className="font-bold">-₹{order.points_redeemed}</span>
           </div>
         )}
         <div className="flex justify-between text-lg pt-4 border-t border-sage/20 font-bold">
           <span className="text-charcoal">Total</span>
-          <span className="text-[#c9a84c]">₹{Number(order.total).toLocaleString('en-IN')}</span>
+          <span className="text-[#c9a84c]">₹{Number(order.total_amount).toLocaleString('en-IN')}</span>
         </div>
       </div>
 
-      {/* Tracking Section */}
-      {order.shiprocket_awb_code ? (
-        <div className="p-4 bg-blue-50 rounded-lg mt-4">
-          <p className="font-semibold text-blue-800">Your order is on its way!</p>
-          <p className="text-sm text-blue-700 mt-1">
-            Courier: {order.shiprocket_courier_name}
-          </p>
-          <p className="text-sm text-blue-700">
-            Tracking: {order.shiprocket_awb_code}
-          </p>
-          <a
-            href={`https://shiprocket.co/tracking/${order.shiprocket_awb_code}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block mt-2 text-blue-600 underline text-sm"
-          >
-            Track your package
-          </a>
-        </div>
-      ) : (
-        <p className="text-sm text-gray-500 mt-4">
-          Your order is being prepared for shipping.
-        </p>
-      )}
-
       {/* Action buttons */}
       <div className="flex flex-wrap gap-3 pt-4 border-t border-sage/20">
-        <Link 
+        <Link
           href={`/account/orders/${order.id}/invoice`}
           className="flex items-center gap-2 border border-[#1a1a1a] px-5 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-sage/5 transition-colors"
         >
           <Download className="w-4 h-4" /> Download Invoice
         </Link>
-        
-        {isDispatched && order.tracking_url && (
+
+        {isDispatched && trackingUrl && (
           <a
-            href={order.tracking_url}
+            href={trackingUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 bg-[#1a1a1a] text-white px-5 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-black transition-colors"
@@ -316,7 +301,7 @@ export default function OrderDetailsPage() {
               </button>
             )}
             <Link
-              href={`/products#reviews`}
+              href="/products#reviews"
               className="flex items-center gap-2 border border-amber-500 text-amber-500 px-5 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-amber-50 transition-colors"
             >
               <Star className="w-3.5 h-3.5" /> Rate Items ⭐
@@ -335,12 +320,12 @@ export default function OrderDetailsPage() {
       {showReturnModal && (
         <ReturnModal
           orderId={order.id}
-          items={order.order_items.map((item: any) => ({
+          items={(order.order_items ?? []).map((item: any) => ({
             id: item.id,
             product_name: item.product_name,
             size: item.size,
             quantity: item.quantity,
-            product_image: item.product_image,
+            product_image: item.image_url,
           }))}
           onSuccess={() => {
             setOrder({ ...order, status: 'return_requested' });

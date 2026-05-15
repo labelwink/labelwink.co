@@ -105,7 +105,7 @@ export function AdminTopBar() {
         className="lg:hidden"
         style={{
           background: 'none', border: 'none', cursor: 'pointer',
-          color: '#5a7060', padding: '8px', borderRadius: '0',
+          color: '#5a7060', padding: '8px', borderRadius: '8px',
           display: 'flex', alignItems: 'center',
           transition: 'color 150ms, background 150ms',
         }}
@@ -124,7 +124,7 @@ export function AdminTopBar() {
             onClick={() => setOpen(o => !o)}
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              color: '#5a7060', padding: '8px', borderRadius: '0',
+              color: '#5a7060', padding: '8px', borderRadius: '8px',
               position: 'relative', display: 'flex', alignItems: 'center',
               transition: 'color 150ms, background 150ms',
             }}
@@ -136,7 +136,7 @@ export function AdminTopBar() {
                 position: 'absolute', top: '4px', right: '4px',
                 background: '#c0392b', color: '#ffffff',
                 fontSize: '9px', fontWeight: 700,
-                width: '16px', height: '16px', borderRadius: '0',
+                width: '16px', height: '16px', borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 {unread > 9 ? '9+' : unread}
@@ -148,7 +148,7 @@ export function AdminTopBar() {
             <div style={{
               position: 'absolute', right: 0, top: '100%', marginTop: '8px',
               width: '320px', background: '#ffffff',
-              border: '1px solid #e8e2d6', borderRadius: '0',
+              border: '1px solid #e8e2d6', borderRadius: '12px',
               boxShadow: '0 8px 24px rgba(26,46,30,0.12)',
               zIndex: 50, overflow: 'hidden',
             }}>
@@ -194,7 +194,7 @@ export function AdminTopBar() {
                         }}
                       >
                         <div style={{
-                          width: '32px', height: '32px', borderRadius: '0', flexShrink: 0,
+                          width: '32px', height: '32px', borderRadius: '8px', flexShrink: 0,
                           background: '#eef5f1', display: 'flex', alignItems: 'center', justifyContent: 'center',
                           color: '#1C3829',
                         }}>
@@ -212,7 +212,7 @@ export function AdminTopBar() {
                           </p>
                         </div>
                         {!notif.is_read && (
-                          <span style={{ width: '8px', height: '8px', borderRadius: '0', background: '#1C3829', flexShrink: 0, marginTop: '8px' }} />
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#1C3829', flexShrink: 0, marginTop: '8px' }} />
                         )}
                       </button>
                     )
@@ -232,7 +232,7 @@ export function AdminTopBar() {
           style={{
             alignItems: 'center', gap: '6px',
             color: '#5a7060', border: '1px solid #e8e2d6',
-            borderRadius: '0', padding: '6px 12px',
+            borderRadius: '8px', padding: '6px 12px',
             fontSize: '13px', fontWeight: 500, textDecoration: 'none',
             transition: 'color 150ms, border-color 150ms, background 150ms',
           }}
@@ -249,7 +249,7 @@ export function AdminTopBar() {
           style={{
             display: 'flex', alignItems: 'center', gap: '6px',
             color: '#5a7060', border: '1px solid #e8e2d6',
-            borderRadius: '0', padding: '6px 12px',
+            borderRadius: '8px', padding: '6px 12px',
             fontSize: '13px', fontWeight: 500,
             background: 'none', cursor: 'pointer',
             transition: 'color 150ms, border-color 150ms',

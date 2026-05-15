@@ -39,7 +39,7 @@ export function ProductCard({
   const imageSrc = image || '/placeholder-product.jpg';
 
   return (
-    <div className="group relative flex flex-col bg-labelwink-cream-card border border-labelwink-cream-border rounded-none overflow-hidden hover:shadow-xl hover:shadow-labelwink-green/5 transition-all duration-300">
+    <div className="group relative flex flex-col bg-labelwink-cream-card border border-labelwink-cream-border rounded-xl overflow-hidden hover:shadow-xl hover:shadow-labelwink-green/5 transition-all duration-300">
       {/* Image Container */}
       <div className="relative aspect-[3/4] overflow-hidden bg-labelwink-cream">
         <Link href={`/products/${slug}`} className="absolute inset-0 block z-0">
@@ -94,12 +94,12 @@ export function ProductCard({
         {/* Badges */}
         <div className="absolute top-2 left-2 flex flex-col gap-1 z-20">
           {isNewArrival && (
-            <span className="bg-labelwink-gold/20 text-labelwink-green text-[10px] font-bold px-2 py-0.5 rounded-none uppercase tracking-widest border border-labelwink-gold/10 backdrop-blur-sm">
+            <span className="bg-labelwink-gold/20 text-labelwink-green text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase tracking-widest border border-labelwink-gold/10 backdrop-blur-sm">
               New
             </span>
           )}
           {discount > 0 && !isOutOfStock && (
-            <span className="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-none uppercase tracking-widest border border-red-100 backdrop-blur-sm">
+            <span className="bg-red-50 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase tracking-widest border border-red-100 backdrop-blur-sm">
               {discount}% OFF
             </span>
           )}
@@ -146,7 +146,7 @@ export function ProductCard({
         <div className="mt-1">
           <Link
             href={`/products/${slug}`}
-            className={`flex items-center justify-center w-full bg-labelwink-green text-white hover:bg-labelwink-green-hover text-xs font-bold uppercase tracking-[0.2em] py-3.5 rounded-none transition-all duration-300 shadow-lg shadow-labelwink-green/10 ${isOutOfStock ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'active:scale-[0.98]'}`}
+            className={`flex items-center justify-center w-full bg-labelwink-green text-white hover:bg-labelwink-green-hover text-xs font-bold uppercase tracking-[0.2em] py-3.5 rounded-xl transition-all duration-300 shadow-lg shadow-labelwink-green/10 ${isOutOfStock ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'active:scale-[0.98]'}`}
           >
             {isOutOfStock ? 'Out of Stock' : 'View Product'}
           </Link>

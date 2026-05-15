@@ -16,8 +16,7 @@ export default function AdminSetupWizard() {
   const [storeData, setStoreData] = useState({
     name: 'Label Wink',
     email: '',
-    whatsapp: '',
-    shippingThreshold: 3499
+    whatsapp: ''
   });
 
   const [categoryData, setCategoryData] = useState({
@@ -31,7 +30,6 @@ export default function AdminSetupWizard() {
       supabase.from('site_settings').upsert({ key: 'store_name', value: { name: storeData.name } }),
       supabase.from('site_settings').upsert({ key: 'store_email', value: { email: storeData.email } }),
       supabase.from('site_settings').upsert({ key: 'whatsapp_number', value: { number: storeData.whatsapp } }),
-      supabase.from('site_settings').upsert({ key: 'free_shipping_threshold', value: { amount: Number(storeData.shippingThreshold) } }),
     ]);
     setLoading(false);
     setStep(2);
@@ -88,10 +86,7 @@ export default function AdminSetupWizard() {
                   <label className="text-xs font-bold uppercase tracking-widest text-charcoal/60">WhatsApp Number</label>
                   <Input placeholder="e.g. 9876543210" value={storeData.whatsapp} onChange={(e) => setStoreData({...storeData, whatsapp: e.target.value})} />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-widest text-charcoal/60">Free Shipping Threshold (₹)</label>
-                  <Input type="number" value={storeData.shippingThreshold} onChange={(e) => setStoreData({...storeData, shippingThreshold: Number(e.target.value)})} />
-                </div>
+
               </div>
 
               <Button onClick={handleStoreSetup} disabled={loading} className="w-full h-14 bg-charcoal text-white rounded-none uppercase tracking-widest font-bold mt-8">

@@ -61,7 +61,7 @@ function ProductCard({ product }: { product: any }) {
       className="product-card-hover group"
       style={{
         background: 'var(--labelwink-cream-card, #FAF5E9)', 
-        borderRadius: '0px',
+        borderRadius: '12px',
         border: '1px solid var(--labelwink-cream-border, #E8DFC8)', 
         overflow: 'hidden',
         textDecoration: 'none', 
@@ -72,10 +72,10 @@ function ProductCard({ product }: { product: any }) {
     >
       {/* Image */}
       <div style={{ position: 'relative', aspectRatio: '3/4', background: '#FAF5E9', overflow: 'hidden' }}>
-        {product.images?.[0] || product.image_url ? (
+        {product.product_images?.[0]?.url ? (
           <Image
-            src={product.images?.[0] || product.image_url}
-            alt={product.name}
+            src={product.product_images[0].url}
+            alt={product.product_images[0].alt || product.name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             style={{ objectFit: 'cover' }}
@@ -94,14 +94,14 @@ function ProductCard({ product }: { product: any }) {
           <span style={{
             position: 'absolute', top: '8px', left: '8px',
             background: 'rgba(201,168,76,0.9)', color: '#FDF8F0',
-            fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '0',
+            fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px',
           }}>NEW</span>
         )}
         {hasDiscount && (
           <span style={{
             position: 'absolute', top: '8px', right: '8px',
             background: 'rgba(74,222,128,0.9)', color: '#FDF8F0',
-            fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '0',
+            fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '4px',
           }}>SALE</span>
         )}
       </div>
@@ -134,7 +134,6 @@ export default async function Home() {
   const { settings, banners, featuredProducts, collections, newArrivals } = await getHomepageData();
 
   const banner = Array.isArray(banners) ? banners.find((b: any) => b.is_active) || banners[0] : null;
-  const freeShipping = settings?.free_shipping_above || settings?.free_shipping_threshold || 999;
   const returnDays = settings?.return_window_days || 7;
 
   return (
@@ -153,22 +152,20 @@ export default async function Home() {
 
       {/* SECTION 1: Hero Banner */}
       <section className="w-full">
-        {banner?.image_url && (
-          <img
-            src={banner.image_url}
-            alt={banner.title || 'Hero Banner'}
-            className="w-full h-auto block"
-            style={{ display: 'block' }}
-          />
-        )}
+        <img
+          src="https://res.cloudinary.com/dcmbwtreb/image/upload/v1778707316/new_Landscape_Poster_1_a3dxgc.png"
+          alt="Better Together - LabelWink Hero Banner"
+          className="w-full h-auto block"
+          style={{ display: 'block' }}
+        />
 
         <div className="relative z-10 pb-12 md:pb-16 lg:pb-20">
           <div className="mx-auto max-w-[1200px] text-center">
             <div className="flex flex-wrap gap-4 justify-center">
               {banner?.cta_text && (
                 <Link
-                  href={banner.cta_link || '#'}
-                  className="bg-labelwink-gold text-labelwink-green font-bold px-8 py-4 rounded-none hover:bg-labelwink-gold-hover transition-all duration-300 shadow-xl uppercase tracking-widest text-xs inline-flex items-center"
+                  href={banner.cta_link && banner.cta_link !== '#' ? banner.cta_link : '/products'}
+                  className="bg-labelwink-gold text-labelwink-green font-bold px-8 py-4 rounded-xl hover:bg-labelwink-gold-hover transition-all duration-300 shadow-xl uppercase tracking-widest text-xs inline-flex items-center"
                   style={{ textDecoration: 'none' }}
                 >
                   {banner.cta_text}
@@ -183,7 +180,7 @@ export default async function Home() {
       {collections && collections.length > 0 && (
         <section style={{ padding: '64px 24px', maxWidth: '1400px', margin: '0 auto', position: 'relative' }}>
           <LeafPattern opacity={0.03} id="collections-pattern" />
-          <div style={{ textAlign: 'center', marginBottom: '40px', position: 'relative', zIndex: 1 }}>
+          <div className="flex flex-col items-center text-center" style={{ marginBottom: '40px', position: 'relative', zIndex: 1, width: '100%' }}>
             <h2 style={{ fontSize: '24px', fontWeight: 600, color: '#1C3829', marginBottom: '8px' }}>Shop by Collection</h2>
             <p style={{ fontSize: '14px', color: '#6B6B5A' }}>Explore our curated collections</p>
           </div>
@@ -191,8 +188,8 @@ export default async function Home() {
             {collections.slice(0, 6).map((c: any) => (
               <Link
                 key={c.id}
-                href={`/collections/${c.slug}`}
-                className="collection-card relative aspect-square rounded-none overflow-hidden cursor-pointer group"
+                href={`/collections/${c.slug ?? c.id}`}
+                className="collection-card relative aspect-square rounded-xl overflow-hidden cursor-pointer group"
                 style={{
                   display: 'block', textDecoration: 'none',
                   transition: 'transform 200ms',
@@ -222,7 +219,7 @@ export default async function Home() {
           <div style={{ textAlign: 'center', marginTop: '32px' }}>
             <Link
               href="/collections"
-              className="border border-labelwink-green text-labelwink-green px-8 py-3 rounded-none hover:bg-labelwink-green hover:text-white transition-all duration-300 font-bold uppercase tracking-widest text-xs"
+              className="border border-labelwink-green text-labelwink-green px-8 py-3 rounded-lg hover:bg-labelwink-green hover:text-white transition-all duration-300 font-bold uppercase tracking-widest text-xs"
               style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
             >
               View All Collections
@@ -241,7 +238,7 @@ export default async function Home() {
                 <h2 style={{ fontSize: '24px', fontWeight: 600, color: '#1C3829', marginBottom: '4px' }}>Featured Pieces</h2>
                 <p style={{ fontSize: '14px', color: '#6B6B5A' }}>Handpicked for you</p>
               </div>
-              <Link href="/products" style={{ fontSize: '14px', color: '#c9a84c', textDecoration: 'none', fontWeight: 500 }}>
+              <Link href="/products?featured=true" style={{ fontSize: '14px', color: '#c9a84c', textDecoration: 'none', fontWeight: 500 }}>
                 View All →
               </Link>
             </div>
@@ -259,7 +256,7 @@ export default async function Home() {
         <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '32px' }}>
             {[
-              { icon: <Truck size={28} />, title: 'Fast Delivery', subtitle: 'On qualifying orders' },
+              { icon: <Truck size={28} />, title: 'Fast Delivery', subtitle: 'Standard shipping applies' },
               { icon: <RotateCcw size={28} />, title: `${returnDays}-day Easy Returns`, subtitle: 'Hassle-free returns' },
               { icon: <Lock size={28} />, title: 'Secure Payments', subtitle: 'Razorpay protected' },
               { icon: <Sparkles size={28} />, title: 'Handpicked Quality', subtitle: 'Curated collection' },
@@ -308,7 +305,7 @@ export default async function Home() {
           </p>
           <Link href="/admin" style={{
             display: 'inline-flex', alignItems: 'center',
-            height: '44px', padding: '0 24px', borderRadius: '0',
+            height: '44px', padding: '0 24px', borderRadius: '8px',
             background: '#FAF5E9', color: '#1C3829',
             fontWeight: 500, fontSize: '14px', textDecoration: 'none',
             border: '1px solid #E8DFC8',

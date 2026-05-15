@@ -1,6 +1,6 @@
 'use client'
 import { CldUploadWidget } from 'next-cloudinary'
-import { Video, Film } from 'lucide-react'
+import { Film } from 'lucide-react'
 
 interface Props {
   onUpload: (publicId: string) => void
@@ -14,7 +14,7 @@ export function CloudinaryVideoUploader({ onUpload }: Props) {
         folder: 'labelwink/videos',
         resourceType: 'video',
         clientAllowedFormats: ['mp4', 'mov', 'webm'],
-        maxFileSize: 100000000, // 100MB
+        maxFileSize: 100000000,
       }}
       onSuccess={(result) => {
         if (typeof result.info === 'object' && 'public_id' in result.info) {
@@ -22,10 +22,10 @@ export function CloudinaryVideoUploader({ onUpload }: Props) {
         }
       }}
     >
-      {({ open }) => (
+      {(widgetProps: any) => (
         <button
           type="button"
-          onClick={() => open()}
+          onClick={() => widgetProps?.open?.()}
           className="flex items-center gap-2 border border-sage/30 rounded-lg px-6 py-3 bg-white hover:border-teal hover:bg-sage/5 transition-all text-charcoal font-medium shadow-sm"
         >
           <Film className="w-5 h-5 text-teal" />

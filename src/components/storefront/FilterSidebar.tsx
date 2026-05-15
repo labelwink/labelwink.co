@@ -58,7 +58,7 @@ function FilterContent({
               <button
                 key={sz}
                 onClick={() => onChange({ ...activeFilters, sizes: toggle(activeFilters.sizes, sz) })}
-                className={`px-3 py-1.5 rounded-none text-xs font-bold uppercase tracking-widest transition-all duration-200 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all duration-200 ${
                   activeFilters.sizes.includes(sz)
                     ? 'bg-[#1B3A2D] border-[#1B3A2D] text-white shadow-sm'
                     : 'border border-[#ccc] text-[#333] bg-white hover:border-[#ccc] hover:bg-[#f0ece6]'
@@ -81,7 +81,7 @@ function FilterContent({
               value={activeFilters.minPrice}
               onChange={e => onChange({ ...activeFilters, minPrice: Number(e.target.value) })}
               placeholder="0"
-              className="w-full pl-6 pr-2 py-2 border border-[#ccc] rounded-none text-xs font-bold text-[#333] focus:outline-none focus:ring-1 focus:ring-[#1B3A2D] bg-white"
+              className="w-full pl-6 pr-2 py-2 border border-[#ccc] rounded-lg text-xs font-bold text-[#333] focus:outline-none focus:ring-1 focus:ring-[#1B3A2D] bg-white"
             />
           </div>
           <span className="text-[#5a7060] text-xs">to</span>
@@ -92,7 +92,7 @@ function FilterContent({
               value={activeFilters.maxPrice || maxPrice}
               onChange={e => onChange({ ...activeFilters, maxPrice: Number(e.target.value) })}
               placeholder={String(maxPrice)}
-              className="w-full pl-6 pr-2 py-2 border border-[#ccc] rounded-none text-xs font-bold text-[#333] focus:outline-none focus:ring-1 focus:ring-[#1B3A2D] bg-white"
+              className="w-full pl-6 pr-2 py-2 border border-[#ccc] rounded-lg text-xs font-bold text-[#333] focus:outline-none focus:ring-1 focus:ring-[#1B3A2D] bg-white"
             />
           </div>
         </div>
@@ -107,7 +107,7 @@ function FilterContent({
                 type="checkbox"
                 checked={activeFilters.occasions.includes(occ)}
                 onChange={() => onChange({ ...activeFilters, occasions: toggle(activeFilters.occasions, occ) })}
-                className="rounded-none border-labelwink-cream-border text-labelwink-green focus:ring-labelwink-gold"
+                className="rounded border-labelwink-cream-border text-labelwink-green focus:ring-labelwink-gold"
               />
               {occ}
             </label>
@@ -125,7 +125,7 @@ function FilterContent({
                   type="checkbox"
                   checked={activeFilters.fabrics.includes(fab)}
                   onChange={() => onChange({ ...activeFilters, fabrics: toggle(activeFilters.fabrics, fab) })}
-                  className="rounded-none border-labelwink-cream-border text-labelwink-green focus:ring-labelwink-gold"
+                  className="rounded border-labelwink-cream-border text-labelwink-green focus:ring-labelwink-gold"
                 />
                 {fab}
               </label>
@@ -187,7 +187,7 @@ export function FilterSidebar(props: FilterSidebarProps) {
       {/* Mobile trigger */}
       <button
         onClick={() => setSheetOpen(true)}
-        className="md:hidden flex items-center gap-2 px-6 py-3 border border-[#ccc] text-[#333] rounded-none text-xs font-bold uppercase tracking-widest bg-white hover:bg-[#f5f2ee] transition-all duration-300"
+        className="md:hidden flex items-center gap-2 px-6 py-3 border border-[#ccc] text-[#333] rounded-lg text-xs font-bold uppercase tracking-widest bg-white hover:bg-[#f5f2ee] transition-all duration-300"
       >
         <SlidersHorizontal size={14} />
         Filter
@@ -226,13 +226,13 @@ export function FilterSidebar(props: FilterSidebarProps) {
             <div className="flex-shrink-0 flex gap-4 px-6 py-6 border-t border-labelwink-cream-border bg-white">
               <button
                 onClick={() => { onClear(); setSheetOpen(false) }}
-                className="flex-1 px-4 py-4 border border-[#1B3A2D] text-[#1B3A2D] rounded-none text-xs font-bold uppercase tracking-widest bg-transparent hover:bg-[#1B3A2D] hover:text-white transition-colors"
+                className="flex-1 px-4 py-4 border border-[#1B3A2D] text-[#1B3A2D] rounded-lg text-xs font-bold uppercase tracking-widest bg-transparent hover:bg-[#1B3A2D] hover:text-white transition-colors"
               >
                 Clear All
               </button>
               <button
                 onClick={() => setSheetOpen(false)}
-                className="flex-1 px-4 py-4 bg-[#1B3A2D] text-white rounded-none text-xs font-bold uppercase tracking-widest hover:bg-[#163227] transition-colors shadow-lg"
+                className="flex-1 px-4 py-4 bg-[#1B3A2D] text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-[#163227] transition-colors shadow-lg"
               >
                 Apply Filters
               </button>

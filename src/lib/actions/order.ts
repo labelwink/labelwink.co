@@ -92,15 +92,7 @@ export async function prepareCheckout(checkoutData: CheckoutData): Promise<{
     }
   }
 
-  // ── 2. Shipping threshold ────────────────────────────────────────────────────
-  const { data: thresholdSetting } = await supabase
-    .from('site_settings')
-    .select('value')
-    .eq('key', 'free_shipping_threshold')
-    .maybeSingle();
-
-  const threshold = (thresholdSetting?.value as Record<string, number> | null)?.amount ?? 999;
-  let shippingFee = checkoutData.subtotal >= threshold ? 0 : 99;
+  let shippingFee = 99; // Standard shipping always applies
   let discountAmount = 0;
 
   // ── 3. Validate coupon ───────────────────────────────────────────────────────
@@ -129,8 +121,6 @@ export async function prepareCheckout(checkoutData: CheckoutData): Promise<{
           );
         } else if (coupon.type === 'fixed_amount' || coupon.type === 'fixed') {
           discountAmount = Math.min(Number(coupon.value), checkoutData.subtotal);
-        } else if (coupon.type === 'free_shipping') {
-          shippingFee = 0;
         }
       }
     }

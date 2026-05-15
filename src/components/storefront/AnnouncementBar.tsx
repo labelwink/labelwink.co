@@ -26,9 +26,7 @@ export function AnnouncementBar(props?: AnnouncementBarProps) {
   // Use provided props (from layout) or fall back to dynamic settings
   const enabled = props?.enabled ?? settings?.show_announcement_bar ?? true
   const text = props?.text ?? settings?.announcement_text ?? ''
-  const fallbackText = settings?.free_shipping_threshold
-    ? `Free shipping on orders above ₹${settings.free_shipping_threshold.toLocaleString('en-IN')}`
-    : ''
+  const fallbackText = ''
   const color = props?.color ?? '#C9A84C'
 
   const displayText = text.trim() || fallbackText

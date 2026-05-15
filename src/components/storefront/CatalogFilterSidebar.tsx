@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import { ChevronDown, SlidersHorizontal } from 'lucide-react'
@@ -114,7 +114,7 @@ export function CatalogFilterSidebar({
   }
 
   return (
-    <div className="bg-white border border-[#E8DFC8] p-4 rounded-none text-[#1C3829]">
+    <div className="bg-white border border-[#E8DFC8] p-4 rounded-2xl text-[#1C3829]">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <h2 className="flex items-center gap-1.5 text-sm font-semibold text-[#1C3829]">

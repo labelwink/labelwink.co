@@ -55,8 +55,6 @@ export async function POST(req: Request) {
       discount_amount = Math.round(cart_total * (discount.value / 100) * 100) / 100;
     } else if (discount.type === 'flat') {
       discount_amount = Math.min(discount.value, cart_total);
-    } else if (discount.type === 'free_shipping') {
-      discount_amount = 0;
     }
 
     return NextResponse.json({
@@ -64,7 +62,7 @@ export async function POST(req: Request) {
       discount_amount,
       type: discount.type,
       code: discount.code,
-      message: discount.type === 'free_shipping' ? `Shipping charge waived!` : `₹${discount_amount} off applied!`
+      message: `₹${discount_amount} off applied!`
     });
 
   } catch (err: any) {

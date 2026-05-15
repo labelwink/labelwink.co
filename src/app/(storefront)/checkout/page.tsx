@@ -229,9 +229,6 @@ export default function CheckoutPage() {
     }
     setStep(2);
     
-    if (shopSettings && subtotal >= shopSettings.free_shipping_threshold) {
-      setShippingMethod('standard');
-    }
   };
 
   const validateCoupon = async () => {
@@ -254,10 +251,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const isFreeShipping = shopSettings && subtotal >= shopSettings.free_shipping_threshold;
-  const shippingCharge = isFreeShipping 
-    ? 0 
-    : (shippingMethod === 'express' ? (shopSettings?.express_shipping_charge || 0) : (shopSettings?.standard_shipping_charge || 0));
+  const shippingCharge = shippingMethod === 'express' ? (shopSettings?.express_shipping_charge || 0) : (shopSettings?.standard_shipping_charge || 0);
   
   const discountAmt = coupon.status === 'valid' ? coupon.discount : 0;
   
@@ -341,7 +335,7 @@ export default function CheckoutPage() {
                         <input type="radio" name="address" checked={selectedAddressId === addr.id} onChange={() => setSelectedAddressId(addr.id)} className="sr-only" />
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-2">
-                            <span className="bg-[#1B3A2D] text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded">
+                            <span className="bg-[#1B3A2D] text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-lg">
                               {addr.label}
                             </span>
                             {addr.is_default && <span className="bg-[#1B3A2D] text-white text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full">Default</span>}
@@ -451,16 +445,7 @@ export default function CheckoutPage() {
               <div className="space-y-4">
                 <h2 className="text-[#1A1A1A] font-semibold text-base mb-4">2. Shipping Method</h2>
                 
-                {isFreeShipping ? (
-                  <div className="bg-[#F0F7F4] border border-[#1B3A2D] p-6 rounded-xl flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-[#1B3A2D] font-semibold text-base mb-1">🎉 Shipping charges waived!</h3>
-                      <p className="text-xs text-[#5a7060]">Standard Delivery (5-7 working days)</p>
-                    </div>
-                    <span className="font-bold text-[#1B3A2D] text-lg">FREE</span>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
+                <div className="space-y-3">
                     <label className={`border rounded-xl p-4 cursor-pointer transition-colors duration-150 block ${shippingMethod === 'standard' ? 'border-[#1B3A2D] bg-[#F0F7F4]' : 'border-[#E8E2D9] hover:bg-[#FAF8F5]'}`}>
                       <input type="radio" name="shipping" checked={shippingMethod === 'standard'} onChange={() => setShippingMethod('standard')} className="sr-only" />
                       <div className="flex justify-between items-center mb-1">
@@ -479,7 +464,6 @@ export default function CheckoutPage() {
                       <p className="text-xs text-[#5a7060]">2–3 working days</p>
                     </label>
                   </div>
-                )}
 
                 <div className="flex gap-4 pt-4">
                   <button 
@@ -551,7 +535,7 @@ export default function CheckoutPage() {
                   <p className="text-xs text-[#5a7060] mb-4">UPI • Cards • Net Banking • EMI • Wallets</p>
                   <div className="flex justify-center gap-2">
                     {['UPI', 'VISA', 'MasterCard', 'RuPay'].map(brand => (
-                      <span key={brand} className="bg-[#FAF8F5] border border-[#E8E2D9] px-2 py-1 text-[10px] font-bold rounded text-[#444]">{brand}</span>
+                      <span key={brand} className="bg-[#FAF8F5] border border-[#E8E2D9] px-2 py-1 text-[10px] font-bold rounded-lg text-[#444]">{brand}</span>
                     ))}
                   </div>
                 </div>
@@ -575,9 +559,16 @@ export default function CheckoutPage() {
                       customerName={customerName}
                       customerEmail={customerEmail}
                       customerPhone={customerPhone}
-                      onSuccess={() => {
+                      onSuccess={(orderNumber) => {
                         clearCart();
-                        router.push('/account/orders');
+                        if (typeof window !== 'undefined') {
+                          window.localStorage.removeItem('labelwink-cart');
+                          window.localStorage.removeItem('cart');
+                        }
+                        const destination = orderNumber
+                          ? `/order-confirmation?order_id=${orderNumber}`
+                          : '/account/orders';
+                        router.push(destination);
                       }}
                     />
                     <p className="text-xs text-[#5a7060] text-center mt-2">
@@ -628,11 +619,7 @@ export default function CheckoutPage() {
                 
                 <div className="flex justify-between text-sm py-1.5 text-[#444]">
                   <span>Shipping</span>
-                  {shippingCharge === 0 ? (
-                    <span className="text-green-600 font-semibold">FREE 🎉</span>
-                  ) : (
-                    <span>₹{shippingCharge.toLocaleString('en-IN')}</span>
-                  )}
+                  <span>₹{shippingCharge.toLocaleString('en-IN')}</span>
                 </div>
 
                 {discountAmt > 0 && (

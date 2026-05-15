@@ -304,7 +304,7 @@ export default function OTPLoginModal({
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white border border-labelwink-cream-border rounded-none p-8 w-full max-w-md relative shadow-2xl">
+      <div className="bg-white border border-labelwink-cream-border rounded-2xl p-8 w-full max-w-md relative shadow-2xl">
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 text-labelwink-green/30 hover:text-labelwink-green"
@@ -318,7 +318,7 @@ export default function OTPLoginModal({
             <p className="text-labelwink-green/60 mb-6 text-xs uppercase tracking-widest">Enter your mobile number to continue</p>
             
             <form onSubmit={handlePhoneSubmit}>
-              <div className="flex border border-labelwink-cream-border rounded-none bg-labelwink-cream-card focus-within:border-labelwink-gold focus-within:ring-1 focus-within:ring-labelwink-gold mb-4 overflow-hidden">
+              <div className="flex border border-labelwink-cream-border rounded-lg bg-labelwink-cream-card focus-within:border-labelwink-gold focus-within:ring-1 focus-within:ring-labelwink-gold mb-4 overflow-hidden">
                 <div className="flex items-center px-4 border-r border-labelwink-cream-border">
                   <span className="text-lg mr-2">🇮🇳</span>
                   <span className="text-labelwink-green/60 font-medium">+91</span>
@@ -337,7 +337,7 @@ export default function OTPLoginModal({
               <button 
                 type="submit" 
                 disabled={loading || phone.length !== 10}
-                className="w-full bg-labelwink-green text-white font-bold py-4 rounded-none hover:bg-labelwink-green-hover transition disabled:opacity-50 uppercase tracking-widest text-xs shadow-md"
+                className="w-full bg-labelwink-green text-white font-bold py-4 rounded-xl hover:bg-labelwink-green-hover transition disabled:opacity-50 uppercase tracking-widest text-xs shadow-md"
               >
                 {loading ? 'Sending...' : 'Get OTP'}
               </button>
@@ -351,7 +351,7 @@ export default function OTPLoginModal({
 
             <button 
               onClick={handleGoogleLogin}
-              className="w-full border border-labelwink-cream-border text-labelwink-green font-bold py-4 rounded-none hover:bg-labelwink-cream-card transition flex items-center justify-center gap-3 uppercase tracking-widest text-[10px]"
+              className="w-full border border-labelwink-cream-border text-labelwink-green font-bold py-4 rounded-lg hover:bg-labelwink-cream-card transition flex items-center justify-center gap-3 uppercase tracking-widest text-[10px]"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
               Continue with Google
@@ -379,7 +379,7 @@ export default function OTPLoginModal({
                   value={digit}
                   onChange={(e) => handleOtpChange(i, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                  className="w-12 h-14 bg-labelwink-cream-card border border-labelwink-cream-border text-labelwink-green rounded-none text-center text-xl focus:border-labelwink-gold focus:ring-1 focus:ring-labelwink-gold outline-none font-bold"
+                  className="w-12 h-14 bg-labelwink-cream-card border border-labelwink-cream-border text-labelwink-green rounded-lg text-center text-xl focus:border-labelwink-gold focus:ring-1 focus:ring-labelwink-gold outline-none font-bold"
                   disabled={loading}
                 />
               ))}
@@ -424,7 +424,7 @@ export default function OTPLoginModal({
                   placeholder="First Name*"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full bg-labelwink-cream-card border border-labelwink-cream-border text-labelwink-green rounded-none px-4 py-3 focus:border-labelwink-gold focus:ring-1 focus:ring-labelwink-gold outline-none font-medium"
+                  className="w-full bg-labelwink-cream-card border border-labelwink-cream-border text-labelwink-green rounded-lg px-4 py-3 focus:border-labelwink-gold focus:ring-1 focus:ring-labelwink-gold outline-none font-medium"
                   required
                 />
                 <input
@@ -432,7 +432,7 @@ export default function OTPLoginModal({
                   placeholder="Last Name"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full bg-labelwink-cream-card border border-labelwink-cream-border text-labelwink-green rounded-none px-4 py-3 focus:border-labelwink-gold focus:ring-1 focus:ring-labelwink-gold outline-none font-medium"
+                  className="w-full bg-labelwink-cream-card border border-labelwink-cream-border text-labelwink-green rounded-lg px-4 py-3 focus:border-labelwink-gold focus:ring-1 focus:ring-labelwink-gold outline-none font-medium"
                 />
               </div>
               <input
@@ -456,7 +456,7 @@ export default function OTPLoginModal({
               <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full bg-labelwink-green text-white font-bold py-4 rounded-none hover:bg-labelwink-green-hover transition disabled:opacity-50 mt-4 uppercase tracking-widest text-xs shadow-md"
+                className="w-full bg-labelwink-green text-white font-bold py-4 rounded-xl hover:bg-labelwink-green-hover transition disabled:opacity-50 mt-4 uppercase tracking-widest text-xs shadow-md"
               >
                 {loading ? 'Creating Account...' : 'Create Account & Continue'}
               </button>

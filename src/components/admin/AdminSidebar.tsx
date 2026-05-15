@@ -147,7 +147,7 @@ function SidebarNavItem({
         marginLeft: '8px',
         marginRight: '8px',
         marginBottom: '2px',
-        borderRadius: '0',
+        borderRadius: '8px',
         fontSize: '14px',
         fontWeight: isActive ? 600 : 500,
         color: isActive ? '#1C3829' : '#5a7060',
@@ -185,7 +185,7 @@ function SidebarNavItem({
           fontSize: '10px',
           fontWeight: 700,
           padding: '2px 6px',
-          borderRadius: '0',
+          borderRadius: '4px',
           minWidth: '18px',
           textAlign: 'center',
           background: isActive ? '#1C3829' : '#fdf0ef',
@@ -242,7 +242,7 @@ function SidebarContent({ badges, onNavClick, role }: { badges: BadgeCounts; onN
           color: '#1C3829',
           background: '#eef5f1',
           padding: '3px 8px',
-          borderRadius: '0',
+          borderRadius: '4px',
         }}>
           Admin
         </span>
@@ -302,7 +302,7 @@ function SidebarContent({ badges, onNavClick, role }: { badges: BadgeCounts; onN
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             margin: '0 8px 8px', padding: '8px 12px',
-            borderRadius: '0',
+            borderRadius: '8px',
             background: 'rgba(201,168,76,0.15)',
             border: '1px solid rgba(201,168,76,0.3)',
             fontSize: '13px', fontWeight: 600,
@@ -323,7 +323,7 @@ function SidebarContent({ badges, onNavClick, role }: { badges: BadgeCounts; onN
           rel="noopener noreferrer"
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
-            height: '36px', padding: '0 12px', borderRadius: '0',
+            height: '36px', padding: '0 12px', borderRadius: '6px',
             fontSize: '13px', color: '#9aab9e', textDecoration: 'none',
             transition: 'color 150ms, background 150ms',
           }}
@@ -337,7 +337,7 @@ function SidebarContent({ badges, onNavClick, role }: { badges: BadgeCounts; onN
           onClick={handleLogout}
           style={{
             display: 'flex', alignItems: 'center', gap: '8px',
-            height: '36px', padding: '0 12px', borderRadius: '0',
+            height: '36px', padding: '0 12px', borderRadius: '6px',
             fontSize: '13px', color: '#9aab9e',
             background: 'none', border: 'none', cursor: 'pointer', width: '100%',
             transition: 'color 150ms, background 150ms',

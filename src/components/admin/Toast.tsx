@@ -39,16 +39,29 @@ export function Toast({ message, type, onClose }: ToastProps) {
 
 // Hook for easy toast usage
 export function useToast() {
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const [toast, setToast] = useState<{
+    message: string
+    type: 'success' | 'error'
+    duration?: number
+  } | null>(null)
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ message, type })
+  const showToast = (
+    message: string,
+    type: 'success' | 'error' = 'success',
+    duration = 3000
+  ) => {
+    setToast({ message, type, duration })
   }
 
   const hideToast = () => setToast(null)
 
   const ToastComponent = toast ? (
-    <Toast message={toast.message} type={toast.type} onClose={hideToast} />
+    <Toast
+      message={toast.message}
+      type={toast.type}
+      duration={toast.duration}
+      onClose={hideToast}
+    />
   ) : null
 
   return { showToast, ToastComponent }

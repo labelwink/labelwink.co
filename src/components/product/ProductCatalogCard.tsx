@@ -75,15 +75,15 @@ export function ProductCatalogCard({ product, listView = false }: { product: Pro
 
   if (listView) {
     return (
-      <div style={{ display: 'flex', gap: '16px', background: '#ffffff', borderRadius: '10px', padding: '12px', border: '1px solid #E8DFC8' }}>
-        <Link href={`/products/${product.slug}`} style={{ position: 'relative', width: '112px', flexShrink: 0, aspectRatio: '3/4', overflow: 'hidden', borderRadius: '8px', background: '#f5f2ec', display: 'block' }}>
+      <div style={{ display: 'flex', gap: '16px', background: '#ffffff', borderRadius: '12px', padding: '12px', border: '1px solid #E8DFC8' }}>
+        <Link href={`/products/${product.slug}`} style={{ position: 'relative', width: '112px', flexShrink: 0, aspectRatio: '3/4', overflow: 'hidden', borderRadius: '12px', background: '#f5f2ec', display: 'block' }}>
           {img1 && <Image src={img1} alt={product.name} fill className="object-cover" sizes="112px" />}
         </Link>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '4px 0' }}>
           <div>
             <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-              {isNew && <span style={{ fontSize: '10px', background: '#c9a84c', color: '#faf8f4', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>NEW</span>}
-              {isSale && <span style={{ fontSize: '10px', background: 'rgba(248,113,113,0.2)', color: '#f87171', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>SALE</span>}
+              {isNew && <span style={{ fontSize: '10px', background: '#c9a84c', color: '#faf8f4', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>NEW</span>}
+              {isSale && <span style={{ fontSize: '10px', background: 'rgba(248,113,113,0.2)', color: '#f87171', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>SALE</span>}
             </div>
             <Link href={`/products/${product.slug}`} style={{ fontSize: '14px', fontWeight: 500, color: '#1a2e1e', textDecoration: 'none', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden' }}>
               {product.name}
@@ -93,7 +93,7 @@ export function ProductCatalogCard({ product, listView = false }: { product: Pro
           <div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
               {sizes.slice(0, 6).map(sz => (
-                <span key={sz} style={{ fontSize: '10px', border: '1px solid #E8DFC8', borderRadius: '4px', padding: '2px 6px', color: '#9aab9e' }}>{sz}</span>
+                <span key={sz} style={{ fontSize: '10px', border: '1px solid #E8DFC8', borderRadius: '6px', padding: '2px 6px', color: '#9aab9e' }}>{sz}</span>
               ))}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -117,7 +117,7 @@ export function ProductCatalogCard({ product, listView = false }: { product: Pro
       onMouseLeave={() => setHovered(false)}
     >
       {/* Image area */}
-      <div style={{ position: 'relative', aspectRatio: '3/4', overflow: 'hidden', borderRadius: '8px', background: '#ffffff' }}>
+      <div style={{ position: 'relative', aspectRatio: '3/4', overflow: 'hidden', borderRadius: '12px', background: '#ffffff' }}>
         <Link href={`/products/${product.slug}`} style={{ position: 'absolute', inset: 0, display: 'block' }}>
           {img1 && (
             <Image
@@ -136,20 +136,20 @@ export function ProductCatalogCard({ product, listView = false }: { product: Pro
         {/* OOS overlay */}
         {isOOS && (
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-            <span style={{ background: '#ffffff', color: '#9aab9e', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 10px', borderRadius: '4px' }}>Out of Stock</span>
+            <span style={{ background: '#ffffff', color: '#9aab9e', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 10px', borderRadius: '8px' }}>Out of Stock</span>
           </div>
         )}
 
         {/* Badges */}
         <div style={{ position: 'absolute', top: '8px', left: '8px', display: 'flex', flexDirection: 'column', gap: '4px', zIndex: 20 }}>
-          {isNew && !isSale && <span style={{ background: '#c9a84c', color: '#faf8f4', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>New</span>}
-          {isSale && <span style={{ background: 'rgba(248,113,113,0.9)', color: '#fff', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>Sale</span>}
+          {isNew && !isSale && <span style={{ background: '#c9a84c', color: '#faf8f4', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 6px', borderRadius: '8px', fontWeight: 700 }}>New</span>}
+          {isSale && <span style={{ background: 'rgba(248,113,113,0.9)', color: '#fff', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '2px 6px', borderRadius: '8px', fontWeight: 700 }}>Sale</span>}
         </div>
 
         {/* Low stock */}
         {lowStock && !isOOS && (
           <div style={{ position: 'absolute', bottom: '48px', left: '8px', zIndex: 20 }}>
-            <span style={{ background: 'rgba(0,0,0,0.8)', color: '#fb923c', fontSize: '9px', padding: '2px 6px', borderRadius: '4px', fontWeight: 500 }}>Only {lowStock.stock_qty} left!</span>
+            <span style={{ background: 'rgba(0,0,0,0.8)', color: '#fb923c', fontSize: '9px', padding: '2px 6px', borderRadius: '8px', fontWeight: 500 }}>Only {lowStock.stock_qty} left!</span>
           </div>
         )}
 
@@ -219,7 +219,7 @@ export function ProductCatalogCard({ product, listView = false }: { product: Pro
         {sizes.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
             {sizes.slice(0, 5).map(sz => (
-              <span key={sz} style={{ fontSize: '9px', border: '1px solid #E8DFC8', borderRadius: '4px', padding: '1px 5px', color: '#9aab9e' }}>{sz}</span>
+              <span key={sz} style={{ fontSize: '9px', border: '1px solid #E8DFC8', borderRadius: '6px', padding: '1px 5px', color: '#9aab9e' }}>{sz}</span>
             ))}
             {sizes.length > 5 && <span style={{ fontSize: '9px', color: '#9aab9e' }}>+{sizes.length - 5}</span>}
           </div>

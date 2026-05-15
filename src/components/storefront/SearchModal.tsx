@@ -89,7 +89,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
       />
 
       {/* Modal panel */}
-      <div className="absolute top-0 left-0 right-0 bg-[#faf7f2] shadow-2xl">
+      <div className="absolute top-0 left-0 right-0 bg-[#faf7f2] shadow-2xl rounded-b-2xl">
         {/* Search input row */}
         <div className="container mx-auto px-4 py-4 flex items-center gap-3">
           <Search className="w-5 h-5 text-[#1a3a34] flex-shrink-0" />

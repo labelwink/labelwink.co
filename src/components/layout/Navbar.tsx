@@ -68,7 +68,7 @@ export function Navbar() {
 
   const iconBtnStyle: React.CSSProperties = {
     background: 'none', border: 'none', cursor: 'pointer',
-    padding: '8px', borderRadius: '0',
+    padding: '8px', borderRadius: '9999px',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     transition: 'color 150ms',
     position: 'relative',
@@ -115,7 +115,7 @@ export function Navbar() {
             <button
               onClick={() => setSearchOpen(true)}
               aria-label="Search"
-              className="text-white hover:text-labelwink-gold transition-colors duration-200 relative p-2"
+              className="text-white hover:text-labelwink-gold transition-colors duration-200 relative p-2 rounded-full"
             >
               <Search size={20} />
             </button>
@@ -124,7 +124,7 @@ export function Navbar() {
             <Link
               href="/account/wishlist"
               aria-label="Wishlist"
-              className="hidden md:flex text-white hover:text-[#c9a84c] transition-colors duration-200 relative p-2"
+              className="hidden md:flex text-white hover:text-[#c9a84c] transition-colors duration-200 relative p-2 rounded-full"
             >
               <Heart size={20} />
               {mounted && wishlistCount > 0 && (
@@ -138,7 +138,7 @@ export function Navbar() {
             <button
               onClick={() => setIsOpen(true)}
               aria-label="Cart"
-              className="text-white hover:text-[#c9a84c] transition-colors duration-200 relative p-2"
+              className="text-white hover:text-[#c9a84c] transition-colors duration-200 relative p-2 rounded-full"
             >
               <ShoppingBag size={20} />
               {mounted && totalQuantity > 0 && (
@@ -152,7 +152,7 @@ export function Navbar() {
             <div className="hidden md:block">
               <Link
                 href={user ? '/account' : '/account/login'}
-                className="text-white hover:text-[#c9a84c] transition-colors duration-200 relative p-2 block"
+                className="text-white hover:text-[#c9a84c] transition-colors duration-200 relative p-2 rounded-full block"
               >
                 <User size={20} />
               </Link>
@@ -160,7 +160,7 @@ export function Navbar() {
 
             {/* Mobile Hamburger */}
             <button
-              className="md:hidden text-white hover:text-labelwink-gold transition-colors duration-200 relative p-2"
+              className="md:hidden text-white hover:text-labelwink-gold transition-colors duration-200 relative p-2 rounded-full"
               onClick={() => setMobileOpen(true)}
               aria-label="Open menu"
             >
@@ -228,7 +228,7 @@ export function Navbar() {
               ) : (
                 <Link
                   href="/account/login"
-                  className="bg-labelwink-gold text-labelwink-green font-bold px-4 py-3 rounded-none hover:bg-labelwink-gold/90 transition-colors duration-200 flex items-center justify-center h-12 w-full uppercase tracking-widest text-xs shadow-lg"
+                  className="bg-labelwink-gold text-labelwink-green font-bold px-4 py-3 rounded-xl hover:bg-labelwink-gold/90 transition-colors duration-200 flex items-center justify-center h-12 w-full uppercase tracking-widest text-xs shadow-lg"
                 >
                   Login / Sign Up
                 </Link>

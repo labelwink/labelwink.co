@@ -71,7 +71,7 @@ export default function AdminLoginPage() {
         .card-shake { animation: shake 0.6s ease-in-out; }
       `}</style>
 
-      <div className={`relative z-10 bg-[#FAF9F6] rounded-none shadow-2xl max-w-[400px] w-full p-10 border border-white/10 ${shake ? 'card-shake' : ''}`}>
+      <div className={`relative z-10 bg-[#FAF9F6] rounded-2xl shadow-2xl max-w-[400px] w-full p-10 border border-white/10 ${shake ? 'card-shake' : ''}`}>
         {/* Logo */}
         <div className="text-center mb-10">
           <p
@@ -88,7 +88,7 @@ export default function AdminLoginPage() {
         </h1>
 
         {error && (
-          <div className="bg-red-50 text-red-600 text-xs p-4 rounded-none mb-6 text-center font-medium border border-red-100">
+          <div className="bg-red-50 text-red-600 text-xs p-4 rounded-lg mb-6 text-center font-medium border border-red-100">
             {error}
           </div>
         )}
@@ -105,7 +105,7 @@ export default function AdminLoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="admin@labelwink.co"
-              className="w-full border border-gray-200 rounded-none px-4 py-3 text-sm focus:outline-none focus:ring-0 focus:border-[#1C3829] transition-colors placeholder:text-gray-300 bg-white"
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-0 focus:border-[#1C3829] transition-colors placeholder:text-gray-300 bg-white"
             />
           </div>
           <div>
@@ -120,7 +120,7 @@ export default function AdminLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 placeholder="••••••••"
-                className="w-full border border-gray-200 rounded-none px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-0 focus:border-[#1C3829] transition-colors placeholder:text-gray-300 bg-white"
+                className="w-full border border-gray-200 rounded-lg px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-0 focus:border-[#1C3829] transition-colors placeholder:text-gray-300 bg-white"
               />
               <button
                 type="button"
@@ -136,7 +136,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#1C3829] hover:bg-[#234d44] text-[#E8C97A] rounded-none py-4 font-bold text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg active:scale-[0.98]"
+            className="w-full bg-[#1C3829] hover:bg-[#234d44] text-[#E8C97A] rounded-xl py-4 font-bold text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg active:scale-[0.98]"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : null}
             {loading ? 'Authenticating...' : 'Establish Session'}

@@ -180,7 +180,7 @@ export function ProductActions({ productId, productName, productSlug, variants, 
         <button
           onClick={handleAddToCart}
           disabled={isDisabled}
-          className={`w-full h-14 md:h-16 rounded-none text-xs font-bold tracking-[0.3em] uppercase transition-colors
+          className={`w-full h-14 md:h-16 rounded-xl text-xs font-bold tracking-[0.3em] uppercase transition-colors
             ${isDisabled
               ? 'bg-[#F5F5F5] text-[#999] cursor-not-allowed opacity-80'
               : 'bg-[#1B3A2D] text-white hover:bg-[#173129] active:scale-[0.98] shadow-sm'
@@ -196,7 +196,7 @@ export function ProductActions({ productId, productName, productSlug, variants, 
         <button
           onClick={handleBuyNow}
           disabled={isDisabled}
-          className={`w-full h-14 md:h-16 rounded-none text-xs font-bold tracking-[0.3em] uppercase transition-colors
+          className={`w-full h-14 md:h-16 rounded-xl text-xs font-bold tracking-[0.3em] uppercase transition-colors
             ${isDisabled
               ? 'bg-[#F5F5F5] text-[#999] cursor-not-allowed opacity-80'
               : 'bg-[#1B3A2D] text-white hover:bg-[#173129] active:scale-[0.98] shadow-sm'
@@ -206,7 +206,7 @@ export function ProductActions({ productId, productName, productSlug, variants, 
         </button>
         <button
           onClick={handleShare}
-          className="w-14 h-14 md:w-16 md:h-16 border border-[#E8E2D9] text-[#1B3A2D] rounded-none hover:border-[#1B3A2D] hover:text-[#1B3A2D] transition-colors flex items-center justify-center flex-shrink-0 bg-white"
+          className="w-14 h-14 md:w-16 md:h-16 border border-[#E8E2D9] text-[#1B3A2D] rounded-full hover:border-[#1B3A2D] hover:text-[#1B3A2D] transition-colors flex items-center justify-center flex-shrink-0 bg-white shadow-sm"
           aria-label="Share product"
         >
           <Share2 className="w-5 h-5" />

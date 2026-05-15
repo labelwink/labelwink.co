@@ -1,7 +1,7 @@
 {
   "announcement_bar": {
     "enabled": true,
-    "text": "Free Shipping on orders above ₹3499 🚚",
+    "text": "New Arrivals are here! Shop the latest collection 🛍️",
     "color": "#faf7f2"
   },
   "hero": {
@@ -72,7 +72,7 @@
   "trust_badges": [
     {
       "icon": "🚚",
-      "text": "Free Shipping Above ₹3499"
+      "text": "Express Shipping Available"
     },
     {
       "icon": "↩",

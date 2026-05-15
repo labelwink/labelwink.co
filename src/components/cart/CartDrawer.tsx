@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useCartStore } from '@/store/useCartStore';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -13,22 +12,6 @@ import { EmptyState } from '@/components/ui/EmptyState';
 export function CartDrawer() {
   const { items, isOpen, setIsOpen, updateQuantity, removeItem, getTotals } = useCartStore();
   const { subtotal, totalQuantity } = getTotals();
-  const [threshold, setThreshold] = useState(3499);
-
-  useEffect(() => {
-    fetch('/api/storefront/settings')
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        // API returns flat object; value may be number or {amount: N} JSONB
-        const raw = data?.free_shipping_threshold;
-        const val = raw && typeof raw === 'object' ? raw.amount : raw;
-        if (val) setThreshold(Number(val));
-      })
-      .catch(() => {});
-  }, []);
-
-  const progress = Math.min((subtotal / threshold) * 100, 100);
-  const remainingForFreeShipping = threshold - subtotal;
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -58,7 +41,7 @@ export function CartDrawer() {
           ) : (
             items.map((item) => (
               <div key={item.id} className="flex gap-5 group">
-                <div className="w-24 h-32 bg-labelwink-cream-card rounded-none overflow-hidden flex-shrink-0 border border-labelwink-cream-border/50 relative">
+                <div className="w-24 h-32 bg-labelwink-cream-card rounded-lg overflow-hidden flex-shrink-0 border border-labelwink-cream-border/50 relative">
                   <Image
                     src={getProductImageUrl(item.publicId || item.image, 'thumb')}
                     alt={item.name}
@@ -87,7 +70,7 @@ export function CartDrawer() {
                   </div>
                   
                   <div className="flex justify-between items-center mt-auto">
-                    <div className="flex items-center bg-labelwink-cream-card border border-labelwink-cream-border/50 rounded-none h-9">
+                    <div className="flex items-center bg-labelwink-cream-card border border-labelwink-cream-border/50 rounded-lg h-9 overflow-hidden">
                       <button 
                         onClick={() => updateQuantity(item.id, item.quantity - 1)}
                         className="w-9 h-full flex items-center justify-center hover:bg-white transition-colors"
@@ -123,7 +106,7 @@ export function CartDrawer() {
                 <span>Calculated at checkout</span>
               </div>
             </div>
-            <Link href="/checkout" onClick={() => setIsOpen(false)} className={buttonVariants({ className: "w-full h-16 bg-labelwink-green hover:bg-labelwink-green-hover text-white rounded-none text-xs font-bold tracking-[0.3em] uppercase transition-all shadow-xl flex items-center justify-center" })}>Checkout Securely</Link>
+            <Link href="/checkout" onClick={() => setIsOpen(false)} className={buttonVariants({ className: "w-full h-16 bg-labelwink-green hover:bg-labelwink-green-hover text-white rounded-xl text-xs font-bold tracking-[0.3em] uppercase transition-all shadow-xl flex items-center justify-center" })}>Checkout Securely</Link>
             <p className="text-[9px] text-center text-muted-foreground uppercase tracking-widest font-bold">
               Secure Checkout &bull; Standard Shipping Policy Applies
             </p>

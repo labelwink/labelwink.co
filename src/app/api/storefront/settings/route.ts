@@ -22,7 +22,7 @@ export async function GET() {
       {
         store_name: 'LabelWink',
         currency: 'INR',
-        free_shipping_threshold: 3499,
+        free_shipping_threshold: 0,
         standard_shipping_rate: 99,
         return_window_days: 7,
       },

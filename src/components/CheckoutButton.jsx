@@ -26,6 +26,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { loadRazorpay } from "@/lib/loadRazorpay";
+import { useCartStore } from "@/store/useCartStore";
 
 export default function CheckoutButton({
   items,
@@ -41,6 +42,7 @@ export default function CheckoutButton({
   onSuccess,
 }) {
   const router = useRouter();
+  const clearCart = useCartStore((state) => state.clearCart);
   const [status, setStatus] = useState("idle"); // idle | loading | verifying | success | error
   const [errorMsg, setErrorMsg] = useState("");
   const [userId, setUserId] = useState(null);
@@ -131,11 +133,18 @@ export default function CheckoutButton({
             }
 
             setStatus("success");
+            clearCart();
+            if (typeof window !== "undefined") {
+              window.localStorage.removeItem("labelwink-cart");
+              window.localStorage.removeItem("cart");
+            }
+
+            const orderIdForRedirect = verifyData.order_number ?? verifyData.orderId;
 
             if (onSuccess) {
-              onSuccess(verifyData.orderId);
+              onSuccess(orderIdForRedirect);
             } else {
-              router.push(`/order-confirmation?order_id=${verifyData.orderId}`);
+              router.push(`/order-confirmation?order_id=${orderIdForRedirect}`);
             }
           } catch (verifyError) {
             console.error("[CheckoutButton] Verify error:", verifyError);
@@ -189,7 +198,7 @@ export default function CheckoutButton({
         disabled={isLoading || status === "success"}
         className={
           `
-          w-full py-3 px-6 rounded-lg text-white font-medium text-base
+          w-full py-4 px-6 rounded-xl text-white font-bold text-lg
           transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
           ${
             status === "success"

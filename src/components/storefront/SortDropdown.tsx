@@ -33,14 +33,14 @@ export function SortDropdown({ value, onChange }: SortDropdownProps) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-6 py-3 border border-[#ccc] rounded-none text-xs font-bold uppercase tracking-widest text-[#1a1a1a] hover:border-[#1B3A2D] bg-white min-w-[200px] justify-between transition-all"
+        className="flex items-center gap-2 px-6 py-3 border border-[#ccc] rounded-lg text-xs font-bold uppercase tracking-widest text-[#1a1a1a] hover:border-[#1B3A2D] bg-white min-w-[200px] justify-between transition-all"
       >
         <span>Sort: <span className="text-[#1a1a1a]">{current.label}</span></span>
         <ChevronDown size={14} className={`text-[#1a1a1a] transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 bg-white border border-[#D1D5DB] rounded-none shadow-xl z-30 min-w-[200px] py-2 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 bg-white border border-[#D1D5DB] rounded-xl shadow-xl z-30 min-w-[200px] py-2 overflow-hidden">
           {OPTIONS.map(opt => (
             <button
               key={opt.value}

@@ -8,7 +8,7 @@ type SortOption = (typeof VALID_SORTS)[number]
 
 const PRODUCT_SELECT = `
   id, name, slug, price, compare_at_price,
-  fabric, occasion, tags, created_at, status,
+  fabric, occasion, tags, created_at, status, is_featured,
   collection_id,
   product_images (url, alt, is_cover, sort_order),
   product_variants (id, size, color, stock_qty, price, compare_at_price, is_active)
@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
   const maxPrice = parseFloat(searchParams.get('max_price') ?? '0') || 0
   const fabric = searchParams.get('fabric')?.trim() ?? ''
   const sleeve = searchParams.get('sleeve')?.trim() ?? ''
+  const featured = searchParams.get('featured') === 'true'
   const sort: SortOption = (
     VALID_SORTS.includes(searchParams.get('sort') as SortOption)
       ? searchParams.get('sort')
@@ -48,6 +49,12 @@ export async function GET(req: NextRequest) {
     let query = supabase
       .from('products')
       .select(PRODUCT_SELECT)
+      .neq('status', 'draft')  // exclude draft products
+
+    // Featured filter
+    if (featured) {
+      query = query.eq('is_featured', true)
+    }
 
     // Full-text search (only when search_vector populated)
     if (q.length >= 2) {
@@ -107,7 +114,8 @@ export async function GET(req: NextRequest) {
       return q2.range(from, to)
     })(),
     (() => {
-      let cq = countQuery
+      let cq = countQuery.neq('status', 'draft')
+      if (featured) cq = cq.eq('is_featured', true)
       if (q.length >= 2) cq = cq.textSearch('search_vector', q, { type: 'websearch', config: 'english' })
       if (collection) cq = cq.contains('tags', [collection])
       if (occasion) cq = cq.or(`occasion.ilike.%${occasion}%,tags.cs.{${occasion}}`)
@@ -146,9 +154,19 @@ export async function GET(req: NextRequest) {
   const total = count ?? 0
   const totalPages = Math.ceil(total / perPage)
 
+  // Sort product_images: cover image first, then by sort_order
+  const sortedProducts = products.map((p) => ({
+    ...p,
+    product_images: [...((p.product_images as any[]) ?? [])].sort((a, b) => {
+      if (a.is_cover && !b.is_cover) return -1
+      if (!a.is_cover && b.is_cover) return 1
+      return (a.sort_order ?? 0) - (b.sort_order ?? 0)
+    }),
+  }))
+
   return NextResponse.json(
     {
-      products,
+      products: sortedProducts,
       total,
       page,
       per_page: perPage,

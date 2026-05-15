@@ -242,11 +242,6 @@ export default function SettingsPage() {
         {activeTab === 'commerce' && (
           <form onSubmit={handleSave} className="space-y-6 max-w-2xl">
             <div className="space-y-4">
-              <div>
-                <label className="block text-gray-600 text-sm font-medium mb-1">Free Shipping Threshold (₹)</label>
-                <input type="number" value={settings.free_shipping_threshold || 0} onChange={e => setSettings({...settings, free_shipping_threshold: Number(e.target.value)})} className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg px-4 py-3" />
-                <p className="text-gray-400 text-xs mt-1">Orders above this amount get free standard shipping.</p>
-              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-gray-600 text-sm font-medium mb-1">Standard Shipping Charge (₹)</label>

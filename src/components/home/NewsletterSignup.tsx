@@ -52,19 +52,19 @@ export function NewsletterSignup({ threshold = 3499 }: NewsletterSignupProps) {
               <p className="text-charcoal/60">Watch your inbox for some magic coming your way.</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-0 max-w-md mx-auto shadow-2xl">
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
               <input
                 type="email"
                 placeholder="Enter your email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 px-8 py-5 rounded-none border-none bg-white focus:outline-none focus:ring-2 focus:ring-teal/20 transition-all text-sm"
+                className="flex-1 px-8 py-5 rounded-xl border border-sage/20 bg-white focus:outline-none focus:ring-2 focus:ring-teal/20 transition-all text-sm shadow-sm"
               />
               <button
                 type="submit"
                 disabled={status === 'loading'}
-                className="bg-charcoal text-white px-10 py-5 rounded-none font-bold uppercase tracking-widest text-[10px] hover:bg-teal transition-all active:scale-95 disabled:opacity-70 flex items-center justify-center gap-3"
+                className="bg-charcoal text-white px-10 py-5 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-teal transition-all active:scale-95 disabled:opacity-70 flex items-center justify-center gap-3 shadow-md"
               >
                 {status === 'loading' ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
