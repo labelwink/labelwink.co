@@ -1,12 +1,11 @@
 import type { Metadata } from 'next'
-// ✅ AUDIT FIX #9 - Migrate Google Fonts to next/font
 import { Inter, Playfair_Display } from 'next/font/google'
 import './globals.css'
 import { generateOrganizationSchema } from '@/lib/json-ld'
 import { Toaster } from 'sonner'
 import { createAdminClient } from '@/lib/supabase/server'
-// ✅ AUDIT FIX #7 - DPDP-Compliant Cookie Consent Banner
 import CookieBanner from '@/components/ui/CookieBanner'
+import { Analytics } from '@vercel/analytics/next'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -108,6 +107,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {children}
         <Toaster position="bottom-right" richColors closeButton />
         <CookieBanner />
+        <Analytics />
       </body>
     </html>
   )
