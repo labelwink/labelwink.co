@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { Star } from 'lucide-react';
@@ -125,7 +125,7 @@ export default function WriteReviewForm({ productId, isLoggedIn, hasPurchased = 
       <button
         type="submit"
         disabled={submitting || !rating}
-        className="bg-charcoal text-cream text-xs font-bold uppercase tracking-widest px-6 py-3 rounded-none hover:bg-teal transition-colors disabled:opacity-50 w-full"
+        className="w-full bg-labelwink-green hover:bg-labelwink-green-hover text-labelwink-cream font-bold text-xs uppercase tracking-widest py-3.5 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? 'Submitting…' : 'Submit Review'}
       </button>

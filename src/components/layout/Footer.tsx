@@ -18,10 +18,10 @@ const COLUMNS = [
   },
   {
     id: 'care',
-    title: 'CUSTOMER CARE',
+    title: 'CUSTOMER CARE & POLICIES',
     links: [
       { href: '/about', label: 'Our Story' },
-      { href: '/faq', label: 'FAQ' },
+      { href: '/faqs', label: 'FAQ' },
       { href: '/size-guide', label: 'Size Guide' },
       { href: '/shipping-policy', label: 'Shipping Policy' },
       { href: '/return-exchange-policy', label: 'Return & Exchanges' },
@@ -40,13 +40,13 @@ function FooterColumn({ id, title, links }: { id: string; title: string; links: 
     <>
       {/* DESKTOP — always expanded, no toggle */}
       <div className="hidden md:block">
-        <h4 className="text-[#c9a84c] font-semibold text-sm uppercase tracking-wider mb-3">
+        <h4 className="text-[#c9a84c] font-semibold text-sm uppercase tracking-wider mb-5">
           {title}
         </h4>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <ul className="space-y-3" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
           {links.map(link => (
             <li key={link.href + link.label}>
-              <Link href={link.href} className="text-white/70 hover:text-[#c9a84c] transition-colors text-sm block">
+              <Link href={link.href} className="text-[#9aab9e] hover:text-[#c9a84c] transition-colors text-sm block">
                 {link.label}
               </Link>
             </li>
@@ -55,21 +55,12 @@ function FooterColumn({ id, title, links }: { id: string; title: string; links: 
       </div>
 
       {/* MOBILE — collapsible */}
-      <div className="md:hidden" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="md:hidden border-b border-white/10">
         <button
           onClick={() => setOpen(!open)}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
-            padding: '16px 0',
-          }}
+          className="flex items-center justify-between w-full py-4 bg-transparent border-none cursor-pointer"
         >
-          <span className="text-[#c9a84c] font-semibold text-sm uppercase tracking-wider mb-3">
+          <span className="text-[#c9a84c] font-semibold text-sm uppercase tracking-wider">
             {title}
           </span>
           <ChevronDown
@@ -82,17 +73,10 @@ function FooterColumn({ id, title, links }: { id: string; title: string; links: 
           />
         </button>
         {open && (
-          <ul style={{
-            listStyle: 'none',
-            padding: '0 0 16px',
-            margin: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-          }}>
+          <ul className="space-y-3 pb-4" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {links.map(link => (
               <li key={link.href + link.label}>
-                <Link href={link.href} className="text-white/70 hover:text-[#c9a84c] transition-colors text-sm block">
+                <Link href={link.href} className="text-[#9aab9e] hover:text-[#c9a84c] transition-colors text-sm block">
                   {link.label}
                 </Link>
               </li>
@@ -104,7 +88,6 @@ function FooterColumn({ id, title, links }: { id: string; title: string; links: 
   );
 }
 
-// Footer accepts (and ignores) legacy props passed from layout.tsx for backwards compatibility
 export function Footer(_props?: { columns?: any[]; social?: any; tagline?: string }) {
   const [settings, setSettings] = useState<any>({});
   const [email, setEmail] = useState('');
@@ -114,10 +97,10 @@ export function Footer(_props?: { columns?: any[]; social?: any; tagline?: strin
     fetch('/api/storefront/settings')
       .then(r => r.ok ? r.json() : {})
       .then(d => setSettings(d))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
-  const storeEmail = settings.store_email || 'hello@labelwink.com';
+  const storeEmail = settings.legal?.support_email || settings.store_email || 'support@labelwink.co';
   const socialLinks = {
     instagram: 'https://www.instagram.com/labelwink/',
     facebook: settings.social_links?.facebook,
@@ -134,162 +117,134 @@ export function Footer(_props?: { columns?: any[]; social?: any; tagline?: strin
   return (
     <footer className="relative bg-[#1C3829] text-white border-t border-white/5">
       <LeafPattern opacity={0.06} id="footer" />
-      {/* Main grid */}
+      
       <div className="max-w-[1400px] mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 py-10 px-8">
-
-          {/* Column 1 — Brand */}
-          <div>
-            {/* Logo */}
-            <div className="mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-x-8 gap-y-12 py-12 px-8 lg:px-12">
+          
+          {/* LEFT SIDE: Shop Information (Logo, GST, Legal Entity, Grievance) */}
+          <div className="md:col-span-5 lg:col-span-4 space-y-6">
+            <div className="mb-2">
               <Image
                 src="/logo.png"
                 alt="Label Wink"
                 width={160}
                 height={56}
-                className="h-14 w-auto object-contain mb-3"
+                className="h-14 w-auto object-contain"
               />
             </div>
-            <p style={{
-              fontStyle: 'italic',
-              color: '#c9a84c',
-              fontSize: '14px',
-              margin: '0 0 16px',
-            }}>
-              Wear Wink
-            </p>
-            <p style={{
-              fontSize: '14px',
-              color: '#9aab9e',
-              lineHeight: 1.7,
-              maxWidth: '240px',
-              margin: '0 0 24px',
-            }}>
-              Curated ethnic & fusion wear for the modern Indian woman. Every piece is handcrafted with love and meticulous detail in the heart of India.
-            </p>
-
-            {/* Newsletter */}
-            <div>
-              <p style={{
-                fontSize: '11px',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.15em',
-                color: '#c9a84c',
-                margin: '0 0 4px',
-              }}>
-                JOIN THE WINK CLUB
+            
+            <div className="text-sm text-[#9aab9e] space-y-4 leading-relaxed">
+              <p>
+                <strong className="text-[#c9a84c] block mb-1 font-medium text-base">
+                  {settings.legal?.legal_entity_name || 'LabelWink Pvt Ltd'}
+                </strong>
+                {settings.legal?.registered_address || '123 Fashion Street, Bandra West, Mumbai, Maharashtra – 400050 | India'}
               </p>
-              <p style={{
-                fontSize: '11px',
-                color: '#6a8a72',
-                margin: '0 0 12px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}>
-                UNLOCK EXCLUSIVE DEALS AND NEW ARRIVALS!
+              
+              <p className="flex flex-col gap-1">
+                <span>GSTIN: <span className="text-white/90">{settings.legal?.gstin || '27AABCT3518Q1Z4'}</span></span>
+                {settings.legal?.cin && (
+                  <span>CIN: <span className="text-white/90">{settings.legal.cin}</span></span>
+                )}
               </p>
-
-              {emailSent ? (
-                <p style={{ fontSize: '13px', color: '#c9a84c' }}>✓ You&apos;re on the list!</p>
-              ) : (
-                <form onSubmit={handleNewsletter} style={{ display: 'flex' }}>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    style={{
-                      flex: 1,
-                      height: '48px',
-                      background: 'rgba(255,255,255,0.07)',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRight: 'none',
-                      borderRadius: '8px 0 0 8px',
-                      padding: '0 16px',
-                      fontSize: '13px',
-                      color: '#ffffff',
-                      outline: 'none',
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    style={{
-                      width: '48px',
-                      height: '48px',
-                      background: '#c9a84c',
-                      border: 'none',
-                      borderRadius: '0 8px 8px 0',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#1e3d29',
-                      transition: 'background 150ms',
-                      flexShrink: 0,
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = '#e0bc5a')}
-                    onMouseLeave={e => (e.currentTarget.style.background = '#c9a84c')}
-                  >
-                    <ArrowRight size={18} />
-                  </button>
-                </form>
-              )}
+              
+              <div className="pt-2 border-t border-white/10">
+                <strong className="text-[#c9a84c] block mb-1 font-medium">
+                  {settings.legal?.grievance_officer_designation || 'Grievance Officer'}: {settings.legal?.grievance_officer_name || 'Rahul Sharma'}
+                </strong>
+                <a href={`mailto:${settings.legal?.grievance_officer_email || 'grievance@labelwink.co'}`} className="hover:text-white transition-colors block">
+                  {settings.legal?.grievance_officer_email || 'grievance@labelwink.co'}
+                </a>
+                <span className="block mt-1">
+                  {settings.legal?.grievance_officer_phone || '+91 9876543210'}
+                </span>
+                <span className="text-xs text-[#6a8a72] mt-2 block">
+                  Response within {settings.legal?.grievance_acknowledgement_sla || '48 hours'}
+                </span>
+              </div>
+              
+              <p className="text-xs text-[#6a8a72] pt-2">
+                As per Consumer Protection (E-Commerce) Rules, 2020 & IT Rules, 2021
+              </p>
             </div>
           </div>
 
-          {/* Column 2 — Collections */}
-          <FooterColumn id="collections" title="COLLECTIONS" links={COLUMNS[0].links} />
+          {/* RIGHT SIDE: Links & Contact */}
+          <div className="md:col-span-7 lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            {/* Column 1: Collections */}
+            <FooterColumn id="collections" title="COLLECTIONS" links={COLUMNS[0].links} />
 
-          {/* Column 3 — Customer Care */}
-          <FooterColumn id="care" title="CUSTOMER CARE" links={COLUMNS[1].links} />
+            {/* Column 2: Customer Care & Policies */}
+            <FooterColumn id="care" title="CUSTOMER CARE & POLICIES" links={COLUMNS[1].links} />
 
-          {/* Column 4 — Contact */}
-          <div>
-            {/* Desktop heading */}
-            <h4 className="hidden md:block text-[#c9a84c] font-semibold text-sm uppercase tracking-wider mb-3">
-              CONTACT
-            </h4>
+            {/* Column 3: Contact & Newsletter */}
+            <div className="space-y-8">
+              {/* Contact Info */}
+              <div>
+                <h4 className="hidden md:block text-[#c9a84c] font-semibold text-sm uppercase tracking-wider mb-5">
+                  CONTACT
+                </h4>
+                <ContactMobileSection email={storeEmail} socialLinks={socialLinks} />
+                
+                <div className="hidden md:block space-y-4">
+                  <div>
+                    <p className="text-[11px] text-[#6a8a72] uppercase tracking-widest mb-1">EMAIL US</p>
+                    <a href={`mailto:${storeEmail}`} className="text-[#9aab9e] hover:text-[#c9a84c] transition-colors text-sm">
+                      {storeEmail}
+                    </a>
+                  </div>
+                  
+                  {/* Social Icons */}
+                  <div className="flex gap-3 pt-2">
+                    {socialLinks.instagram && (
+                      <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-[#9aab9e] hover:text-[#c9a84c] transition-colors w-10 h-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center">
+                        <Instagram size={18} />
+                      </a>
+                    )}
+                    {socialLinks.facebook && (
+                      <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-[#9aab9e] hover:text-[#c9a84c] transition-colors w-10 h-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center">
+                        <Facebook size={18} />
+                      </a>
+                    )}
+                    {!socialLinks.instagram && !socialLinks.facebook && (
+                      <>
+                        <div className="text-[#9aab9e] hover:text-[#c9a84c] transition-colors w-10 h-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center"><Instagram size={18} /></div>
+                        <div className="text-[#9aab9e] hover:text-[#c9a84c] transition-colors w-10 h-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center"><Facebook size={18} /></div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
 
-            {/* Mobile collapsible heading for Contact */}
-            <ContactMobileSection email={storeEmail} socialLinks={socialLinks} />
+              {/* Newsletter */}
+              <div className="pt-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#c9a84c] mb-1">
+                  JOIN THE WINK CLUB
+                </p>
+                <p className="text-[11px] text-[#6a8a72] uppercase tracking-wide mb-3">
+                  UNLOCK EXCLUSIVE DEALS AND NEW ARRIVALS!
+                </p>
 
-            {/* Desktop contact content */}
-            <div className="hidden md:block">
-              <p style={{
-                fontSize: '11px',
-                color: '#6a8a72',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                margin: '0 0 8px',
-              }}>
-                EMAIL US
-              </p>
-              <a
-                href={`mailto:${storeEmail}`}
-                className="text-white/70 hover:text-[#c9a84c] transition-colors text-sm block"
-              >
-                {storeEmail}
-              </a>
-
-              {/* Social icons */}
-              <div className="mt-6 flex gap-3">
-                {socialLinks.instagram && (
-                  <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center">
-                    <Instagram size={16} />
-                  </a>
-                )}
-                {socialLinks.facebook && (
-                  <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center">
-                    <Facebook size={16} />
-                  </a>
-                )}
-                {/* Always show Instagram placeholder if no links configured */}
-                {!socialLinks.instagram && !socialLinks.facebook && (
-                  <>
-                    <div className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center"><Instagram size={16} /></div>
-                    <div className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center"><Facebook size={16} /></div>
-                  </>
+                {emailSent ? (
+                  <p className="text-[13px] text-[#c9a84c]">✓ You&apos;re on the list!</p>
+                ) : (
+                  <form onSubmit={handleNewsletter} className="flex max-w-[280px]">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className="flex-1 h-12 bg-white/5 border border-white/10 border-r-0 rounded-l-lg px-4 text-[13px] text-white focus:outline-none focus:border-[#c9a84c]/50 transition-colors"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      className="w-12 h-12 bg-[#c9a84c] hover:bg-[#e0bc5a] text-[#1e3d29] rounded-r-lg flex items-center justify-center transition-colors shrink-0"
+                    >
+                      <ArrowRight size={18} />
+                    </button>
+                  </form>
                 )}
               </div>
             </div>
@@ -297,72 +252,67 @@ export function Footer(_props?: { columns?: any[]; social?: any; tagline?: strin
         </div>
       </div>
 
-      {/* Bottom bar */}
-      <div className="border-t border-white/10 text-white/50 text-xs flex flex-wrap items-center justify-between gap-3 px-8 py-4">
-        <p className="m-0 tracking-wider">
-          © {new Date().getFullYear()} LABEL WINK. ALL RIGHTS RESERVED.
-        </p>
+      {/* Bottom bar - End Credits */}
+      <div className="border-t border-white/10 bg-[#152a1e]">
+        <div className="max-w-[1400px] mx-auto px-8 lg:px-12 py-5 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#6a8a72]">
+          <p className="m-0 tracking-wider text-center md:text-left">
+            © {new Date().getFullYear()} LABEL WINK. ALL RIGHTS RESERVED.
+          </p>
 
-        {/* Payment badges */}
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {['VISA', 'MASTERCARD', 'UPI', 'RAZORPAY'].map(badge => (
-            <span key={badge} style={{
-              border: '1px solid #4a6a52',
-              color: '#6a8a72',
-              fontSize: '11px',
-              padding: '4px 12px',
-              borderRadius: '4px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}>
-              {badge}
-            </span>
-          ))}
+          <p className="m-0 tracking-wider uppercase text-center">
+            Developed & Maintained by <a href="https://hawklab.in" target="_blank" rel="noopener noreferrer" className="text-[#c9a84c] hover:text-[#e0bc5a] transition-colors font-medium">HAWKLAB.in</a>
+          </p>
+
+          {/* Payment badges */}
+          <div className="flex gap-2 flex-wrap justify-center">
+            {['VISA', 'MASTERCARD', 'UPI', 'RAZORPAY'].map(badge => (
+              <span key={badge} className="border border-white/10 bg-white/5 px-3 py-1.5 rounded text-[10px] uppercase tracking-wider font-medium text-[#9aab9e]">
+                {badge}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </footer>
   );
 }
 
-// Separate mobile-only collapsible for Contact column
 function ContactMobileSection({ email, socialLinks }: { email: string; socialLinks: any }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="md:hidden" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+    <div className="md:hidden border-b border-white/10 mb-6">
       <button
         onClick={() => setOpen(!open)}
-        style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          width: '100%', padding: '16px 0',
-        }}
+        className="flex items-center justify-between w-full py-4 bg-transparent border-none cursor-pointer"
       >
-        <span className="text-[#c9a84c] font-semibold text-sm uppercase tracking-wider mb-3">
+        <span className="text-[#c9a84c] font-semibold text-sm uppercase tracking-wider">
           CONTACT
         </span>
         <ChevronDown size={16} style={{ color: '#6a8a72', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 200ms' }} />
       </button>
       {open && (
-        <div style={{ paddingBottom: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <p style={{ fontSize: '11px', color: '#6a8a72', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>EMAIL US</p>
-          <a href={`mailto:${email}`} className="text-white/70 hover:text-[#c9a84c] transition-colors text-sm block">
-            {email}
-          </a>
-          <div className="mt-2 flex gap-3">
+        <div className="pb-4 space-y-4">
+          <div>
+            <p className="text-[11px] text-[#6a8a72] uppercase tracking-widest mb-1">EMAIL US</p>
+            <a href={`mailto:${email}`} className="text-[#9aab9e] hover:text-[#c9a84c] transition-colors text-sm">
+              {email}
+            </a>
+          </div>
+          <div className="flex gap-3">
             {socialLinks.instagram && (
-              <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center">
-                <Instagram size={16} />
+              <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-[#9aab9e] hover:text-[#c9a84c] transition-colors w-10 h-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center">
+                <Instagram size={18} />
               </a>
             )}
             {socialLinks.facebook && (
-              <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-[#c9a84c] transition-colors w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center">
-                <Facebook size={16} />
+              <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-[#9aab9e] hover:text-[#c9a84c] transition-colors w-10 h-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center">
+                <Facebook size={18} />
               </a>
             )}
             {!socialLinks.instagram && !socialLinks.facebook && (
               <>
-                <div className="text-white/60 w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center"><Instagram size={16} /></div>
-                <div className="text-white/60 w-9 h-9 rounded-full border border-white/15 bg-white/5 flex items-center justify-center"><Facebook size={16} /></div>
+                <div className="text-[#9aab9e] w-10 h-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center"><Instagram size={18} /></div>
+                <div className="text-[#9aab9e] w-10 h-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center"><Facebook size={18} /></div>
               </>
             )}
           </div>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { resolveCollectionFilter } from '@/lib/storefront/resolve-collection'
 
 // Canonical size order for sorting
 const SIZE_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL']
@@ -20,6 +21,10 @@ export async function GET(req: NextRequest) {
   const collection = searchParams.get('collection')?.trim() ?? ''
 
   const supabase = await createClient()
+
+  const collectionFilter = collection
+    ? await resolveCollectionFilter(supabase, collection)
+    : null
 
   // Run all filter queries in parallel
   const [
@@ -93,8 +98,20 @@ export async function GET(req: NextRequest) {
       .gt('stock_qty', 0)
       .eq('products.is_active', true)
 
-    if (collection) {
-      variantQuery = variantQuery.contains('products.tags', [collection])
+    if (collectionFilter) {
+      const parts: string[] = []
+      if (collectionFilter.collectionId) {
+        parts.push(`products.collection_id.eq.${collectionFilter.collectionId}`)
+      }
+      if (collectionFilter.categoryId) {
+        parts.push(`products.category_id.eq.${collectionFilter.categoryId}`)
+      }
+      for (const tag of collectionFilter.tagSlugs) {
+        parts.push(`products.tags.cs.{${tag}}`)
+      }
+      if (parts.length > 0) {
+        variantQuery = variantQuery.or(parts.join(','))
+      }
     }
 
     const { data: variantData } = await variantQuery

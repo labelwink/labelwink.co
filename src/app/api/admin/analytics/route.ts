@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     supabase.from('orders').select('id, status, created_at, total, payment_status').gte('created_at', rangeStart),
     // Top products in period
     supabase.from('order_items')
-      .select('product_name, quantity, price_at_purchase')
+      .select('product_name, quantity, price_at_purchase:unit_price')
       .gte('created_at', rangeStart)
       .order('quantity', { ascending: false })
       .limit(5),

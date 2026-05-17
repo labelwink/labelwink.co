@@ -52,9 +52,8 @@ export async function POST(req: NextRequest) {
       await supabase.from('admin_notifications').insert({
         type: 'order_status_update',
         title: 'Order Status Updated',
-        body: `Order ${invoice_number} → ${targetStatus} (Bulk)`,
-        entity_type: 'order',
-        entity_id: id
+        message: `Order ${invoice_number} → ${targetStatus} (Bulk)`,
+        metadata: { entity_type: 'order', entity_id: id, order_id: id }
       })
       successCount++
     }

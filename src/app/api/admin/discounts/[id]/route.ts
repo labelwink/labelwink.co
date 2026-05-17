@@ -18,7 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         *,
         discount_code_uses (
           id, used_at,
-          orders ( id, total, discount_amount, customer_name, customer_email, created_at, order_number )
+          orders ( id, total, total_amount, discount_amount, customer_name, customer_email, created_at, order_number )
         )
       `)
       .eq('id', id)
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       const order = Array.isArray(use.orders) ? use.orders[0] : use.orders
       if (order) {
         total_discount_given += Number(order.discount_amount || 0)
-        total_order_value += Number(order.total || 0)
+        total_order_value += Number(order.total_amount ?? order.total ?? 0)
       }
       return {
         id: use.id,
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         order_number: order?.order_number,
         customer_name: order?.customer_name,
         customer_email: order?.customer_email,
-        cart_total: order?.total,
+        cart_total: order?.total_amount ?? order?.total,
         discount_applied: order?.discount_amount
       }
     })

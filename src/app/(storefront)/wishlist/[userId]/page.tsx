@@ -4,7 +4,7 @@ import { ProductCard } from '@/components/product/ProductCard'
 import { MoveToCartButton } from '../MoveToCartButton'
 
 export const metadata = {
-  title: 'Shared Wishlist | LabelWink',
+  title: 'Shared Wishlist',
 }
 
 interface SharedWishlistPageProps {

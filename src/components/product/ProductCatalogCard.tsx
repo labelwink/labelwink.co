@@ -101,6 +101,25 @@ export function ProductCatalogCard({ product, listView = false }: { product: Pro
                 <span style={{ fontWeight: 700, color: '#1a2e1e' }}>₹{price.toLocaleString('en-IN')}</span>
                 {mrp && mrp > price && <span style={{ fontSize: '12px', color: '#9aab9e', textDecoration: 'line-through' }}>₹{mrp.toLocaleString('en-IN')}</span>}
                 {discount > 0 && <span style={{ fontSize: '10px', color: '#4ade80', fontWeight: 600 }}>{discount}% off</span>}
+                {isOOS && (
+                  <Link
+                    href={`/products/${product.slug}?notify=true`}
+                    style={{
+                      fontSize: '9px',
+                      fontWeight: 700,
+                      background: '#FAF5E9',
+                      border: '1px solid #1B3A2D',
+                      color: '#1B3A2D',
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      textDecoration: 'none',
+                      textTransform: 'uppercase',
+                      marginLeft: '6px'
+                    }}
+                  >
+                    Notify Me
+                  </Link>
+                )}
               </div>
               <WishlistButton productId={product.id} className="p-1.5 rounded-full bg-[#f5f2ec] text-[#9aab9e] hover:text-red-400 transition-colors" />
             </div>
@@ -135,8 +154,29 @@ export function ProductCatalogCard({ product, listView = false }: { product: Pro
 
         {/* OOS overlay */}
         {isOOS && (
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
-            <span style={{ background: '#ffffff', color: '#9aab9e', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 10px', borderRadius: '8px' }}>Out of Stock</span>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+            <span style={{ background: '#ffffff', color: '#1B3A2D', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', padding: '4px 10px', borderRadius: '8px' }}>Out of Stock</span>
+            <Link 
+              href={`/products/${product.slug}?notify=true`}
+              style={{ 
+                background: '#FAF5E9', 
+                color: '#1B3A2D', 
+                fontSize: '11px', 
+                fontWeight: 700, 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.05em', 
+                padding: '6px 14px', 
+                borderRadius: '8px',
+                border: '1px solid #1B3A2D',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                transition: 'all 200ms'
+              }}
+            >
+              Notify Me
+            </Link>
           </div>
         )}
 

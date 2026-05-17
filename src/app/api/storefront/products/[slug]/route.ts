@@ -43,7 +43,7 @@ export async function GET(
   const { data: reviewsRaw } = await supabase
     .from('reviews')
     .select(
-      `id, rating, title, body, photos, is_verified_purchase,
+      `id, rating, review_text, photos, is_verified_purchase,
        admin_reply, admin_replied_at, helpful_count, created_at,
        profiles (id, full_name, avatar_url)`
     )
@@ -53,7 +53,24 @@ export async function GET(
     .order('created_at', { ascending: false })
     .limit(10)
 
-  const reviews = reviewsRaw ?? []
+  // Map database review_text to title/body for storefront component compatibility
+  const reviews = (reviewsRaw ?? []).map((r: any) => {
+    let t = 'Review'
+    let b = r.review_text || ''
+    if (r.review_text && r.review_text.includes(' - ')) {
+      const parts = r.review_text.split(' - ')
+      t = parts[0]
+      b = parts.slice(1).join(' - ')
+    } else if (r.review_text) {
+      t = r.review_text.slice(0, 50)
+    }
+    return {
+      ...r,
+      comment: r.review_text,
+      title: t,
+      body: b,
+    }
+  })
 
   // ── 3. Reviews summary ──────────────────────────────────────────────────────
   const { data: allRatings } = await supabase

@@ -147,6 +147,10 @@ export interface Order {
   tracking_url: string | null
   shiprocket_order_id: string | null
   shiprocket_awb: string | null
+  shiprocket_awb_code?: string | null
+  shiprocket_courier_name?: string | null
+  shiprocket_shipment_id?: string | null
+  fulfillment_status?: string | null
   label_url: string | null
   created_at: string
   updated_at: string | null
@@ -165,10 +169,15 @@ export interface OrderItem {
   product_name: string
   size: string | null
   color: string | null
+  variant_size?: string | null
+  variant_color?: string | null
   sku: string | null
   quantity: number
   price: number
+  price_at_purchase?: number
+  mrp_at_purchase?: number
   image_url: string | null
+  image_cloudinary_id?: string | null
 }
 
 export interface OrderStatusHistory {

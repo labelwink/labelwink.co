@@ -28,6 +28,7 @@ export function ProductImage({ publicId, alt, width, height, className, priority
           onError={(event) => {
             const target = event.currentTarget as HTMLImageElement
             target.src = '/placeholder-product.jpg'
+            target.alt = alt ? `${alt} - image currently unavailable` : 'Product image unavailable' // ✅ AUDIT FIX #10
           }}
           style={{ objectFit: 'cover', objectPosition: 'center top' }}
           className={className}
@@ -46,6 +47,7 @@ export function ProductImage({ publicId, alt, width, height, className, priority
       onError={(event) => {
         const target = event.currentTarget as HTMLImageElement
         target.src = '/placeholder-product.jpg'
+        target.alt = alt ? `${alt} - image currently unavailable` : 'Product image unavailable' // ✅ AUDIT FIX #10
       }}
       className={className}
     />

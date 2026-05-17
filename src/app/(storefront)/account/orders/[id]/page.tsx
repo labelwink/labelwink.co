@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { ChevronLeft, Download, Package, MapPin, CreditCard, Star } from 'lucide-react';
+import { ChevronLeft, Download, Package, MapPin, CreditCard, Star, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ReturnModal } from '@/components/storefront/ReturnModal';
@@ -25,6 +25,8 @@ export default function OrderDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showReturnModal, setShowReturnModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -73,7 +75,29 @@ export default function OrderDetailsPage() {
   const isDelivered = order.status === 'delivered';
   const isDispatched = ['dispatched', 'shipped'].includes(order.status);
   const daysSinceOrder = Math.floor((Date.now() - new Date(order.created_at).getTime()) / (1000 * 3600 * 24));
+  const hoursSinceOrder = (Date.now() - new Date(order.created_at).getTime()) / (1000 * 3600);
   const canReturn = isDelivered && daysSinceOrder <= 7;
+  const canCancel = ['pending', 'confirmed', 'packed'].includes(order.status) && hoursSinceOrder <= 5;
+  const hoursLeft = Math.max(0, 5 - hoursSinceOrder);
+
+  const handleCancel = async () => {
+    if (!confirm('Cancel this order? This action cannot be undone.')) return;
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      const res = await fetch(`/api/storefront/orders/${order.id}/cancel`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setOrder({ ...order, status: 'cancelled' });
+      } else {
+        setCancelError(data.error || 'Failed to cancel order');
+      }
+    } catch {
+      setCancelError('Network error. Please try again.');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   // Build tracking URL from Shiprocket AWB if present
   const trackingUrl = order.shiprocket_awb_code
@@ -166,9 +190,19 @@ export default function OrderDetailsPage() {
                   {item.sku && <span className="font-mono text-[10px]">SKU: {item.sku}</span>}
                 </div>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-charcoal">₹{Number(item.total_price ?? (item.unit_price ?? item.price ?? 0) * item.quantity).toLocaleString('en-IN')}</p>
-                <p className="text-[10px] text-muted-foreground">₹{item.unit_price ?? item.price ?? 0} each</p>
+              <div className="text-right flex flex-col items-end gap-2">
+                <div>
+                  <p className="font-bold text-charcoal">₹{Number(item.total_price ?? (item.unit_price ?? item.price ?? 0) * item.quantity).toLocaleString('en-IN')}</p>
+                  <p className="text-[10px] text-muted-foreground">₹{item.unit_price ?? item.price ?? 0} each</p>
+                </div>
+                {isDelivered && item.slug && (
+                  <Link
+                    href={`/products/${item.slug}#reviews`}
+                    className="text-[11px] font-bold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded flex items-center gap-1 transition-colors"
+                  >
+                    <Star className="w-3 h-3 text-amber-500 fill-amber-500" /> Rate Item
+                  </Link>
+                )}
               </div>
             </div>
           ))}
@@ -272,12 +306,16 @@ export default function OrderDetailsPage() {
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-3 pt-4 border-t border-sage/20">
-        <Link
-          href={`/account/orders/${order.id}/invoice`}
-          className="flex items-center gap-2 border border-[#1a1a1a] px-5 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-sage/5 transition-colors"
-        >
-          <Download className="w-4 h-4" /> Download Invoice
-        </Link>
+        {(order.invoice_signed_url || order.invoice_number) && (
+          <a
+            href={order.invoice_signed_url || `/account/orders/${order.id}/invoice`}
+            target={order.invoice_signed_url ? "_blank" : "_self"}
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 border border-[#1a1a1a] px-5 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-sage/5 transition-colors"
+          >
+            <Download className="w-4 h-4" /> Download Invoice
+          </a>
+        )}
 
         {isDispatched && trackingUrl && (
           <a
@@ -300,18 +338,43 @@ export default function OrderDetailsPage() {
                 Return Items ↩️
               </button>
             )}
-            <Link
-              href="/products#reviews"
-              className="flex items-center gap-2 border border-amber-500 text-amber-500 px-5 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-amber-50 transition-colors"
-            >
-              <Star className="w-3.5 h-3.5" /> Rate Items ⭐
-            </Link>
+            {(() => {
+              const firstItem = (order.order_items ?? []).find((item: any) => item.slug);
+              return (
+                <Link
+                  href={firstItem ? `/products/${firstItem.slug}#reviews` : '/products'}
+                  className="flex items-center gap-2 border border-amber-500 text-amber-500 px-5 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase hover:bg-amber-50 transition-colors"
+                >
+                  <Star className="w-3.5 h-3.5" /> Rate Items ⭐
+                </Link>
+              );
+            })()}
           </>
         )}
 
         {order.status === 'return_requested' && (
           <div className="w-full mt-2 bg-orange-50 text-orange-700 border border-orange-200 p-4 rounded-xl text-sm font-medium">
             ↩️ Return request submitted. We&apos;ll contact you within 24 hours.
+          </div>
+        )}
+
+        {/* Cancel button — only within 5 hours */}
+        {canCancel && (
+          <div className="w-full mt-2">
+            <button
+              onClick={handleCancel}
+              disabled={cancelling}
+              className="flex items-center gap-2 border border-red-300 text-red-600 bg-red-50 hover:bg-red-100 px-5 py-2.5 rounded-lg text-xs font-bold tracking-widest uppercase transition-colors disabled:opacity-50"
+            >
+              <XCircle className="w-4 h-4" />
+              {cancelling ? 'Cancelling…' : 'Cancel Order'}
+            </button>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              Can cancel within {hoursLeft.toFixed(1)}h — Contact support after that.
+            </p>
+            {cancelError && (
+              <p className="text-xs text-red-600 mt-1">{cancelError}</p>
+            )}
           </div>
         )}
       </div>

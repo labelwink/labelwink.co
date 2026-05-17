@@ -240,7 +240,7 @@ export default function InventoryPage() {
         <div className="flex space-x-2">
           <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={handleFileChange} />
           <div className="relative group">
-            <button onClick={() => fileInputRef.current?.click()} disabled={importing} className="flex items-center space-x-2 bg-white text-white px-4 py-2 rounded-md hover:bg-white/90 transition-colors text-sm disabled:opacity-50">
+            <button onClick={() => fileInputRef.current?.click()} disabled={importing} className="flex items-center space-x-2 bg-[#1b3a34] text-white min-h-11 px-4 py-2 rounded-md hover:bg-[#16312b] transition-colors text-sm disabled:opacity-50">
               <Upload className="h-4 w-4" />
               <span>{importing ? 'Importing...' : 'Import CSV'}</span>
             </button>
@@ -336,7 +336,7 @@ export default function InventoryPage() {
                   <Fragment key={v.variant_id}>
                     <tr className={`hover:bg-[#faf7f2]/50 transition-colors ${isExpanded ? 'bg-[#faf7f2]/30' : ''}`}>
                       <td className="px-4 py-3">
-                        <button onClick={() => toggleRow(v.variant_id)} className="text-[#ffffff]/40 hover:text-[#ffffff]">
+                        <button onClick={() => toggleRow(v.variant_id)} className="min-h-11 min-w-11 flex items-center justify-center text-gray-400 hover:text-[#1b3a34]" aria-label={isExpanded ? 'Collapse row' : 'Expand row'}>
                           {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                         </button>
                       </td>
@@ -365,10 +365,10 @@ export default function InventoryPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-right w-20">{renderInlineEdit('stock_qty', 'number', 'right')}</td>
-                      <td className="px-4 py-3 text-right w-20 text-[#ffffff]/60">{renderInlineEdit('low_stock_threshold', 'number', 'right')}</td>
+                      <td className="px-4 py-3 text-right w-20 text-gray-600">{renderInlineEdit('low_stock_threshold', 'number', 'right')}</td>
                       <td className="px-4 py-3 w-32">{renderInlineEdit('warehouse_location')}</td>
                       <td className="px-4 py-3 text-right">
-                        <button onClick={() => { setModalVariant(v); setAdjQty(String(v.stock_qty)) }} className="p-1.5 text-[#ffffff]/50 hover:text-[#c9a84c] hover:bg-[#c9a84c]/10 rounded transition-colors" title="Adjust Stock">
+                        <button onClick={() => { setModalVariant(v); setAdjQty(String(v.stock_qty)) }} className="min-h-11 min-w-11 flex items-center justify-center text-gray-500 hover:text-[#c9a84c] hover:bg-[#c9a84c]/10 rounded transition-colors" title="Adjust Stock" aria-label="Adjust stock">
                           <Edit3 className="h-4 w-4" />
                         </button>
                       </td>

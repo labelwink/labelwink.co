@@ -12,7 +12,7 @@ export async function GET() {
 
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, phone, avatar_url, role, is_active, wink_points, created_at, updated_at')
+      .select('id, email, full_name, first_name, last_name, phone, avatar_url, role, is_active, wink_points, created_at, updated_at')
       .eq('id', user.id)
       .single();
 
@@ -22,18 +22,22 @@ export async function GET() {
         id: user.id,
         email: user.email,
         full_name: user.user_metadata?.full_name || '',
+        first_name: user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')[0] || '',
+        last_name: user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+        phone: user.phone || null,
         updated_at: new Date().toISOString(),
       };
       
       const { data: created } = await supabase
         .from('profiles')
         .insert([newProfile])
-        .select('id, email, full_name, phone, avatar_url, role, is_active, wink_points, created_at, updated_at')
+        .select('id, email, full_name, first_name, last_name, phone, avatar_url, role, is_active, wink_points, created_at, updated_at')
         .single();
       
       return NextResponse.json({
         ...created,
         email: user.email,
+        phone: created?.phone || user.phone || null,
       });
     }
 
@@ -45,6 +49,7 @@ export async function GET() {
     return NextResponse.json({
       ...profile,
       email: user.email,
+      phone: profile.phone || user.phone || null,
     });
   } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
@@ -63,8 +68,7 @@ export async function PATCH(req: Request) {
     const body = await req.json();
 
     // Only allow columns that actually exist on the profiles table
-    // DB columns: id, email, full_name, phone, avatar_url, role, is_active, wink_points
-    const allowed = ['full_name', 'phone', 'avatar_url'] as const;
+    const allowed = ['full_name', 'phone', 'avatar_url', 'first_name', 'last_name'] as const;
     const updates: Record<string, any> = {};
 
     for (const key of allowed) {
@@ -73,11 +77,17 @@ export async function PATCH(req: Request) {
       }
     }
 
-    // Handle split first_name + last_name → full_name
+    // Ensure all name fields are in sync
     if (body.first_name !== undefined || body.last_name !== undefined) {
       const first = (body.first_name || '').trim();
       const last = (body.last_name || '').trim();
+      updates.first_name = first;
+      updates.last_name = last;
       updates.full_name = `${first} ${last}`.trim();
+    } else if (body.full_name !== undefined) {
+      const parts = (body.full_name || '').trim().split(/\s+/);
+      updates.first_name = parts[0] || '';
+      updates.last_name = parts.slice(1).join(' ') || '';
     }
 
     if (Object.keys(updates).length === 0) {
@@ -90,7 +100,7 @@ export async function PATCH(req: Request) {
       .from('profiles')
       .update(updates)
       .eq('id', user.id)
-      .select('id, email, full_name, phone, avatar_url, role, is_active, wink_points')
+      .select('id, email, full_name, first_name, last_name, phone, avatar_url, role, is_active, wink_points')
       .single();
 
     if (error) {
@@ -98,7 +108,11 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(profile);
+    return NextResponse.json({
+      ...profile,
+      email: user.email,
+      phone: profile.phone || user.phone || null,
+    });
   } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

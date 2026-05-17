@@ -48,16 +48,29 @@ export function ProductActions({ productId, productName, productSlug, variants, 
     fetchSettings()
   }, [])
 
-  // Auto-select first in-stock size
+  // Auto-select size with notify support
   useEffect(() => {
-    if (!selectedSize && variants.length > 0) {
-      const firstAvailable = variants.find(v => (v.stock_qty ?? (v as any).stock ?? 0) > 0 && v.is_active !== false)
-      if (firstAvailable) {
-        setSelectedSize(firstAvailable.size)
-      } else {
-        // If all out of stock, select the first active one, or just the first one
-        const firstActive = variants.find(v => v.is_active !== false)
-        setSelectedSize(firstActive ? firstActive.size : variants[0].size)
+    if (variants.length > 0) {
+      const sp = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+      const notifyParam = sp?.get('notify') === 'true'
+
+      if (notifyParam) {
+        const firstOutOfStock = variants.find(v => (v.stock_qty ?? (v as any).stock ?? 0) === 0 && v.is_active !== false)
+        if (firstOutOfStock) {
+          setSelectedSize(firstOutOfStock.size)
+          return
+        }
+      }
+
+      if (!selectedSize) {
+        const firstAvailable = variants.find(v => (v.stock_qty ?? (v as any).stock ?? 0) > 0 && v.is_active !== false)
+        if (firstAvailable) {
+          setSelectedSize(firstAvailable.size)
+        } else {
+          // If all out of stock, select the first active one, or just the first one
+          const firstActive = variants.find(v => v.is_active !== false)
+          setSelectedSize(firstActive ? firstActive.size : variants[0].size)
+        }
       }
     }
   }, [variants, selectedSize])
@@ -126,14 +139,14 @@ export function ProductActions({ productId, productName, productSlug, variants, 
             return (
               <button
                 key={v.id}
-                disabled={outOfStock}
+                disabled={v.is_active === false}
                 onClick={() => setSelectedSize(v.size)}
-                title={v.is_active === false ? 'Not available' : outOfStock ? 'Out of stock' : `Size ${v.size}`}
+                title={v.is_active === false ? 'Not available' : outOfStock ? 'Out of stock — select to notify' : `Size ${v.size}`}
                 className={`min-w-[44px] min-h-[44px] flex items-center justify-center text-xs font-bold transition-all border relative rounded-lg px-3 py-2
                   ${isSelected
                     ? 'border-[#1B3A2D] bg-[#1B3A2D] text-white shadow-sm scale-105 z-10'
                     : outOfStock
-                      ? 'border-[#E8E2D9] bg-[#F5F5F5] text-[#999] cursor-not-allowed line-through'
+                      ? 'border-[#E8E2D9] bg-[#FAF8F5] text-[#A69B8A] hover:border-red-300 hover:text-red-500 line-through cursor-pointer'
                       : 'border-[#E8E2D9] bg-white text-[#333] hover:border-[#1B3A2D] hover:text-[#1B3A2D] hover:bg-[#F7F5EF]'
                   }`}
               >
@@ -176,34 +189,42 @@ export function ProductActions({ productId, productName, productSlug, variants, 
       </div>
 
       {/* CTA row — sticky on mobile */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 p-4 bg-white border-t border-[#E8E2D9] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] md:relative md:bottom-auto md:left-auto md:right-auto md:p-0 md:bg-transparent md:border-0 md:shadow-none flex flex-col gap-3">
-        <button
-          onClick={handleAddToCart}
-          disabled={isDisabled}
-          className={`w-full h-14 md:h-16 rounded-xl text-xs font-bold tracking-[0.3em] uppercase transition-colors
-            ${isDisabled
-              ? 'bg-[#F5F5F5] text-[#999] cursor-not-allowed opacity-80'
-              : 'bg-[#1B3A2D] text-white hover:bg-[#173129] active:scale-[0.98] shadow-sm'
-            }`}
-        >
-          {isOutOfStock
-            ? 'Out of Stock'
-            : !selectedSize
-              ? 'Select a Size'
-              : 'Add to Cart'
-          }
-        </button>
-        <button
-          onClick={handleBuyNow}
-          disabled={isDisabled}
-          className={`w-full h-14 md:h-16 rounded-xl text-xs font-bold tracking-[0.3em] uppercase transition-colors
-            ${isDisabled
-              ? 'bg-[#F5F5F5] text-[#999] cursor-not-allowed opacity-80'
-              : 'bg-[#1B3A2D] text-white hover:bg-[#173129] active:scale-[0.98] shadow-sm'
-            }`}
-        >
-          Buy Now
-        </button>
+      <div className="fixed bottom-0 left-0 right-0 z-30 p-4 bg-white border-t border-[#E8E2D9] shadow-[0_-4px_20px_rgba(0,0,0,0.05)] md:relative md:bottom-auto md:left-auto md:right-auto md:p-0 md:bg-transparent md:border-0 md:shadow-none flex items-center gap-3 w-full">
+        {isOutOfStock && selectedVariant ? (
+          <div className="flex-1">
+            <StockAlertButton 
+              productId={productId} 
+              variantId={selectedVariant.id} 
+              size={selectedVariant.size} 
+              currentStock={selectedVariant.stock_qty} 
+            />
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col md:flex-row gap-3">
+            <button
+              onClick={handleAddToCart}
+              disabled={isDisabled}
+              className={`w-full h-14 md:h-16 rounded-xl text-xs font-bold tracking-[0.3em] uppercase transition-colors
+                ${isDisabled
+                  ? 'bg-[#F5F5F5] text-[#999] cursor-not-allowed opacity-80'
+                  : 'bg-[#1B3A2D] text-white hover:bg-[#173129] active:scale-[0.98] shadow-sm'
+                }`}
+            >
+              {!selectedSize ? 'Select a Size' : 'Add to Cart'}
+            </button>
+            <button
+              onClick={handleBuyNow}
+              disabled={isDisabled}
+              className={`w-full h-14 md:h-16 rounded-xl text-xs font-bold tracking-[0.3em] uppercase transition-colors
+                ${isDisabled
+                  ? 'bg-[#F5F5F5] text-[#999] cursor-not-allowed opacity-80'
+                  : 'bg-[#1B3A2D] text-white hover:bg-[#173129] active:scale-[0.98] shadow-sm'
+                }`}
+            >
+              Buy Now
+            </button>
+          </div>
+        )}
         <button
           onClick={handleShare}
           className="w-14 h-14 md:w-16 md:h-16 border border-[#E8E2D9] text-[#1B3A2D] rounded-full hover:border-[#1B3A2D] hover:text-[#1B3A2D] transition-colors flex items-center justify-center flex-shrink-0 bg-white shadow-sm"
@@ -212,17 +233,6 @@ export function ProductActions({ productId, productName, productSlug, variants, 
           <Share2 className="w-5 h-5" />
         </button>
       </div>
-
-      {isOutOfStock && selectedVariant && (
-        <div className="mt-4">
-          <StockAlertButton 
-            productId={productId} 
-            variantId={selectedVariant.id} 
-            size={selectedVariant.size} 
-            currentStock={selectedVariant.stock_qty} 
-          />
-        </div>
-      )}
     </div>
   )
 }

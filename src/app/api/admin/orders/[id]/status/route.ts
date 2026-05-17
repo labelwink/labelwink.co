@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/requireAdmin'
 import { sendOrderDeliveredSMS } from '@/lib/sms-notifications'
+import { generateOrderDocuments } from '@/lib/pdf/generator'
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const guard = await requireAdmin()
@@ -16,7 +17,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const { data: order, error: fetchError } = await supabase
       .from('orders')
-      .select('id, status')
+      .select('*, invoices(*)')
       .eq('id', id)
       .single()
 
@@ -42,9 +43,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: `Cannot move from ${currentStatus} to ${status}` }, { status: 400 })
     }
 
+    let updateData: any = { status, updated_at: new Date().toISOString() }
+
+    // Generate documents if status is becoming packed and they don't exist
+    if (status === 'packed' && !order.invoice_pdf_url) {
+      const { data: settings } = await supabase.from('site_legal_settings').select('*').single()
+      if (settings) {
+        try {
+          const docs = await generateOrderDocuments(supabase, order, settings)
+          updateData = { ...updateData, ...docs }
+        } catch (docError) {
+          console.error('Failed to generate order documents:', docError)
+          // we don't fail the status update if document generation fails
+        }
+      }
+    }
+
     const { error: updateError } = await supabase
       .from('orders')
-      .update({ status, updated_at: new Date().toISOString() })
+      .update(updateData)
       .eq('id', id)
 
     if (updateError) return NextResponse.json({ error: 'Update failed' }, { status: 500 })
@@ -56,14 +73,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       changed_by: 'admin'
     })
 
-    const invoice_number = order.invoices?.[0]?.invoice_number || 'PENDING'
+    const invoice_number = order.invoices?.[0]?.invoice_number || order.invoice_number || 'PENDING'
 
     await supabase.from('admin_notifications').insert({
       type: 'order_status_update',
       title: 'Order Status Updated',
-      body: `Order ${invoice_number} → ${status}`,
-      entity_type: 'order',
-      entity_id: id
+      message: `Order ${invoice_number} → ${status}`,
+      metadata: { entity_type: 'order', entity_id: id, order_id: id }
     })
 
     if (status === 'delivered') {

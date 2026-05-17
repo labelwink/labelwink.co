@@ -19,9 +19,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .eq('slug', slug)
     .single()
 
-  if (!data) return { title: 'Lookbook – Label Wink' }
+  if (!data) return { title: 'Lookbook' }
   return {
-    title:       `${data.title} – Label Wink Lookbook`,
+    title:       data.title,
     description: data.excerpt ?? 'Shop the look from Label Wink.',
     openGraph: {
       title:       data.title,

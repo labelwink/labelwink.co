@@ -43,33 +43,45 @@ export async function GET() {
 
 /**
  * POST /api/storefront/stock-alerts
- * Creates or reactivates a stock alert for a variant.
+ * Creates or reactivates a stock alert for a variant (for guests or logged-in users).
  */
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
+  const sbAdmin = createAdminClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  let body: { variant_id?: string; product_id?: string; size?: string; email?: string }
+  let body: { variant_id?: string; email?: string }
   try {
     body = await req.json()
   } catch {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { variant_id } = body
+  const { variant_id, email } = body
   if (!variant_id) {
     return NextResponse.json({ error: 'variant_id is required' }, { status: 400 })
   }
 
-  // Check variant exists and is actually out of stock
-  const sbAdmin = createAdminClient()
+  // Check user authentication
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  let targetEmail = email?.trim() || ''
+  const targetUserId = user?.id || null
+
+  if (user) {
+    if (!targetEmail) {
+      targetEmail = user.email || ''
+    }
+  } else {
+    // If not logged in, we MUST have an email
+    if (!targetEmail || !targetEmail.includes('@')) {
+      return NextResponse.json({ error: 'A valid email is required to subscribe' }, { status: 400 })
+    }
+  }
+
+  // Check variant exists, is actually out of stock, and retrieve product_id and size
   const { data: variant, error: varErr } = await sbAdmin
     .from('product_variants')
-    .select('stock_qty')
+    .select('id, stock_qty, size, product_id')
     .eq('id', variant_id)
     .single()
 
@@ -84,22 +96,76 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Upsert alert (reactivates if previously deactivated)
-  const { data, error } = await supabase
-    .from('stock_alerts')
-    .upsert(
-      { user_id: user.id, variant_id, is_active: true, notified: false },
-      { onConflict: 'user_id,variant_id' }
-    )
-    .select()
-    .single()
+  // Find if an alert already exists for this variant/user or variant/email
+  let existingAlert: any = null
 
-  if (error) {
-    console.error('[stock-alerts POST]', error)
-    return NextResponse.json({ error: 'Failed to create alert' }, { status: 500 })
+  if (targetUserId) {
+    const { data } = await sbAdmin
+      .from('stock_alerts')
+      .select('*')
+      .eq('user_id', targetUserId)
+      .eq('variant_id', variant_id)
+      .maybeSingle()
+    existingAlert = data
+  } else {
+    const { data } = await sbAdmin
+      .from('stock_alerts')
+      .select('*')
+      .eq('email', targetEmail)
+      .eq('variant_id', variant_id)
+      .maybeSingle()
+    existingAlert = data
   }
 
-  return NextResponse.json(data)
+  let resultData: any
+
+  if (existingAlert) {
+    // Reactivate and update details
+    const { data, error } = await sbAdmin
+      .from('stock_alerts')
+      .update({
+        is_active: true,
+        notified: false,
+        email: targetEmail || existingAlert.email,
+        size: variant.size,
+        product_id: variant.product_id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', existingAlert.id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('[stock-alerts POST update] error:', error)
+      return NextResponse.json({ error: 'Failed to update subscription' }, { status: 500 })
+    }
+    resultData = data
+  } else {
+    // Insert new alert
+    const { data, error } = await sbAdmin
+      .from('stock_alerts')
+      .insert({
+        user_id: targetUserId,
+        variant_id,
+        email: targetEmail,
+        size: variant.size,
+        product_id: variant.product_id,
+        is_active: true,
+        notified: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('[stock-alerts POST insert] error:', error)
+      return NextResponse.json({ error: 'Failed to create subscription' }, { status: 500 })
+    }
+    resultData = data
+  }
+
+  return NextResponse.json(resultData)
 }
 
 /**

@@ -25,13 +25,21 @@ export async function GET(req: NextRequest) {
   // Check purchased + delivered
   const { data: orders } = await supabase
     .from('orders')
-    .select('id, order_items!inner(product_id)')
+    .select('id, items, order_items(product_id)')
     .eq('user_id', user.id)
     .eq('status', 'delivered')
-    .eq('order_items.product_id', product_id)
-    .limit(1)
 
-  if (!orders || orders.length === 0) {
+  const hasPurchased = orders?.some(order => {
+    const tableItems = order.order_items || []
+    const jsonbItems = order.items || []
+    
+    const hasInTable = tableItems.some((item: any) => item.product_id === product_id)
+    const hasInJsonb = jsonbItems.some((item: any) => (item.product_id === product_id || item.productId === product_id))
+    
+    return hasInTable || hasInJsonb
+  })
+
+  if (!hasPurchased) {
     return NextResponse.json({ can_review: false, reason: 'purchase_required' })
   }
 

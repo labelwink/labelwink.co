@@ -5,9 +5,9 @@ import { cloudinaryUrl, getCloudinaryUrl } from '@/lib/utils/cloudinary'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Lookbook – Label Wink',
+  title: 'Lookbook',
   description: 'Explore our editorial lookbooks and shop curated seasonal styles.',
-  openGraph: { title: 'Lookbook – Label Wink', description: 'Shop curated seasonal styles from Label Wink.' },
+  openGraph: { title: 'Lookbook', description: 'Shop curated seasonal styles from Label Wink.' },
 }
 
 export const revalidate = 3600

@@ -15,8 +15,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   if (!data) return { title: 'Page Not Found' }
 
+  const rawTitle = data.meta_title || data.title
+  const cleanTitle = rawTitle
+    .replace(/\s*[|—–-]\s*Label\s*Wink[a-zA-Z0-9.]*/gi, '')
+    .replace(/\s*[|—–-]\s*LabelWink[a-zA-Z0-9.]*/gi, '')
+    .trim();
+
   return {
-    title: data.meta_title || data.title,
+    title: cleanTitle,
     description: data.meta_desc || '',
   }
 }
@@ -36,26 +42,18 @@ export default async function DynamicPage({ params }: { params: Promise<{ slug: 
   }
 
   return (
-    <div className="relative min-h-screen bg-[#FDF8F0]">
-      <LeafPattern opacity={0.02} id="dynamic-page" />
+    <div className="relative min-h-screen bg-[#FDF8F0] pt-8 md:pt-16">
+      <LeafPattern opacity={0.06} id="dynamic-page" />
       
-      {/* Header Area */}
-      <div className="bg-[#1C3829] text-white pt-24 pb-16 md:pt-32 md:pb-20 relative overflow-hidden text-center px-4">
-        <LeafPattern opacity={0.05} id="dynamic-page-header" />
-        <div className="relative z-10 max-w-2xl mx-auto">
-          <h1 className="text-xl md:text-3xl font-bold font-serif text-[#c9a84c] mb-6 tracking-tight">
-            {page.title}
-          </h1>
-          <div className="w-16 h-0.5 bg-[#c9a84c] mx-auto opacity-60"></div>
-        </div>
-      </div>
-
       {/* Content Area */}
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 -mt-6 md:-mt-10 pb-24 relative z-10">
-        <div 
-          className="prose prose-sm md:prose-base prose-headings:text-labelwink-green prose-p:text-labelwink-green/80 prose-strong:text-labelwink-green max-w-none bg-white p-6 md:p-16 rounded-none shadow-2xl border border-labelwink-cream-border"
-          dangerouslySetInnerHTML={{ __html: page.content }}
-        />
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 pb-24 relative z-10">
+        <div className="relative bg-white shadow-2xl border border-labelwink-cream-border overflow-hidden">
+          <LeafPattern opacity={0.04} id="dynamic-page-card" />
+          <div 
+            className="relative z-10 prose prose-sm md:prose-base prose-headings:text-labelwink-green prose-p:text-labelwink-green/80 prose-strong:text-labelwink-green max-w-none p-6 md:p-16 rounded-none"
+            dangerouslySetInnerHTML={{ __html: page.content }}
+          />
+        </div>
       </div>
     </div>
   )

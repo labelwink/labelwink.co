@@ -1,9 +1,25 @@
 import type { Metadata } from 'next'
-import { fontVariables } from '@/lib/fonts'
+// ✅ AUDIT FIX #9 - Migrate Google Fonts to next/font
+import { Inter, Playfair_Display } from 'next/font/google'
 import './globals.css'
 import { generateOrganizationSchema } from '@/lib/json-ld'
 import { Toaster } from 'sonner'
 import { createAdminClient } from '@/lib/supabase/server'
+// ✅ AUDIT FIX #7 - DPDP-Compliant Cookie Consent Banner
+import CookieBanner from '@/components/ui/CookieBanner'
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-playfair',
+  weight: ['400', '600', '700'],
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
@@ -80,23 +96,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
         />
       </head>
       <body
-        className={`${fontVariables} antialiased overflow-x-hidden`}
-        style={{ fontFamily: "'Inter', -apple-system, sans-serif", background: '#faf8f4', color: '#1a2e1e' }}
+        className={`${inter.variable} ${playfair.variable} font-sans antialiased overflow-x-hidden`}
+        style={{ background: '#faf8f4', color: '#1a2e1e' }}
       >
         {children}
         <Toaster position="bottom-right" richColors closeButton />
+        <CookieBanner />
       </body>
     </html>
   )

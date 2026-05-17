@@ -44,13 +44,15 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     }
   }, [isOpen])
 
-  // ESC key closes modal
   useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+    if (!isOpen) return
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKey)
     }
-    if (isOpen) document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
   }, [isOpen, onClose])
 
   // Debounced search
@@ -90,7 +92,8 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
       />
 
       {/* Modal panel */}
-      <div className="absolute top-0 left-0 right-0 bg-[#faf7f2] shadow-2xl rounded-b-2xl">
+      <div role="dialog" aria-modal="true" aria-labelledby="search-modal-title" className="absolute top-0 left-0 right-0 bg-[#faf7f2] shadow-2xl rounded-b-2xl">
+        <h2 id="search-modal-title" className="sr-only">Search products</h2>
         {/* Search input row */}
         <div className="container mx-auto px-4 py-4 flex items-center gap-3">
           <Search className="w-5 h-5 text-[#1a3a34] flex-shrink-0" />
@@ -112,7 +115,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
           <button
             onClick={onClose}
             className="flex-shrink-0 text-[#5a7060] hover:text-[#1a3a34] transition-colors p-1 hidden md:block"
-            aria-label="Close search"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -155,7 +158,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                         </div>
                       )}
                     </div>
-                    <p className="text-sm font-medium text-[#ffffff] line-clamp-2 group-hover:text-[#1a3a34] transition-colors">
+                    <p className="text-sm font-medium text-[#1b3a34] line-clamp-2 group-hover:text-[#1a3a34] transition-colors">
                       {product.name}
                     </p>
                     {displayPrice && (

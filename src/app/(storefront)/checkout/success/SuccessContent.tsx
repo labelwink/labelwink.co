@@ -99,6 +99,7 @@ interface OrderItem {
 
 interface OrderInfo {
   id: string;
+  order_number?: string | null;
   status: string;
   total: number;
   subtotal: number;
@@ -135,7 +136,7 @@ export default function SuccessContent() {
     return () => clearTimeout(t);
   }, [orderId]);
 
-  const shortId  = orderId ? orderId.slice(0, 8).toUpperCase() : '—';
+  const shortId  = order?.order_number || (orderId ? orderId.slice(0, 8).toUpperCase() : '—');
   const pts      = order ? pointsEarned(order.total) : null;
   const addr     = (order?.shipping_address as any) || {};
 

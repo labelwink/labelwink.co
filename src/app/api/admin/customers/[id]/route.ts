@@ -32,7 +32,7 @@ export async function GET(
     supabase.from('loyalty_points').select('*').eq('user_id', id).maybeSingle(),
     supabase.from('loyalty_transactions').select('*').eq('user_id', id).order('created_at', { ascending: false }).limit(10),
     supabase.from('orders').select('id, invoice_number, total, status, payment_status, created_at, order_items(id, product_id, quantity, unit_price, product_name, size)').eq('user_id', id).order('created_at', { ascending: false }).limit(10),
-    supabase.from('reviews').select('id, product_id, rating, title, status, created_at, products(name)').eq('user_id', id).order('created_at', { ascending: false }).limit(5),
+    supabase.from('reviews').select('id, product_id, rating, review_text, status, created_at, products(name)').eq('user_id', id).order('created_at', { ascending: false }).limit(5),
     supabase.from('returns').select('id, order_id, status, created_at, reason').eq('user_id', id).order('created_at', { ascending: false }).limit(5),
   ])
 
@@ -57,7 +57,19 @@ export async function GET(
     loyalty_points: loyaltyPoints ?? null,
     loyalty_transactions: loyaltyTxns ?? [],
     orders: orders ?? [],
-    reviews: reviews ?? [],
+    reviews: (reviews ?? []).map((r: any) => {
+      let t = 'Review'
+      if (r.review_text && r.review_text.includes(' - ')) {
+        t = r.review_text.split(' - ')[0]
+      } else if (r.review_text) {
+        t = r.review_text.slice(0, 50)
+      }
+      return {
+        ...r,
+        comment: r.review_text,
+        title: t,
+      }
+    }),
     returns: returns ?? [],
   })
 }

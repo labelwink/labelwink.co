@@ -262,7 +262,7 @@ export default function UsersPage() {
           <button
             onClick={() => setPage(Math.max(1, page - 1))}
             disabled={page === 1}
-            className="px-4 py-2 bg-[#faf8f4] border border-[#f5f2ec] rounded text-white disabled:opacity-50 hover:bg-white"
+            className="min-h-11 px-4 py-2 bg-[#faf8f4] border border-[#f5f2ec] rounded text-[#1b3a34] disabled:opacity-50 hover:bg-white"
           >
             Previous
           </button>
@@ -272,7 +272,7 @@ export default function UsersPage() {
           <button
             onClick={() => setPage(Math.min(totalPages, page + 1))}
             disabled={page === totalPages}
-            className="px-4 py-2 bg-[#faf8f4] border border-[#f5f2ec] rounded text-white disabled:opacity-50 hover:bg-white"
+            className="min-h-11 px-4 py-2 bg-[#faf8f4] border border-[#f5f2ec] rounded text-[#1b3a34] disabled:opacity-50 hover:bg-white"
           >
             Next
           </button>

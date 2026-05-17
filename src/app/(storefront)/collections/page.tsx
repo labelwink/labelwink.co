@@ -1,9 +1,9 @@
-﻿import Link from 'next/link'
+import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 
 export const metadata = {
-  title: 'Collections | Label Wink',
+  title: 'Collections',
   description: 'Explore our curated collections of ethnic wear',
 }
 
@@ -55,7 +55,7 @@ export default async function CollectionsPage() {
           {collections.map((col) => (
             <Link
               key={col.id}
-              href={`/collections/${col.slug}`}
+              href={`/products?collection=${encodeURIComponent(col.slug)}`}
               className="group relative block overflow-hidden rounded-sm aspect-[4/3] bg-[#1a3a34]"
             >
               {/* Image */}

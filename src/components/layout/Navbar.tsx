@@ -12,10 +12,12 @@ import { createClient } from '@/lib/supabase/client';
 import { SearchModal } from '@/components/storefront/SearchModal';
 import { LeafPattern } from '@/components/ui/LeafPattern';
 
+const COLLECTIONS_SECTION_ID = 'collections';
+
 const NAV_LINKS = [
-  { href: '/products',    label: 'Shop' },
-  { href: '/collections', label: 'Collections' },
-  { href: '/about',       label: 'About' },
+  { href: '/products', label: 'Shop' },
+  { href: `/#${COLLECTIONS_SECTION_ID}`, label: 'Collections', sectionId: COLLECTIONS_SECTION_ID },
+  { href: '/about', label: 'About' },
 ];
 
 export function Navbar() {
@@ -63,8 +65,18 @@ export function Navbar() {
     window.location.href = '/';
   };
 
-  const isActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname.startsWith(href);
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/';
+    if (href === `/#${COLLECTIONS_SECTION_ID}`) return pathname.startsWith('/collections');
+    return pathname.startsWith(href);
+  };
+
+  const scrollToCollections = (e: React.MouseEvent) => {
+    if (pathname !== '/') return;
+    e.preventDefault();
+    document.getElementById(COLLECTIONS_SECTION_ID)?.scrollIntoView({ behavior: 'smooth' });
+    window.history.replaceState(null, '', `/#${COLLECTIONS_SECTION_ID}`);
+  };
 
   const iconBtnStyle: React.CSSProperties = {
     background: 'none', border: 'none', cursor: 'pointer',
@@ -100,6 +112,7 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 prefetch
+                onClick={link.sectionId ? scrollToCollections : undefined}
                 className={`text-white/80 hover:text-labelwink-gold transition-colors duration-200 text-xs font-bold uppercase tracking-widest ${
                   isActive(link.href) ? 'text-labelwink-gold underline underline-offset-8 decoration-2' : ''
                 }`}
@@ -199,6 +212,7 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
+                  onClick={link.sectionId ? scrollToCollections : undefined}
                   className={`flex items-center h-14 px-6 text-xs font-bold uppercase tracking-widest transition-colors ${
                     isActive(link.href) ? 'bg-white/10 text-labelwink-gold border-l-4 border-labelwink-gold' : 'text-white/80 hover:bg-white/5'
                   }`}

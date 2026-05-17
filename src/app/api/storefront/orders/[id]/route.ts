@@ -49,6 +49,7 @@ export async function GET(
       shiprocket_shipment_id,
       shiprocket_awb_code,
       shiprocket_courier_name,
+      invoice_pdf_url,
       created_at,
       updated_at,
       items,
@@ -63,7 +64,10 @@ export async function GET(
         product_id,
         variant_id,
         product_name,
-        image_url
+        image_url,
+        products (
+          slug
+        )
       )
     `)
     .eq('user_id', user.id)
@@ -104,6 +108,7 @@ export async function GET(
         image_url: item.image_url,
         product_id: item.product_id,
         variant_id: item.variant_id,
+        slug: item.products?.slug ?? null,
       }))
     : jsonbItems.map((item: any) => ({
         id: item.id,
@@ -118,11 +123,19 @@ export async function GET(
         image_url: item.image ?? item.image_url ?? null,
         product_id: item.productId ?? null,
         variant_id: item.variantId ?? null,
+        slug: item.slug ?? null,
       }))
+
+  let invoiceSignedUrl = null;
+  if ((data as any).invoice_pdf_url) {
+    const { data: signedData } = await db.storage.from('order-documents').createSignedUrl((data as any).invoice_pdf_url, 3600);
+    invoiceSignedUrl = signedData?.signedUrl;
+  }
 
   const order = {
     ...(data as any),
     order_items: normalisedItems,
+    invoice_signed_url: invoiceSignedUrl
   }
 
   return NextResponse.json(order)

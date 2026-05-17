@@ -5,6 +5,7 @@ import { Package, Heart, Star, ChevronRight, Loader2, User, LogOut, MapPin, Gift
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface Profile {
   full_name: string | null;
@@ -76,12 +77,8 @@ export default function AccountDashboard() {
     setUser(user as any);
 
     // Parallel fetch — profile, recent orders, wishlist count, tiers
-    const [profileRes, ordersRes, wishlistRes, settingsRes] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('full_name, phone, wink_points')
-        .eq('id', user.id)
-        .single(),
+    const [profileData, ordersRes, wishlistRes, settingsRes] = await Promise.all([
+      fetch('/api/storefront/profile').then(r => r.ok ? r.json() : null),
       // Fetch orders via API route (uses admin client, bypasses RLS)
       fetch('/api/storefront/orders').then(r => r.ok ? r.json() : { orders: [] }),
       supabase
@@ -94,21 +91,11 @@ export default function AccountDashboard() {
         .single(),
     ]);
 
-    if (profileRes.data) {
-      setProfile(profileRes.data);
-      setEditName(profileRes.data.full_name || '');
-      setEditPhone(profileRes.data.phone || '');
-      setLifetime(profileRes.data.wink_points || 0);
-    } else {
-      // Upsert empty profile on first visit
-      await supabase.from('profiles').upsert({
-        id: user.id,
-        full_name: user.user_metadata?.full_name || null,
-        phone: null,
-        wink_points: 0,
-      }, { onConflict: 'id' });
-      setProfile({ full_name: user.user_metadata?.full_name || null, phone: null, wink_points: 0 });
-      setEditName(user.user_metadata?.full_name || '');
+    if (profileData && !profileData.error) {
+      setProfile(profileData);
+      setEditName(profileData.full_name || '');
+      setEditPhone(profileData.phone || '');
+      setLifetime(profileData.wink_points || 0);
     }
 
     // ordersRes is now { orders: [...] } from API route
@@ -124,14 +111,41 @@ export default function AccountDashboard() {
   const handleSaveProfile = async () => {
     if (!user) return;
     setSaving(true);
-    await supabase.from('profiles').upsert({
-      id: user.id,
-      full_name: editName,
-      phone: editPhone,
-    }, { onConflict: 'id' });
-    setProfile(prev => prev ? { ...prev, full_name: editName, phone: editPhone } : prev);
-    setSaving(false);
-    setEditing(false);
+    try {
+      const parts = editName.trim().split(/\s+/);
+      const first_name = parts[0] || '';
+      const last_name = parts.slice(1).join(' ') || '';
+
+      const res = await fetch('/api/storefront/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          first_name,
+          last_name,
+          phone: editPhone,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update profile');
+      }
+
+      const updated = await res.json();
+      setProfile(prev => prev ? {
+        ...prev,
+        full_name: updated.full_name,
+        phone: updated.phone,
+      } : null);
+      setEditName(updated.full_name || '');
+      setEditPhone(updated.phone || '');
+      toast.success('✅ Profile updated successfully');
+      setEditing(false);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSignOut = async () => {

@@ -11,6 +11,7 @@ import type { OrderStatus } from '@/lib/utils/constants'
 // Local query result types
 interface OrderRow {
   id: string
+  order_number?: string | null
   total_amount: number | null
   status: string | null
   shipping_name: string | null
@@ -51,7 +52,7 @@ async function getDashboardData() {
     supabaseAny.from('orders').select('id, total_amount').gte('created_at', todayStart).neq('status', 'cancelled'),
     supabaseAny.from('products').select('id', { count: 'exact', head: true }).eq('visible', true),
     supabaseAny.from('product_variants').select('id, size, color, stock_qty, low_stock_threshold, product_id, products:product_id(name, id)').lte('stock_qty', 10).eq('is_active', true).order('stock_qty', { ascending: true }).limit(20),
-    supabaseAny.from('orders').select('id, total_amount, status, shipping_name, created_at, profiles(email, full_name)').order('created_at', { ascending: false }).limit(5),
+    supabaseAny.from('orders').select('id, order_number, total_amount, status, shipping_name, created_at, profiles(email, full_name)').order('created_at', { ascending: false }).limit(5),
     supabaseAny.from('profiles').select('id', { count: 'exact', head: true }),
     supabaseAny.from('returns').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
     supabaseAny.from('reviews').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
@@ -295,7 +296,7 @@ export default async function AdminDashboard() {
                     <tr key={order.id} style={{ borderBottom: '1px solid #f5f2ec' }}>
                       <td style={{ padding: '14px 16px' }}>
                         <Link href={`/admin/orders/${order.id}`} style={{ fontSize: '13px', fontWeight: 600, color: '#c9a84c', textDecoration: 'none' }}>
-                          #{order.id.slice(0, 8).toUpperCase()}
+                           #{order.order_number || order.id.slice(0, 8).toUpperCase()}
                         </Link>
                       </td>
                       <td style={{ padding: '14px 16px', fontSize: '13px', color: '#5a7060', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

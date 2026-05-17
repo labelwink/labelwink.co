@@ -12,7 +12,7 @@ export default function GlobalError({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${fontVariables} antialiased bg-white text-white min-h-screen flex items-center justify-center p-4`}>
+      <body className={`${fontVariables} antialiased bg-white text-[#1a3a34] min-h-screen flex items-center justify-center p-4`}>
         <div className="text-center max-w-md">
           <div className="mb-6 text-6xl">⚠️</div>
           <h1 className="text-2xl md:text-3xl font-bold mb-4 uppercase tracking-widest text-[#c9a84c]">

@@ -13,8 +13,8 @@ const navItems = [
   { name: 'Wishlist',     href: '/account/wishlist',       icon: Heart },
   { name: 'Profile',      href: '/account/profile',        icon: User },
   { name: 'Addresses',    href: '/account/addresses',      icon: MapPin },
-  { name: 'Wink Points',  href: '/account/wink-points',    icon: Coins },
-  { name: 'Referrals',    href: '/account/referrals',      icon: Gift },
+  { name: 'Wink Points',  href: '/account/wink-points',    icon: Coins, isSoon: true },
+  { name: 'Referrals',    href: '/account/referrals',      icon: Gift, isSoon: true },
   { name: 'Alerts',       href: '/account/alerts',         icon: Bell },
 ];
 
@@ -94,7 +94,12 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                   )}
                 >
                   <item.icon className="w-4 h-4" />
-                  <span className="flex-1">{item.name}</span>
+                  <span className="flex-1 flex items-center justify-between gap-2">
+                    {item.name}
+                    {item.isSoon && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 tracking-wider">SOON</span>
+                    )}
+                  </span>
                   <ChevronRight className={cn("w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity", active && "opacity-50")} />
                 </Link>
               );
@@ -126,7 +131,12 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                   )}
                 >
                   <item.icon className="w-3.5 h-3.5" />
-                  {item.name}
+                  <span className="flex items-center gap-1.5">
+                    {item.name}
+                    {item.isSoon && (
+                      <span className="text-[8px] font-bold px-1.5 py-0.5 bg-[#1C3829]/10 text-[#1C3829] rounded">SOON</span>
+                    )}
+                  </span>
                 </Link>
               );
             })}

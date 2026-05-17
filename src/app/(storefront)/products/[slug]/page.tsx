@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { Star, Truck, ShieldCheck, RefreshCcw } from 'lucide-react';
 import { ProductImage } from '@/components/storefront/ProductImage';
@@ -32,8 +32,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
   const canonical = `${siteUrl}/products/${resolvedParams.slug}`;
 
+  const rawTitle = product.seo_title || product.name
+  const cleanTitle = rawTitle
+    .replace(/\s*[|—–-]\s*Label\s*Wink[a-zA-Z0-9.]*/gi, '')
+    .replace(/\s*[|—–-]\s*LabelWink[a-zA-Z0-9.]*/gi, '')
+    .trim();
+
   return {
-    title: product.seo_title || `${product.name} | ${settings?.store_name || process.env.NEXT_PUBLIC_STORE_NAME}`,
+    title: cleanTitle,
     description: product.seo_description || product.description,
     alternates: {
       canonical,
@@ -77,34 +83,59 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   // Re-check wishlist with actual product ID
   let hasPurchased = false;
   if (user) {
-    const [wlResult, purchaseResult] = await Promise.all([
+    const [wlResult, ordersResult] = await Promise.all([
       supabase
         .from('wishlists')
         .select('id')
         .eq('product_id', product.id)
         .eq('user_id', user.id)
         .maybeSingle(),
-      // Gate: user must have a DELIVERED order containing this product
-      supabase
-        .from('order_items')
-        .select('id, orders!inner(user_id, status)')
-        .eq('product_id', product.id)
-        .eq('orders.user_id', user.id)
-        .eq('orders.status', 'delivered')
-        .limit(1),
+      // Gate: user must have a DELIVERED order containing this product in items or order_items
+      createAdminClient()
+        .from('orders')
+        .select('id, items, order_items(product_id)')
+        .eq('user_id', user.id)
+        .eq('status', 'delivered')
     ]);
     isWishlisted = !!wlResult.data;
-    hasPurchased = (purchaseResult.data?.length ?? 0) > 0;
+    hasPurchased = (ordersResult.data ?? []).some((order: any) => {
+      const tableItems = order.order_items || [];
+      const jsonbItems = order.items || [];
+      
+      const hasInTable = tableItems.some((item: any) => item.product_id === product.id);
+      const hasInJsonb = jsonbItems.some((item: any) => (item.product_id === product.id || item.productId === product.id));
+      
+      return hasInTable || hasInJsonb;
+    });
   }
 
   // Fetch reviews separately to avoid inner join issues
 
-  const { data: reviews } = await supabase
+  const { data: reviewsRaw } = await supabase
     .from('reviews')
-    .select('id, rating, title, body, is_verified_purchase, admin_reply, created_at, profiles(full_name)')
+    .select('id, rating, review_text, is_verified_purchase, admin_reply, created_at, profiles(full_name)')
     .eq('product_id', product.id)
     .eq('status', 'approved')
     .order('created_at', { ascending: false });
+
+  // Map database review_text to title/body for the frontend UI
+  const reviews = (reviewsRaw ?? []).map((r: any) => {
+    let t = 'Review'
+    let b = r.review_text || ''
+    if (r.review_text && r.review_text.includes(' - ')) {
+      const parts = r.review_text.split(' - ')
+      t = parts[0]
+      b = parts.slice(1).join(' - ')
+    } else if (r.review_text) {
+      t = r.review_text.slice(0, 50)
+    }
+    return {
+      ...r,
+      comment: r.review_text,
+      title: t,
+      body: b,
+    }
+  })
 
   // Fetch related products
   const { data: relatedProducts } = await supabase
@@ -175,7 +206,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <span className="opacity-40">/</span>
         {product.categories && (
           <>
-            <Link href={`/collections/${product.categories.slug}`} className="hover:text-[#1C3829] transition-colors">{product.categories.name}</Link>
+            <Link href={`/products?collection=${encodeURIComponent(product.categories.slug)}`} className="hover:text-[#1C3829] transition-colors">{product.categories.name}</Link>
             <span className="opacity-40">/</span>
           </>
         )}
@@ -206,11 +237,17 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div className="w-full md:w-1/2 flex flex-col space-y-10 px-0 md:px-0">
           <div className="space-y-4">
             <h1 className="font-heading text-4xl md:text-5xl text-[#1A1A1A] font-semibold">{product.name}</h1>
-            <div className="flex items-center gap-6">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
               <div className="flex text-[#c9a84c]">
                 {[1,2,3,4,5].map(i => <Star key={i} className={`w-4 h-4 ${i <= Number(avgRating) ? 'fill-current' : 'text-[#E8DFC8]'}`} />)}
               </div>
               <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-[#E8DFC8] pb-0.5">{reviews?.length || 0} Reviews</span>
+              <a
+                href="#reviews"
+                className="text-[10px] font-bold uppercase tracking-widest text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1 rounded transition-all shadow-sm hover:shadow"
+              >
+                Write a Review
+              </a>
             </div>
           </div>
 
@@ -312,7 +349,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       />
 
         {/* Reviews Section */}
-      <section className="mt-12 border-t border-[#E8DFC8] pt-10">
+      <section id="reviews" className="mt-12 border-t border-[#E8DFC8] pt-10">
         <h2 className="text-2xl font-heading font-semibold mb-8 text-[#1A1A1A]">Customer Reviews</h2>
 
         {reviews && reviews.length > 0 && (() => {
@@ -348,7 +385,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <span className="text-xs text-[#E8DFC8] w-6 text-right">{count}</span>
+                      <span className="text-xs text-[#6B6B5A] w-6 text-right">{count}</span>
                     </div>
                   );
                 })}
@@ -384,7 +421,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
                       <p className="text-sm text-[#1A1A1A] leading-relaxed">{r.admin_reply}</p>
                     </div>
                   )}
-                  <p className="text-xs text-[#E8DFC8] mt-3">
+                  <p className="text-xs text-[#6B6B5A] mt-3 font-semibold">
                     {reviewerName} · {new Date(r.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </p>
                 </div>

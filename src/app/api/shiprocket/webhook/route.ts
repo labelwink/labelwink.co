@@ -13,6 +13,16 @@ export const runtime = 'nodejs'
  *   awb, order_id (their internal ID), current_status, shipment_track_activities, etc.
  */
 export async function POST(req: NextRequest) {
+  // ── Security Check ───────────────────────────────────────────────────────────
+  const webhookSecret = process.env.SHIPROCKET_WEBHOOK_SECRET
+  if (webhookSecret) {
+    const passedKey = req.headers.get('x-api-key') || req.headers.get('authorization')
+    if (!passedKey || passedKey.replace('Bearer ', '') !== webhookSecret) {
+      console.warn('[ShiprocketWebhook] Unauthorized attempt')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+  }
+
   let body: Record<string, unknown>
   try {
     body = await req.json()
@@ -47,23 +57,26 @@ export async function POST(req: NextRequest) {
 
   // ── Find order by shiprocket_order_id or by AWB ─────────────────────────────
   let orderId: string | null = null
+  let orderNumber: string | null = null
 
   if (srOrderId) {
     const { data } = await supabase
       .from('orders')
-      .select('id')
+      .select('id, order_number')
       .eq('shiprocket_order_id', String(srOrderId))
       .maybeSingle()
     orderId = data?.id ?? null
+    orderNumber = data?.order_number ?? null
   }
 
   if (!orderId && awbCode) {
     const { data } = await supabase
       .from('orders')
-      .select('id')
+      .select('id, order_number')
       .eq('shiprocket_awb', String(awbCode))
       .maybeSingle()
     orderId = data?.id ?? null
+    orderNumber = data?.order_number ?? null
   }
 
   if (!orderId) {
@@ -84,11 +97,12 @@ export async function POST(req: NextRequest) {
   if (mappedStatus === 'shipped' || mappedStatus === 'delivered') {
     try {
       const label = mappedStatus === 'delivered' ? 'Delivered' : 'Shipped'
+      const bodyText = awbCode ? `AWB: ${awbCode}` : `Status: ${srStatus}`
       await supabase.from('admin_notifications').insert({
         type:  mappedStatus === 'delivered' ? 'order_delivered' : 'order_shipped',
-        title: `Order ${label} — #${orderId.slice(0, 8).toUpperCase()}`,
-        body:  awbCode ? `AWB: ${awbCode}` : `Status: ${srStatus}`,
-        data:  { order_id: orderId, awb: awbCode, shiprocket_status: srStatus },
+        title: `Order ${label} — #${orderNumber || orderId.slice(0, 8).toUpperCase()}`,
+        message: bodyText,
+        metadata:  { order_id: orderId, order_number: orderNumber, awb: awbCode, shiprocket_status: srStatus },
       } as any)
     } catch { /* non-fatal */ }
   }

@@ -45,8 +45,8 @@ export function WishlistButton({
             setIsWishlisted(false)
             localStorage.removeItem(`wl_${productId}`)
           }
-        } catch (e) {
-          console.error('Wishlist check failed', e)
+        } catch {
+          // Offline or API error — fall back to localStorage state
         } finally {
           if (isMounted) setLoading(false)
         }
@@ -114,14 +114,14 @@ export function WishlistButton({
         toggle()
       }}
       disabled={loading}
-      className={className || `p-2 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white hover:scale-110 transition-all shadow-sm disabled:opacity-50 ${loading ? 'opacity-50 animate-pulse' : ''}`}
+      className={className || `flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm hover:bg-white hover:scale-110 active:scale-95 transition-all shadow-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-labelwink-green focus-visible:ring-offset-2 ${loading ? 'opacity-50 animate-pulse' : ''}`}
       aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
     >
       <Heart
         size={iconSizes[size]}
-        className="transition-colors"
-        fill={isWishlisted ? '#ef4444' : 'none'}
-        stroke={isWishlisted ? '#ef4444' : 'currentColor'}
+        className={isWishlisted ? 'text-destructive transition-colors' : 'transition-colors'}
+        fill={isWishlisted ? 'currentColor' : 'none'}
+        stroke="currentColor"
       />
     </button>
   )

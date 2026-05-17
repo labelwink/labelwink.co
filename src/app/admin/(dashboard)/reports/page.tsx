@@ -386,7 +386,7 @@ function StockReport() {
             <button
               key={t.id}
               onClick={() => setStatus(t.id as any)}
-              className={`px-4 py-2 rounded-md text-sm transition-colors ${status === t.id ? 'bg-white text-white' : 'bg-[#faf7f2] border border-[#ffffff]/10 hover:bg-white/5 text-[#ffffff]/70'}`}
+              className={`min-h-11 px-4 py-2 rounded-md text-sm transition-colors ${status === t.id ? 'bg-[#1b3a34] text-white' : 'bg-[#faf7f2] border border-[#e5e7eb] hover:bg-white text-[#6b7280]'}`}
             >
               {t.label}
             </button>

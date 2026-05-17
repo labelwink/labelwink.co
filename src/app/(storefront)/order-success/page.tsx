@@ -143,13 +143,13 @@ export default async function OrderSuccessPage({ searchParams }: { searchParams:
       <div className="flex flex-col sm:flex-row gap-4">
         <Link 
           href={`/account/orders/${order.id}`}
-          className="flex-1 bg-white text-[#faf7f2] py-4 rounded-xl text-sm font-bold uppercase tracking-widest text-center hover:bg-black transition-colors"
+          className="flex-1 min-h-11 bg-labelwink-green text-white py-4 rounded-xl text-base font-bold uppercase tracking-widest text-center hover:bg-labelwink-green-hover transition-colors"
         >
           Track My Order
         </Link>
         <Link 
           href="/collections/all"
-          className="flex-1 border-2 border-[#ffffff] text-[#ffffff] py-4 rounded-xl text-sm font-bold uppercase tracking-widest text-center hover:bg-sage/5 transition-colors"
+          className="flex-1 min-h-11 border-2 border-labelwink-green text-labelwink-green py-4 rounded-xl text-base font-bold uppercase tracking-widest text-center hover:bg-labelwink-cream-card transition-colors"
         >
           Continue Shopping
         </Link>

@@ -38,7 +38,7 @@ export function WishlistRemoveButton({ productId }: WishlistRemoveButtonProps) {
     <button
       onClick={handleRemove}
       disabled={isLoading}
-      className="absolute top-3 right-3 p-2 rounded-full bg-white/90 backdrop-blur-sm text-destructive hover:bg-destructive hover:text-white transition-all z-10 shadow-sm disabled:opacity-50"
+      className="absolute top-3 right-3 flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm text-destructive hover:bg-destructive hover:text-white active:scale-95 transition-all z-10 shadow-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-labelwink-green focus-visible:ring-offset-2"
       aria-label="Remove from wishlist"
     >
       {isLoading ? (

@@ -27,7 +27,7 @@ export function CategoryHighlights({ categories }: CategoryHighlightsProps) {
           {categories.map((category) => (
             <Link 
               key={category.id} 
-              href={`/collections/${category.slug ?? category.id}`}
+              href={`/products?collection=${encodeURIComponent(category.slug ?? category.id)}`}
               className="group block relative overflow-hidden aspect-[3/4] bg-sage/10 rounded-xl"
             >
               <div className="absolute inset-0 z-0">

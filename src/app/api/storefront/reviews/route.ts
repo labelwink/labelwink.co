@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 export const runtime = 'nodejs'
 
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from('reviews')
-    .select('id, rating, title, body, photos, is_verified_purchase, admin_reply, admin_replied_at, helpful_count, created_at, profiles(id, full_name, avatar_url)')
+    .select('id, rating, review_text, photos, is_verified_purchase, admin_reply, admin_replied_at, helpful_count, created_at, profiles(id, full_name, avatar_url)')
     .eq('product_id', product_id)
     .eq('status', 'approved')
 
@@ -38,8 +38,27 @@ export async function GET(req: NextRequest) {
   const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 } as Record<number, number>
   ratings.forEach(r => { if (r >= 1 && r <= 5) distribution[r]++ })
 
+  // Map to frontend-expected fields (title, body) from review_text
+  const reviews = (data ?? []).map((r: any) => {
+    let t = 'Review'
+    let b = r.review_text || ''
+    if (r.review_text && r.review_text.includes(' - ')) {
+      const parts = r.review_text.split(' - ')
+      t = parts[0]
+      b = parts.slice(1).join(' - ')
+    } else if (r.review_text) {
+      t = r.review_text.slice(0, 50)
+    }
+    return {
+      ...r,
+      comment: r.review_text,
+      title: t,
+      body: b,
+    }
+  })
+
   return NextResponse.json({
-    reviews: data ?? [],
+    reviews,
     total, avg_rating, distribution,
     page, per_page, total_pages: Math.ceil(total / per_page),
   })
@@ -74,36 +93,52 @@ export async function POST(req: NextRequest) {
   }
 
   // Check if user has purchased this product (for verified badge)
-  // If order_id is provided, use it directly; otherwise query all orders
+  // Since the relational order_items table is empty, we must query the orders table and check the JSONB items column fallback.
   let isVerified = false
+  const adminDb = createAdminClient()
   if (order_id) {
-    const { data: orderCheck } = await supabase
+    const { data: orderCheck } = await adminDb
       .from('orders')
-      .select('id, order_items!inner(products!inner(id))')
+      .select('id, items, order_items(product_id)')
       .eq('id', order_id)
       .eq('user_id', user.id)
-      .eq('order_items.products.id', product_id)
       .maybeSingle()
-    isVerified = !!orderCheck
+      
+    if (orderCheck) {
+      const tableItems = orderCheck.order_items || []
+      const jsonbItems = orderCheck.items || []
+      
+      const hasInTable = tableItems.some((item: any) => item.product_id === product_id)
+      const hasInJsonb = jsonbItems.some((item: any) => (item.product_id === product_id || item.productId === product_id))
+      isVerified = hasInTable || hasInJsonb
+    }
   } else {
-    const { data: orderItems } = await supabase
-      .from('order_items')
-      .select('id, orders!inner(user_id)')
-      .eq('product_id', product_id)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    isVerified = orderItems?.some((oi: any) => oi.orders?.user_id === user.id) ?? false
+    const { data: orders } = await adminDb
+      .from('orders')
+      .select('id, items, order_items(product_id)')
+      .eq('user_id', user.id)
+      
+    isVerified = orders?.some(order => {
+      const tableItems = order.order_items || []
+      const jsonbItems = order.items || []
+      
+      const hasInTable = tableItems.some((item: any) => item.product_id === product_id)
+      const hasInJsonb = jsonbItems.some((item: any) => (item.product_id === product_id || item.productId === product_id))
+      return hasInTable || hasInJsonb
+    }) ?? false
   }
 
   if (!isVerified) {
     return NextResponse.json({ error: 'You must purchase this product to review.' }, { status: 403 });
   }
 
+  const fullComment = title ? `${title} - ${body}` : body
+
   const { error } = await supabase.from('reviews').insert({
     product_id,
     user_id: user.id,
     rating: Number(rating),
-    title: title || null,
-    body,
+    review_text: fullComment,
     status: 'pending',
     is_verified_purchase: isVerified,
   } as any)
@@ -112,13 +147,15 @@ export async function POST(req: NextRequest) {
 
   // Admin notification (non-fatal)
   try {
-    await supabase.from('admin_notifications').insert({
+    await adminDb.from('admin_notifications').insert({
       type: 'new_review',
       title: 'New Review Submitted',
-      body: `A customer submitted a ${rating}-star review pending approval`,
-      data: { product_id },
+      message: `A customer submitted a ${rating}-star review pending approval`,
+      metadata: { product_id },
     } as any)
-  } catch { /* ignore */ }
+  } catch (notifErr) {
+    console.error('Failed to insert admin notification:', notifErr)
+  }
 
   return NextResponse.json({ success: true, message: 'Review submitted for approval' })
 }

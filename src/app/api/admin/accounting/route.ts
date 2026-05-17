@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   try {
     // Build order revenue query
     let orderQ = sb.from('orders')
-      .select('id, total_amount, created_at', { count: 'exact' })
+      .select('id, order_number, total_amount, created_at', { count: 'exact' })
       .eq('status', 'delivered')
     if (startDate) orderQ = orderQ.gte('created_at', startDate)
     if (endDate)   orderQ = orderQ.lte('created_at', endDate + 'T23:59:59')
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
         id:          o.id,
         date:        o.created_at,
         type:        'revenue',
-        reference:   `ORD-${o.id.slice(0, 8).toUpperCase()}`,
+        reference:   o.order_number || `ORD-${o.id.slice(0, 8).toUpperCase()}`,
         description: `Order delivered`,
         amount:      Number(o.total_amount || 0),
       })),

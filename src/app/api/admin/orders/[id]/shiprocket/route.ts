@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
-import { createShiprocketOrder, getShiprocketTracking } from '@/lib/shiprocket'
+import { createShiprocketOrder, cancelShiprocketOrder, generateShiprocketAWB, requestShiprocketPickup, getShiprocketTracking } from '@/lib/shiprocket'
 import { sendDispatchEmail } from '@/lib/brevo'
 import { sendTelegramMessage } from '@/lib/telegram'
 import { sendOrderDispatchedSMS } from '@/lib/sms-notifications'
@@ -34,7 +34,7 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
   const storeName = settingsRows?.[0]?.value ?? 'LabelWink'
 
   const mode = process.env.SHIPROCKET_MODE || 'test'
-  const invoice_number = order.invoice_number || `INV-${order.id.slice(0, 8).toUpperCase()}`
+  const invoice_number = order.invoice_number || (order.order_number ? `INV-${order.order_number}` : `INV-${order.id.slice(0, 8).toUpperCase()}`)
 
   // Customer info from shipping fields (schema uses shipping_name, shipping_phone)
   const customer_name = order.shipping_name || 'Customer'
@@ -92,16 +92,75 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
       return NextResponse.json({ success: true, awb: test_awb, mode: 'test', shiprocket_order_id: sr_order_id })
     }
 
-    // LIVE MODE
-    const srData = await createShiprocketOrder(order)
-    if (!srData.order_id || !srData.awb_code) {
-      return NextResponse.json({ error: srData.message || 'Shiprocket error (No AWB/Order ID)', detail: srData }, { status: 400 })
+    // ── LIVE MODE ─────────────────────────────────────────────────────────────
+    // Step 1: Reuse existing Shiprocket order if we already created one for this order
+    let srOrderId: number | string | null = order.shiprocket_order_id || null
+    let shipmentId: number | string | null = (order as any).shiprocket_shipment_id || null
+
+    if (srOrderId && shipmentId) {
+      console.log('[shiprocket/live] Reusing existing Shiprocket order:', srOrderId, 'shipment:', shipmentId)
+    } else {
+      // Create fresh order in Shiprocket
+      console.log('[shiprocket/live] Creating new Shiprocket order for:', id)
+      const srData = await createShiprocketOrder(order)
+      console.log('[shiprocket/live] Create response:', JSON.stringify(srData))
+
+      srOrderId  = srData.order_id
+      shipmentId = srData.shipment_id
+
+      if (!srOrderId || !shipmentId) {
+        console.error('[shiprocket/live] Missing order_id or shipment_id:', JSON.stringify(srData))
+        return NextResponse.json(
+          { error: srData.message || 'Shiprocket: order creation failed', detail: srData },
+          { status: 400 }
+        )
+      }
+
+      // Handle CANCELED status (Shiprocket auto-cancels duplicate order_ids)
+      if (srData.status === 'CANCELED' || srData.status_code === 5) {
+        console.warn('[shiprocket/live] Order came back CANCELED — cancelling on their side')
+        await cancelShiprocketOrder(srOrderId).catch(e =>
+          console.error('[shiprocket/live] Cancel failed:', e.message)
+        )
+        return NextResponse.json(
+          { error: 'Shiprocket rejected this order (duplicate). Click "Generate AWB & Mark Ready" once more — a new unique ID will be used.', retry: true },
+          { status: 409 }
+        )
+      }
+
+      // Store the Shiprocket IDs immediately so retries reuse them
+      await supabase.from('orders').update({
+        shiprocket_order_id: String(srOrderId),
+        shiprocket_shipment_id: String(shipmentId),
+      } as any).eq('id', id)
     }
 
+    // Step 2: Assign AWB
+    console.log('[shiprocket/live] Assigning AWB for shipment:', shipmentId)
+    const awbData    = await generateShiprocketAWB(String(shipmentId))
+    console.log('[shiprocket/live] AWB response:', JSON.stringify(awbData))
+    const awb_code   = awbData.awb_code
+    const courierName = awbData.courier_name || 'Shiprocket Partner'
+
+    if (!awb_code) {
+      console.error('[shiprocket/live] AWB assignment failed:', JSON.stringify(awbData))
+      return NextResponse.json(
+        { error: awbData.error || 'AWB assignment failed — check courier serviceability', detail: awbData.raw },
+        { status: 400 }
+      )
+    }
+
+    // Step 3: Request pickup (non-blocking — don't fail the response if this errors)
+    console.log('[shiprocket/live] Requesting pickup for shipment:', shipmentId)
+    requestShiprocketPickup(String(shipmentId))
+      .then(p  => console.log('[shiprocket/live] Pickup response:', JSON.stringify(p)))
+      .catch(e => console.error('[shiprocket/live] Pickup request error:', e.message))
+
+    // Persist to DB
     await supabase.from('orders').update({
-      shiprocket_order_id: String(srData.order_id),
-      tracking_number: srData.awb_code,
-      shipping_carrier: srData.courier_name || 'Shiprocket Partner',
+      shiprocket_order_id: String(srOrderId),
+      tracking_number: awb_code,
+      shipping_carrier: courierName,
       label_url: srData.label_url || null,
       ...(action === 'dispatch' ? { status: 'shipped' } : {}),
     }).eq('id', id)
@@ -110,8 +169,8 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
       await supabase.from('system_logs').insert({
         level: 'info',
         category: 'shipping',
-        message: `Order ${invoice_number} dispatched via Shiprocket LIVE. AWB: ${srData.awb_code}`,
-        context: { order_id: id, awb: srData.awb_code, sr_order_id: srData.order_id },
+        message: `Order ${invoice_number} dispatched via Shiprocket LIVE. AWB: ${awb_code}`,
+        context: { order_id: id, awb: awb_code, sr_order_id: srOrderId, shipment_id: shipmentId },
       })
 
       if (customer_email) {
@@ -120,9 +179,9 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
           customer_name,
           invoice_number,
           order_id: id,
-          tracking_number: srData.awb_code,
-          tracking_url: srData.tracking_url || `https://shiprocket.co/tracking/${srData.awb_code}`,
-          shipping_carrier: srData.courier_name || 'Shipping Partner',
+          tracking_number: awb_code,
+          tracking_url: `https://shiprocket.co/tracking/${awb_code}`,
+          shipping_carrier: courierName,
         }).catch(e => console.error('[shiprocket/live] dispatch email:', e.message))
       }
 
@@ -130,23 +189,24 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
         sendOrderDispatchedSMS(customer_phone, {
           customer_name,
           invoice_number,
-          tracking_number: srData.awb_code,
+          tracking_number: awb_code,
           store_name: storeName,
         }).catch(e => console.error('[shiprocket/live] SMS:', e.message))
       }
 
-      const teleMsg = `📬 <b>Order Dispatched</b>\n📄 Invoice: ${invoice_number}\n🏷️ AWB: ${srData.awb_code}\n👤 Customer: ${customer_name}\n📍 ${order.shipping_city ?? ''}, ${order.shipping_state ?? ''}`
+      const teleMsg = `📬 <b>Order Dispatched</b>\n📄 Invoice: ${invoice_number}\n🏷️ AWB: ${awb_code}\n🚚 Courier: ${courierName}\n👤 Customer: ${customer_name}\n📍 ${order.shipping_city ?? ''}, ${order.shipping_state ?? ''}`
       sendTelegramMessage(teleMsg).catch(e => console.error('[shiprocket/live] telegram:', e.message))
     } else {
       await supabase.from('system_logs').insert({
         level: 'info',
         category: 'shipping',
-        message: `AWB generated for order ${invoice_number}: ${srData.awb_code}`,
-        context: { order_id: id, awb: srData.awb_code },
+        message: `AWB generated for order ${invoice_number}: ${awb_code}`,
+        context: { order_id: id, awb: awb_code, shipment_id: shipmentId },
       })
     }
 
-    return NextResponse.json({ success: true, awb: srData.awb_code, shiprocket_order_id: srData.order_id })
+    return NextResponse.json({ success: true, awb: awb_code, shiprocket_order_id: srOrderId, shipment_id: shipmentId })
+
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error'
     console.error('[shiprocket/route] POST error:', msg)

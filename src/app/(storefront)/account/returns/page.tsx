@@ -28,11 +28,12 @@ interface ReturnRequest {
   admin_note: string | null;
   refund_amount: number | null;
   created_at: string;
-  orders: { id: string; total: number; created_at: string } | null;
+  orders: { id: string; order_number?: string | null; total: number; created_at: string } | null;
 }
 
 interface DeliveredOrder {
   id: string;
+  order_number?: string | null;
   total: number;
   created_at: string;
 }
@@ -62,7 +63,7 @@ export default function AccountReturnsPage() {
       fetch('/api/storefront/returns').then(r => r.json()),
       supabase
         .from('orders')
-        .select('id, total, created_at')
+        .select('id, order_number, total, created_at')
         .eq('user_id', user.id)
         .eq('status', 'delivered')
         .order('created_at', { ascending: false }),
@@ -164,9 +165,9 @@ export default function AccountReturnsPage() {
             >
               <option value="">— Choose a delivered order —</option>
               {deliveredOrders.map(o => (
-                <option key={o.id} value={o.id}>
-                  Order #{o.id.slice(0, 8).toUpperCase()} · ₹{Number(o.total).toLocaleString('en-IN')} · {new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </option>
+                 <option key={o.id} value={o.id}>
+                   Order #{o.order_number || o.id.slice(0, 8).toUpperCase()} · ₹{Number(o.total).toLocaleString('en-IN')} · {new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                 </option>
               ))}
             </select>
             {deliveredOrders.length === 0 && (
@@ -275,7 +276,7 @@ export default function AccountReturnsPage() {
                           href={`/account/orders/${ret.orders.id}`}
                           className="text-xs font-bold text-teal hover:underline"
                         >
-                          #{ret.orders.id.slice(0, 8).toUpperCase()}
+                          #{ret.orders?.order_number || ret.orders?.id?.slice(0, 8).toUpperCase()}
                         </Link>
                       </div>
                     )}

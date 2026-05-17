@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react';
 import LoginContent from './LoginContent';
 
 export const metadata = {
-  title: 'Login | LabelWink',
+  title: 'Login',
 };
 
 export default function LoginPage() {

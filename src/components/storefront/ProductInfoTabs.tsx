@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import DOMPurify from 'isomorphic-dompurify' // ✅ AUDIT FIX #1 - XSS Sanitization
 
 const SLEEVE_LABELS: Record<string, string> = {
   sleeveless: 'Sleeveless', half_sleeve: 'Half Sleeve',
@@ -76,7 +77,7 @@ export function ProductInfoTabs({
           description
             ? <div
                 className="prose prose-sm max-w-none text-[#444] leading-7"
-                dangerouslySetInnerHTML={{ __html: description }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(description) }} // ✅ AUDIT FIX #1 - XSS Sanitization
               />
             : <p className="text-sm text-[#aaa] italic py-4">No information available.</p>
         )}

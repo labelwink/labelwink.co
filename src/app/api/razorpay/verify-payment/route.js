@@ -146,6 +146,148 @@ export async function POST(request) {
       );
     }
 
+    // ── 4b. Decrement Stock and Trigger Stock Alerts ──────────────────────────
+    try {
+      const itemsList = Array.isArray(items) ? items : [];
+      for (const item of itemsList) {
+        const variantId = item.variant_id || item.variantId || item.id;
+        if (!variantId) continue;
+
+        // Fetch current variant details
+        const { data: variant, error: fetchErr } = await supabaseAdmin
+          .from('product_variants')
+          .select('product_id, stock_qty, low_stock_threshold, size, products(name)')
+          .eq('id', variantId)
+          .single();
+
+        if (fetchErr || !variant) {
+          console.warn(`[verify-payment] Variant ${variantId} not found for stock decrement:`, fetchErr?.message);
+          continue;
+        }
+
+        const prevQty = variant.stock_qty || 0;
+        const newQty = Math.max(0, prevQty - (item.quantity || 1));
+
+        // Update the variant
+        const { error: updErr } = await supabaseAdmin
+          .from('product_variants')
+          .update({ stock_qty: newQty })
+          .eq('id', variantId);
+
+        if (updErr) {
+          console.error(`[verify-payment] Failed to update stock for variant ${variantId}:`, updErr.message);
+          continue;
+        }
+
+        // Log adjustment
+        try {
+          await supabaseAdmin
+            .from('inventory_adjustments')
+            .insert({
+              product_id: variant.product_id || item.product_id,
+              variant_id: variantId,
+              previous_qty: prevQty,
+              new_qty: newQty,
+              adjustment: -(item.quantity || 1),
+              reason: `Order Placement #${order.order_number || order.id.slice(0, 8).toUpperCase()}`,
+              adjusted_by: 'system'
+            });
+        } catch (logErr) {
+          console.error('[verify-payment] Failed to log adjustment:', logErr);
+        }
+
+        // Handle Stock Alerts
+        const pName = (variant.products && !Array.isArray(variant.products)) ? variant.products.name : (item.product_name || item.name || 'Product');
+        const threshold = variant.low_stock_threshold !== null && variant.low_stock_threshold !== undefined
+          ? variant.low_stock_threshold
+          : 5;
+
+        // Out of Stock
+        if (newQty === 0 && prevQty > 0) {
+          try {
+            await supabaseAdmin.from('admin_notifications').insert({
+              type: 'out_of_stock',
+              title: 'Out of Stock Alert',
+              message: `Variant ${variant.size || ''} of product "${pName}" is now out of stock!`,
+              metadata: { variant_id: variantId, product_id: variant.product_id || item.product_id }
+            });
+          } catch (err) {
+            console.error('[verify-payment] Out of stock notification insert failed:', err);
+          }
+
+          try {
+            const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co';
+            const msg = `⚠️ <b>Out of Stock Alert</b>\n📦 ${pName} (Size: ${variant.size || ''}) is now out of stock!\n👉 <a href="${SITE_URL}/admin/inventory">Restock Now</a>`;
+            await sendTelegramMessage(msg);
+          } catch (err) {
+            console.error('[verify-payment] Out of stock Telegram alert failed:', err);
+          }
+        }
+        // Low Stock
+        else if (newQty <= threshold && prevQty > threshold) {
+          try {
+            await supabaseAdmin.from('admin_notifications').insert({
+              type: 'low_stock',
+              title: 'Low Stock Alert',
+              message: `Variant ${variant.size || ''} of product "${pName}" is low on stock (${newQty} left).`,
+              metadata: { variant_id: variantId, product_id: variant.product_id || item.product_id, current_stock: newQty }
+            });
+          } catch (err) {
+            console.error('[verify-payment] Low stock notification insert failed:', err);
+          }
+
+          try {
+            const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co';
+            const msg = `⚠️ <b>Low Stock Alert</b>\n📦 ${pName} (Size: ${variant.size || ''}) is low on stock (${newQty} left)!\n👉 <a href="${SITE_URL}/admin/inventory">Restock Now</a>`;
+            await sendTelegramMessage(msg);
+          } catch (err) {
+            console.error('[verify-payment] Low stock Telegram alert failed:', err);
+          }
+        }
+      }
+    } catch (stockErr) {
+      console.error('[verify-payment] Critical stock update routine error:', stockErr);
+    }
+
+    // ── 4c. Update Coupon Usage ───────────────────────────────────────────────
+    if (couponCode) {
+      try {
+        const upperCoupon = couponCode.trim().toUpperCase();
+        const { data: discount, error: discFetchError } = await supabaseAdmin
+          .from('discount_codes')
+          .select('id, used_count, usage_count')
+          .eq('code', upperCoupon)
+          .single();
+
+        if (discount && !discFetchError) {
+          const newUsedCount = (discount.used_count || 0) + 1;
+          const newUsageCount = (discount.usage_count || 0) + 1;
+
+          await supabaseAdmin
+            .from('discount_codes')
+            .update({
+              used_count: newUsedCount,
+              usage_count: newUsageCount
+            })
+            .eq('id', discount.id);
+
+          await supabaseAdmin
+            .from('discount_code_uses')
+            .insert({
+              discount_code_id: discount.id,
+              user_id: finalUserId,
+              order_id: order.id
+            });
+
+          console.log(`[verify-payment] Successfully recorded coupon usage for code: ${upperCoupon}`);
+        } else {
+          console.warn(`[verify-payment] Coupon ${upperCoupon} not found or error:`, discFetchError?.message);
+        }
+      } catch (couponUseErr) {
+        console.error('[verify-payment] Non-fatal coupon usage tracking error:', couponUseErr);
+      }
+    }
+
     // Send Telegram alert for new order
     try {
       await sendTelegramMessage(
@@ -157,6 +299,18 @@ export async function POST(request) {
       )
     } catch (alertError) {
       console.error('[verify-payment] Telegram alert failed:', alertError)
+    }
+
+    // Insert admin notification
+    try {
+      await supabaseAdmin.from('admin_notifications').insert({
+        type: 'new_order',
+        title: `New Order Placed — #${order.order_number || order.id.slice(0, 8).toUpperCase()}`,
+        message: `Order for ₹${order.total_amount} placed by ${customerName || customerEmail}`,
+        metadata: { order_id: order.id, order_number: order.order_number }
+      });
+    } catch (notifErr) {
+      console.error('[verify-payment] Notification failed:', notifErr);
     }
 
     // Create Shiprocket order — failure must NOT block payment response

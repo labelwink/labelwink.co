@@ -16,7 +16,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { order_id, reason, description, photos = [] } = body;
 
-    const { data: order, error: orderError } = await supabase
+    const adminSupabase = createAdminClient();
+
+    const { data: order, error: orderError } = await adminSupabase
       .from('orders')
       .select('id, user_id, status, updated_at, shipping_name, invoice_number')
       .eq('id', order_id)
@@ -35,7 +37,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Fetch return_window_days from site_settings (key-value store)
-    const adminSupabase = createAdminClient();
     const { data: rows } = await adminSupabase.from('site_settings').select('key, value').eq('key', 'return_window_days');
     const row = rows?.[0];
     const raw = row?.value;
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Return window has expired' }, { status: 400 });
     }
 
-    const { data: existingReturn } = await supabase
+    const { data: existingReturn } = await adminSupabase
       .from('returns')
       .select('id')
       .eq('order_id', order_id)
@@ -82,8 +83,8 @@ export async function POST(req: NextRequest) {
     await adminSupabase.from('admin_notifications').insert({
       type: 'return_requested',
       title: 'Return Requested',
-      body: `${customerName} requested return for ${invoiceNumber}`,
-      entity_id: order_id
+      message: `${customerName} requested return for ${invoiceNumber}`,
+      metadata: { entity_id: order_id, order_id }
     });
 
     const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co';
@@ -103,7 +104,7 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('returns')
-    .select('*, orders(id, total_amount, status, shipping_name), profiles:user_id(full_name, email)')
+    .select('*, orders(id, order_number, total_amount, status, shipping_name), profiles:user_id(full_name, email)')
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -144,7 +145,7 @@ export async function PATCH(req: NextRequest) {
       await supabase.from('admin_notifications').insert({
         type: 'return_status_update',
         title: 'Return Status Updated',
-        body: `Return for order ${data.order_id} updated to ${status}`,
+        message: `Return for order ${data.order_id} updated to ${status}`,
         entity_id: data.order_id
       });
     }

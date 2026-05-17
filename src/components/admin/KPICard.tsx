@@ -52,7 +52,7 @@ export function KPICard({
       </div>
 
       <p className="text-xs text-[#6b7280] font-medium tracking-wide mb-1">{title}</p>
-      <p className="text-2xl font-bold text-[#ffffff] leading-tight">{value}</p>
+      <p className="text-2xl font-bold text-[#1b3a34] leading-tight">{value}</p>
 
       {(subtitle || trendLabel) && (
         <p className="text-[11px] text-[#9ca3af] mt-1.5">{subtitle ?? trendLabel}</p>

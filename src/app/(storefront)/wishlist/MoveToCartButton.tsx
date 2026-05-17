@@ -1,14 +1,12 @@
 ﻿'use client'
 
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ShoppingCart } from 'lucide-react'
 
-export function MoveToCartButton({ productId, slug }: { productId: string, slug: string }) {
-  const [loading, setLoading] = useState(false)
+export function MoveToCartButton({ productId, slug }: { productId: string; slug: string }) {
   const router = useRouter()
 
-  const handleMove = async () => {
+  const handleMove = () => {
     // Basic "Move to Cart" logic. Since variant selection is complex, we'll redirect
     // to the product page if multiple variants or complex sizing, or handle simple add.
     // To comply with instructions "opens size selector (if multiple sizes) -> adds to cart -> removes from wishlist"
@@ -19,12 +17,12 @@ export function MoveToCartButton({ productId, slug }: { productId: string, slug:
 
   return (
     <button
+      type="button"
       onClick={handleMove}
-      disabled={loading}
-      className="flex items-center justify-center gap-2 w-full mt-3 py-2 px-4 bg-white text-[#faf7f2] rounded-md hover:bg-[#333] transition-colors font-medium text-sm disabled:opacity-50"
+      className="flex items-center justify-center gap-2 w-full mt-3 min-h-11 h-11 px-4 bg-labelwink-green text-white rounded-md hover:bg-labelwink-green-hover active:scale-[0.98] transition-colors text-base font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-labelwink-gold focus-visible:ring-offset-2"
     >
-      <ShoppingCart size={16} />
-      {loading ? 'Moving...' : 'Move to Cart'}
+      <ShoppingCart size={16} aria-hidden />
+      Move to Cart
     </button>
   )
 }

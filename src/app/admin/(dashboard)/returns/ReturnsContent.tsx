@@ -23,6 +23,7 @@ interface ReturnRequest {
   created_at: string
   orders: {
     id: string
+    order_number?: string | null
     total: number
     customer_name: string | null
     customer_email: string | null
@@ -81,7 +82,7 @@ function ReturnCard({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono font-bold text-[#1b3a34]">
-                #{ret.orders?.id?.slice(0, 8).toUpperCase() ?? 'UNKNOWN'}
+                #{ret.orders?.order_number ?? ret.orders?.id?.slice(0, 8).toUpperCase() ?? 'UNKNOWN'}
               </span>
               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cfg.color}`}>
                 {cfg.label}

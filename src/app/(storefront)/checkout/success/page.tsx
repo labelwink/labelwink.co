@@ -3,7 +3,7 @@ import { CheckCircle2 } from 'lucide-react';
 import SuccessContent from './SuccessContent';
 
 export const metadata = {
-  title: 'Order Success | LabelWink',
+  title: 'Order Success',
 };
 
 export default function SuccessPage() {

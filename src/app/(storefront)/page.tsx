@@ -13,12 +13,20 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     const res = await fetch(`${baseUrl}/api/storefront/settings`, { next: { revalidate: 3600 } });
     const settings = res.ok ? await res.json() : null;
+    const storeName = settings?.store_name || 'LabelWink';
+    const tagLine = settings?.store_tagline || 'Modern Ethnic Fashion for Women';
     return {
-      title: settings?.store_name || 'LabelWink',
-      description: settings?.store_tagline || 'Modern Ethnic Fashion for Women',
+      title: {
+        absolute: `${storeName} | ${tagLine}`
+      },
+      description: tagLine,
     };
   } catch {
-    return { title: 'LabelWink | Modern Ethnic Fashion' };
+    return {
+      title: {
+        absolute: 'LabelWink | Modern Ethnic Fashion'
+      }
+    };
   }
 }
 
@@ -179,7 +187,7 @@ export default async function Home() {
 
       {/* SECTION 2: Featured Collections */}
       {collections && collections.length > 0 && (
-        <section style={{ padding: '64px 24px', maxWidth: '1400px', margin: '0 auto', position: 'relative' }}>
+        <section id="collections" className="scroll-mt-20" style={{ padding: '64px 24px', maxWidth: '1400px', margin: '0 auto', position: 'relative' }}>
           <LeafPattern opacity={0.03} id="collections-pattern" />
           <div className="flex flex-col items-center text-center" style={{ marginBottom: '40px', position: 'relative', zIndex: 1, width: '100%' }}>
             <h2 style={{ fontSize: '24px', fontWeight: 600, color: '#1C3829', marginBottom: '8px' }}>Shop by Collection</h2>
@@ -189,7 +197,7 @@ export default async function Home() {
             {collections.slice(0, 6).map((c: any) => (
               <Link
                 key={c.id}
-                href={`/collections/${c.slug ?? c.id}`}
+                href={`/products?collection=${encodeURIComponent(c.slug ?? c.id)}`}
                 className="collection-card relative aspect-square rounded-xl overflow-hidden cursor-pointer group"
                 style={{
                   display: 'block', textDecoration: 'none',
@@ -219,7 +227,7 @@ export default async function Home() {
           </div>
           <div style={{ textAlign: 'center', marginTop: '32px' }}>
             <Link
-              href="/collections"
+              href="/products"
               className="border border-labelwink-green text-labelwink-green px-8 py-3 rounded-lg hover:bg-labelwink-green hover:text-white transition-all duration-300 font-bold uppercase tracking-widest text-xs"
               style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
             >

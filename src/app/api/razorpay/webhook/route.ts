@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     // Find our order by Razorpay order ID
     const { data: order } = await supabase
       .from('orders')
-      .select('id, payment_status')
+      .select('id, payment_status, order_number')
       .eq('razorpay_order_id', razorpayOrderId)
       .maybeSingle();
 
@@ -89,9 +89,9 @@ export async function POST(req: NextRequest) {
       try {
         await supabase.from('admin_notifications').insert({
           type:  'payment_confirmed',
-          title: `Payment Captured — #${order.id.slice(0, 8).toUpperCase()}`,
-          body:  `Razorpay webhook confirmed payment ${razorpayPaymentId}`,
-          data:  { order_id: order.id, razorpay_payment_id: razorpayPaymentId },
+          title: `Payment Captured — #${order.order_number || order.id.slice(0, 8).toUpperCase()}`,
+          message: `Razorpay webhook confirmed payment ${razorpayPaymentId}`,
+          metadata:  { order_id: order.id, razorpay_payment_id: razorpayPaymentId },
         } as any);
       } catch { /* non-fatal */ }
 
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       try {
         const { data: fullOrder } = await supabase
           .from('orders')
-          .select('customer_email, customer_name, id')
+          .select('customer_email, customer_name, id, order_number')
           .eq('id', order.id)
           .single();
 
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
               type:  'order_confirmed',
               title: 'Your order is confirmed!',
               body:  `Hi ${fullOrder.customer_name || 'there'}, your order from ${settings?.store_name || 'Our Store'} has been confirmed.`,
-              data:  { order_id: fullOrder.id },
+              data:  { order_id: fullOrder.id, order_number: fullOrder.order_number },
             }),
           });
         }

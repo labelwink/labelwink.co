@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { resolveCollectionFilter, applyCollectionFilter } from '@/lib/storefront/resolve-collection'
 
 const SIZE_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '2XL', '3XL']
 
@@ -44,6 +45,10 @@ export async function GET(req: NextRequest) {
 
   const supabase = await createClient()
 
+  const collectionFilter = collection
+    ? await resolveCollectionFilter(supabase, collection)
+    : null
+
   // ── Build base query ────────────────────────────────────────────────────────
   const buildQuery = () => {
     let query = supabase
@@ -61,9 +66,8 @@ export async function GET(req: NextRequest) {
       query = query.textSearch('search_vector', q, { type: 'websearch', config: 'english' })
     }
 
-    // Collection filter: match on tags array
-    if (collection) {
-      query = query.contains('tags', [collection])
+    if (collectionFilter) {
+      query = applyCollectionFilter(query, collectionFilter)
     }
 
     // Occasion filter — uses occasion column (text) or tags array
@@ -117,7 +121,7 @@ export async function GET(req: NextRequest) {
       let cq = countQuery.neq('status', 'draft')
       if (featured) cq = cq.eq('is_featured', true)
       if (q.length >= 2) cq = cq.textSearch('search_vector', q, { type: 'websearch', config: 'english' })
-      if (collection) cq = cq.contains('tags', [collection])
+      if (collectionFilter) cq = applyCollectionFilter(cq, collectionFilter)
       if (occasion) cq = cq.or(`occasion.ilike.%${occasion}%,tags.cs.{${occasion}}`)
       if (minPrice > 0) cq = cq.gte('price', minPrice)
       if (maxPrice > 0) cq = cq.lte('price', maxPrice)

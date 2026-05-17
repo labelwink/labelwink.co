@@ -67,6 +67,18 @@ export async function POST(req: NextRequest) {
             const msg = `⚠️ <b>Out of Stock Alert</b>\n📦 ${productName} (Size: ${variant.size}) is now out of stock!\n👉 <a href="${SITE_URL}/admin/inventory">Restock Now</a>`
             await sendTelegramMessage(msg)
           }
+
+          if (previous_qty === 0 && stock_qty > 0) {
+            const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+            fetch(`${baseUrl}/api/admin/stock-alerts/notify`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'cookie': req.headers.get('cookie') || ''
+              },
+              body: JSON.stringify({ variant_id })
+            }).catch(e => console.error('Bulk stock alert trigger failed:', e))
+          }
         }
         success_count++
       } catch (err: any) {

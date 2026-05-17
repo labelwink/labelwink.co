@@ -139,7 +139,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
             className={`px-4 py-2.5 text-xs font-semibold transition-all border-b-2 -mb-px ${
               activeTab === tab
                 ? 'border-[#1b3a34] text-[#1b3a34]'
-                : 'border-transparent text-[#6b7280] hover:text-[#ffffff]'
+                : 'border-transparent text-[#6b7280] hover:text-[#16312b]'
             }`}
           >
             {tab}
@@ -162,11 +162,11 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
           {/* Add form */}
           {showAddBanner && (
             <div className="bg-white border border-[#e5e7eb] rounded-xl p-5 space-y-4">
-              <h3 className="text-sm font-semibold text-[#ffffff]">New Hero Banner</h3>
+              <h3 className="text-sm font-semibold text-[#1b3a34]">New Hero Banner</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {/* Image upload */}
                 <div>
-                  <p className="text-xs font-medium text-[#ffffff] mb-2">Banner Image *</p>
+                  <p className="text-xs font-medium text-[#1b3a34] mb-2">Banner Image *</p>
                   <CloudinaryImageUploader
                     onUpload={pid => setBannerForm(prev => ({ ...prev, cloudinary_public_id: pid }))}
                     folder="labelwink/banners"
@@ -178,7 +178,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
                 {/* Fields */}
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-medium text-[#ffffff] mb-1">Heading *</label>
+                    <label className="block text-xs font-medium text-[#1b3a34] mb-1">Heading *</label>
                     <input
                       value={bannerForm.title}
                       onChange={e => setBannerForm(p => ({ ...p, title: e.target.value }))}
@@ -187,7 +187,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#ffffff] mb-1">Button Text</label>
+                    <label className="block text-xs font-medium text-[#1b3a34] mb-1">Button Text</label>
                     <input
                       value={bannerForm.cta_text}
                       onChange={e => setBannerForm(p => ({ ...p, cta_text: e.target.value }))}
@@ -196,7 +196,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-[#ffffff] mb-1">Link URL</label>
+                    <label className="block text-xs font-medium text-[#1b3a34] mb-1">Link URL</label>
                     <input
                       value={bannerForm.cta_link}
                       onChange={e => setBannerForm(p => ({ ...p, cta_link: e.target.value }))}
@@ -246,7 +246,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
                       }
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-[#ffffff] truncate">{b.title}</p>
+                      <p className="text-sm font-semibold text-[#1b3a34] truncate">{b.title}</p>
                       <div className="flex items-center gap-3 mt-0.5 text-[10px] text-[#9ca3af]">
                         {b.cta_text && <span className="flex items-center gap-1"><ImageIcon size={9} /> {b.cta_text}</span>}
                         {b.cta_link && <span className="flex items-center gap-1"><LinkIcon size={9} /> {b.cta_link}</span>}
@@ -352,7 +352,7 @@ export default function CMSClient({ initialBanners, initialAnnouncements, initia
                     <Layout size={14} className="text-[#1b3a34]" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[#ffffff]">{sec.title}</p>
+                    <p className="text-sm font-semibold text-[#1b3a34]">{sec.title}</p>
                     <p className="text-[10px] font-mono text-[#9ca3af]">{sec.section_key}</p>
                   </div>
                 </div>

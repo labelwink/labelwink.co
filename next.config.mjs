@@ -35,50 +35,35 @@ const nextConfig = {
   },
   serverExternalPackages: ['cloudinary'],
   async headers() {
-    const isDev = process.env.NODE_ENV === 'development';
-
-    // script-src: add 'unsafe-eval' in dev for webpack HMR + React Refresh
-    const scriptSrc = isDev
-      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com https://accounts.google.com"
-      : "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://accounts.google.com";
-
-    // connect-src: add HMR WebSocket in dev
-    const connectSrc = isDev
-      ? "connect-src 'self' https://*.supabase.co https://api.brevo.com https://api.cloudinary.com wss://*.supabase.co https://accounts.google.com ws://localhost:3000"
-      : "connect-src 'self' https://*.supabase.co https://api.brevo.com https://api.cloudinary.com wss://*.supabase.co https://accounts.google.com";
+    // ✅ AUDIT FIX #2 - Security Headers + CSP
+    const securityHeaders = [
+      {
+        key: 'Content-Security-Policy',
+        value: [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://accounts.google.com" + (process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ""),
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+          "img-src 'self' res.cloudinary.com images.unsplash.com data: blob:",
+          "font-src 'self' fonts.gstatic.com",
+          "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.brevo.com https://api.cloudinary.com https://accounts.google.com api.razorpay.com checkout.razorpay.com" + (process.env.NODE_ENV === 'development' ? " ws://localhost:3000" : ""),
+          "frame-src https://api.razorpay.com https://accounts.google.com checkout.razorpay.com",
+          "frame-ancestors 'none'",
+          "base-uri 'self'",
+          "form-action 'self'",
+        ].join('; '),
+      },
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+      { key: 'X-XSS-Protection', value: '1; mode=block' },
+    ];
 
     return [
       {
         source: '/(.*)',
-        headers: [
-          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          {
-            key: 'X-XSS-Protection',
-            value: '1; mode=block',
-          },
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload',
-          },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
-          },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              scriptSrc,
-              "img-src 'self' data: res.cloudinary.com images.unsplash.com",
-              connectSrc,
-              "frame-src https://api.razorpay.com https://accounts.google.com",
-              "font-src 'self' https://fonts.gstatic.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-            ].join('; '),
-          },
-        ],
+        headers: securityHeaders,
       },
       {
         source: '/api/:path*',

@@ -33,6 +33,12 @@ export async function GET() {
     );
   }
 
+  const { data: legalData } = await supabase
+    .from('site_legal_settings')
+    .select('*')
+    .limit(1)
+    .single();
+
   // Transform array of {key, value} rows → flat object
   const settings = (data ?? []).reduce((acc: Record<string, any>, row) => {
     // value is jsonb — unwrap single-value objects like {"v": "LabelWink"}
@@ -41,6 +47,8 @@ export async function GET() {
     acc[row.key] = raw !== null && typeof raw === 'object' && 'v' in raw ? raw.v : raw;
     return acc;
   }, {});
+
+  settings.legal = legalData || null;
 
   return NextResponse.json(settings, {
     headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60' },

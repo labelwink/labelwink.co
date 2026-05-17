@@ -46,7 +46,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     .select(`
       id, admin_reply, status,
       products ( name, slug ),
-      profiles!reviews_user_id_profiles_fkey ( email, full_name )
+      profiles ( email, full_name )
     `)
     .eq('id', id)
     .single()

@@ -14,6 +14,7 @@ import { useToast } from '@/components/admin/Toast'
 
 interface Order {
   id: string
+  order_number?: string | null
   status: string
   total: number
   customer_name: string | null
@@ -52,6 +53,7 @@ export default function OrdersContent() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkProcessing, setBulkProcessing] = useState(false)
   const [bulkActionOpen, setBulkActionOpen] = useState(false)
+  const [syncingAll, setSyncingAll] = useState(false)
 
   const updateUrl = (updates: Record<string, string>) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -190,6 +192,24 @@ export default function OrdersContent() {
     a.click()
   }
 
+  const handleSyncAll = async () => {
+    setSyncingAll(true)
+    try {
+      const res = await fetch('/api/cron/sync-shiprocket', { method: 'POST' })
+      const data = await res.json()
+      if (data.success) {
+        showToast(`Synced ${data.synced} shipment(s) from Shiprocket`, 'success')
+        fetchOrders()
+      } else {
+        showToast(data.error || 'Sync failed', 'error')
+      }
+    } catch {
+      showToast('Network error during sync', 'error')
+    } finally {
+      setSyncingAll(false)
+    }
+  }
+
   const STATUS_TABS: Array<{ label: string; value: string }> = [
     { label: 'All',       value: '' },
     ...ORDER_STATUSES.map(s => ({
@@ -215,6 +235,15 @@ export default function OrdersContent() {
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
             Refresh
+          </button>
+          <button
+            onClick={handleSyncAll}
+            disabled={syncingAll}
+            title="Pull latest status, AWB & tracking from Shiprocket for all active shipments"
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-blue-200 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw size={13} className={syncingAll ? 'animate-spin' : ''} />
+            {syncingAll ? 'Syncing…' : 'Sync Shipments'}
           </button>
           <button
             onClick={exportCSV}
@@ -394,7 +423,7 @@ export default function OrdersContent() {
                       <td className="px-4 py-3.5">
                         {invoiceNum && <p className="font-mono font-bold text-[#c9a84c] text-xs">{invoiceNum}</p>}
                         <span className="font-mono text-[#6b7280] text-[10px]">
-                          #{o.id.slice(0, 8).toUpperCase()}
+                          #{o.order_number || o.id.slice(0, 8).toUpperCase()}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 max-w-[160px]">

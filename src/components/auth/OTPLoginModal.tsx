@@ -71,6 +71,7 @@ export default function OTPLoginModal({
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [altPhone, setAltPhone] = useState('');
+  const [emailError, setEmailError] = useState('');
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -87,6 +88,7 @@ export default function OTPLoginModal({
       setLastName('');
       setEmail('');
       setAltPhone('');
+      setEmailError('');
     }
   }, [isOpen]);
 
@@ -97,6 +99,20 @@ export default function OTPLoginModal({
     }
     return () => clearTimeout(timer);
   }, [countdown]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen, onClose]);
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,9 +241,31 @@ export default function OTPLoginModal({
     }
   };
 
+  const verifyDuplicateEmail = async (emailVal: string) => {
+    if (!emailVal || !emailVal.includes('@')) return;
+    try {
+      const res = await fetch('/api/auth/check-duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailVal }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.emailExists) {
+          setEmailError('This email is already registered. Please sign in or use another email.');
+        } else {
+          setEmailError('');
+        }
+      }
+    } catch {
+      // Ignore background check failure
+    }
+  };
+
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setEmailError('');
     
     if (!firstName || !email) {
       setError('First name and email are required');
@@ -236,6 +274,27 @@ export default function OTPLoginModal({
 
     setLoading(true);
     try {
+      // Preemptive client-side duplicate check
+      const dupRes = await fetch('/api/auth/check-duplicate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, phone }),
+      });
+      
+      if (dupRes.ok) {
+        const dupData = await dupRes.json();
+        if (dupData.phoneExists) {
+          setError('An account with this phone number already exists.');
+          setLoading(false);
+          return;
+        }
+        if (dupData.emailExists) {
+          setEmailError('This email is already registered. Please sign in or use another email.');
+          setLoading(false);
+          return;
+        }
+      }
+
       const refCode = localStorage.getItem('ref_code');
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -297,24 +356,32 @@ export default function OTPLoginModal({
         redirectTo: `${window.location.origin}/auth/callback${returnUrl ? `?next=${returnUrl}` : ''}`,
       },
     });
-    if (error) setError(error.message);
+    if (error) setError('Could not start Google sign in. Please try again.');
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white border border-labelwink-cream-border rounded-2xl p-8 w-full max-w-md relative shadow-2xl">
-        <button 
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="auth-modal-title"
+        className="bg-white border border-labelwink-cream-border rounded-2xl p-8 w-full max-w-md relative shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 text-labelwink-green/30 hover:text-labelwink-green"
+          aria-label="Close sign in dialog"
+          className="absolute top-4 right-4 text-labelwink-green/30 hover:text-labelwink-green focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-labelwink-gold"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
 
         {step === 'PHONE' && (
           <div>
-            <h2 className="text-2xl font-bold text-labelwink-green mb-1 font-heading">Sign in to LabelWink</h2>
+            <h2 id="auth-modal-title" className="text-2xl font-bold text-labelwink-green mb-1 font-heading">Sign in to LabelWink</h2>
             <p className="text-labelwink-green/60 mb-6 text-xs uppercase tracking-widest">Enter your mobile number to continue</p>
             
             <form onSubmit={handlePhoneSubmit}>
@@ -439,10 +506,16 @@ export default function OTPLoginModal({
                 type="email"
                 placeholder="Email ID*"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailError('');
+                  setError('');
+                }}
+                onBlur={() => verifyDuplicateEmail(email)}
                 className="w-full bg-labelwink-cream-card border border-labelwink-cream-border text-labelwink-green rounded-none px-4 py-3 focus:border-labelwink-gold focus:ring-1 focus:ring-labelwink-gold outline-none font-medium"
                 required
               />
+              {emailError && <p className="text-red-600 text-xs mt-1 font-medium">{emailError}</p>}
               <input
                 type="tel"
                 placeholder="Alternative Phone (Optional)"

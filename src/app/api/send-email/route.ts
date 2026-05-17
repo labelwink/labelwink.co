@@ -41,7 +41,7 @@ function wrap(inner: string): string {
 interface Payload { to: string; type: string; title: string; body: string; data?: Record<string, string> }
 
 function buildHtml(p: Payload): string {
-  const shortId   = p.data?.order_id ? p.data.order_id.slice(0, 8).toUpperCase() : ''
+  const shortId   = p.data?.order_number ? p.data.order_number : (p.data?.order_id ? p.data.order_id.slice(0, 8).toUpperCase() : '')
   const orderLink = p.data?.order_id ? `${SITE_URL}/account/orders/${p.data.order_id}` : `${SITE_URL}/account/orders`
   const awb       = p.data?.awb ?? ''
 

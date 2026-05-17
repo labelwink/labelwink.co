@@ -47,7 +47,7 @@ export async function CollectionsShowcase() {
         {collections.map(col => (
           <Link
             key={col.id}
-            href={`/collections/${col.slug}`}
+            href={`/products?collection=${encodeURIComponent(col.slug)}`}
             className="group relative overflow-hidden rounded-xl aspect-[3/4] block shadow-sm"
           >
             {col.image_cloudinary_id ? (

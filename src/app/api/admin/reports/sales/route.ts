@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     ] = await Promise.all([
       // 1. Order items for revenue by collection
       sb.from('order_items').select(`
-        total_price, product_name,
+        unit_price, quantity, product_name,
         orders!inner(payment_status, created_at)
       `)
       .eq('orders.payment_status', 'paid')
@@ -57,8 +57,9 @@ export async function GET(req: NextRequest) {
     for (const oi of (orderItemsResult.data || [])) {
       const name = oi.product_name || 'Unknown'
       if (!productMap[name]) productMap[name] = { name, units: 0, revenue: 0 }
-      productMap[name].units++
-      productMap[name].revenue += Number(oi.total_price || 0)
+      const qty = oi.quantity || 1
+      productMap[name].units += qty
+      productMap[name].revenue += Number(oi.unit_price || 0) * qty
     }
     const top_products = Object.values(productMap)
       .sort((a, b) => b.revenue - a.revenue)

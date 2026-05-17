@@ -265,6 +265,7 @@ export default function CheckoutPage() {
   const shippingAddress = selectedAddress
     ? {
         name: `${selectedAddress.first_name} ${selectedAddress.last_name || ''}`.trim(),
+        phone: selectedAddress.phone,
         line1: selectedAddress.line1,
         line2: selectedAddress.line2,
         city: selectedAddress.city,
@@ -273,9 +274,11 @@ export default function CheckoutPage() {
         country: 'India',
       }
     : null;
-  const customerName = user?.user_metadata?.full_name || user?.email || '';
+  const customerName = selectedAddress
+    ? `${selectedAddress.first_name} ${selectedAddress.last_name || ''}`.trim()
+    : (user?.user_metadata?.full_name || user?.email || '');
   const customerEmail = user?.email || '';
-  const customerPhone = user?.phone || '';
+  const customerPhone = selectedAddress?.phone || user?.phone || '';
 
   if (items.length === 0 && step !== 4) {
     return (
@@ -559,7 +562,7 @@ export default function CheckoutPage() {
                       customerName={customerName}
                       customerEmail={customerEmail}
                       customerPhone={customerPhone}
-                      onSuccess={(orderNumber) => {
+                      onSuccess={(orderNumber?: string | null) => {
                         clearCart();
                         if (typeof window !== 'undefined') {
                           window.localStorage.removeItem('labelwink-cart');

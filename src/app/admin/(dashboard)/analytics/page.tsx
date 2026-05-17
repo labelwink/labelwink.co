@@ -105,7 +105,7 @@ function BarChart({ data }: { data: DayBar[] }) {
                 style={{ height: `${pct}%` }}
               />
               {/* Tooltip */}
-              <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 bg-white text-white text-[10px] rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity">
+              <div className="absolute bottom-full mb-1.5 left-1/2 -translate-x-1/2 bg-[#1b3a34] text-white text-xs rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity">
                 {fmtDate(d.date)}: {fmtShort(d.revenue)} · {d.order_count} orders
               </div>
             </div>
@@ -115,7 +115,7 @@ function BarChart({ data }: { data: DayBar[] }) {
       {/* X-axis labels */}
       <div className="flex gap-[3px]">
         {data.map((d, i) => (
-          <div key={i} className="flex-1 text-center text-[8px] text-[#9ca3af] truncate">
+          <div key={i} className="flex-1 text-center text-xs text-[#9ca3af] truncate">
             {i % labelEvery === 0 ? fmtDate(d.date) : ''}
           </div>
         ))}

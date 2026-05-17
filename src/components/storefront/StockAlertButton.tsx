@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react'
 import { Bell, Check } from 'lucide-react'
@@ -30,12 +30,13 @@ export function StockAlertButton({ productId, variantId, size, currentStock }: S
         setIsLoggedIn(true)
         try {
           const res = await fetch('/api/storefront/stock-alerts')
-          const alerts = await res.json()
-          if (Array.isArray(alerts) && alerts.some(a => a.variant_id === variantId)) {
+          const result = await res.json()
+          const alerts = result.alerts || []
+          if (Array.isArray(alerts) && alerts.some((a: any) => a.variant_id === variantId)) {
             setIsSubscribed(true)
           }
-        } catch (e) {
-          console.error(e)
+        } catch {
+          // Status check failed; guest/local fallback still works
         }
       } else {
         // Simple guest check via local storage for UI purposes
@@ -51,9 +52,12 @@ export function StockAlertButton({ productId, variantId, size, currentStock }: S
 
   if (isSubscribed) {
     return (
-      <button disabled className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-green-600 text-green-700 bg-green-50 rounded-md font-medium text-sm cursor-not-allowed">
-        <Check size={18} />
-        Alert set ✓
+      <button 
+        disabled 
+        className="w-full h-14 md:h-16 flex items-center justify-center gap-2 border border-green-700/30 text-green-800 bg-green-50/50 rounded-xl font-bold text-xs uppercase tracking-[0.2em] cursor-not-allowed"
+      >
+        <Check size={16} className="text-green-700" />
+        Alert Set ✓
       </button>
     )
   }
@@ -67,14 +71,19 @@ export function StockAlertButton({ productId, variantId, size, currentStock }: S
       const res = await fetch('/api/storefront/stock-alerts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: productId, variant_id: variantId, size, email: isLoggedIn ? undefined : email })
+        body: JSON.stringify({ 
+          product_id: productId, 
+          variant_id: variantId, 
+          size, 
+          email: isLoggedIn ? undefined : email 
+        })
       })
 
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Something went wrong')
 
       setStatus('success')
-      setMessage(data.message || '✅ We will notify you')
+      setMessage(data.message || '✅ We will notify you!')
       setIsSubscribed(true)
       if (!isLoggedIn) {
         localStorage.setItem(`alert_${variantId}`, 'true')
@@ -95,8 +104,8 @@ export function StockAlertButton({ productId, variantId, size, currentStock }: S
 
   if (showEmailInput && !isSubscribed) {
     return (
-      <div className="w-full mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
-        <p className="text-sm text-[#ffffff] font-medium mb-2">Enter email to get notified:</p>
+      <div className="w-full p-4 border border-[#E8E2D9] rounded-xl bg-[#FAF5E9]/50 backdrop-blur-sm shadow-sm animate-in fade-in duration-300">
+        <p className="text-xs text-[#1C3829] font-bold uppercase tracking-[0.15em] mb-2.5">Enter Email to get notified</p>
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
             type="email"
@@ -104,17 +113,17 @@ export function StockAlertButton({ productId, variantId, size, currentStock }: S
             placeholder="your@email.com"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm outline-none focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c]"
+            className="flex-1 h-14 px-4 border border-[#E8E2D9] rounded-xl text-sm text-[#1C3829] outline-none bg-white focus:border-[#c9a84c] focus:ring-1 focus:ring-[#c9a84c] transition-all"
           />
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="px-4 py-2 bg-white text-[#faf7f2] rounded-md text-sm font-medium hover:bg-[#333] transition-colors disabled:opacity-50"
+            className="h-14 px-6 bg-[#1B3A2D] text-white rounded-xl text-xs font-bold uppercase tracking-[0.2em] hover:bg-[#173129] transition-colors disabled:opacity-50 flex items-center justify-center"
           >
-            {status === 'loading' ? '...' : 'Notify Me'}
+            {status === 'loading' ? '...' : 'Notify'}
           </button>
         </form>
-        {status === 'error' && <p className="text-red-500 text-xs mt-2">{message}</p>}
+        {status === 'error' && <p className="text-red-600 text-xs mt-2 font-medium">{message}</p>}
       </div>
     )
   }
@@ -124,12 +133,12 @@ export function StockAlertButton({ productId, variantId, size, currentStock }: S
       <button
         onClick={handleClick}
         disabled={status === 'loading'}
-        className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-[#ffffff] text-[#ffffff] rounded-md font-medium text-sm hover:bg-white hover:text-[#faf7f2] transition-colors disabled:opacity-50"
+        className="w-full h-14 md:h-16 py-3 px-4 flex items-center justify-center gap-2 border border-[#1B3A2D]/20 text-[#1B3A2D] bg-[#FAF5E9] hover:bg-[#1B3A2D] hover:text-white rounded-xl font-bold text-xs uppercase tracking-[0.2em] transition-all duration-300 shadow-sm disabled:opacity-50"
       >
-        <Bell size={18} />
-        {status === 'loading' ? 'Setting Alert...' : 'Notify me when available'}
+        <Bell size={16} />
+        {status === 'loading' ? 'Setting Alert...' : 'Notify when available'}
       </button>
-      {status === 'error' && <p className="text-red-500 text-xs mt-2 text-center">{message}</p>}
+      {status === 'error' && <p className="text-red-600 text-xs mt-2 text-center font-medium">{message}</p>}
     </div>
   )
 }

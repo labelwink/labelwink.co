@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import JoinContent from './JoinContent';
 
 export const metadata = {
-  title: 'Join the Club | LabelWink',
+  title: 'Join the Club',
 };
 
 export default function JoinPage() {

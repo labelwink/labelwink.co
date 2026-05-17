@@ -8,6 +8,29 @@ import { WishlistRemoveButton } from './WishlistRemoveButton';
 
 export const dynamic = 'force-dynamic';
 
+type ProductImage = { url?: string; is_cover?: boolean; sort_order?: number };
+type WishlistProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  price: number | null;
+  compare_at_price: number | null;
+  product_images?: ProductImage[] | null;
+};
+
+type WishlistRow = {
+  id: string;
+  product_id: string;
+  created_at: string;
+  products: WishlistProduct | null;
+};
+
+function getImageUrl(product: WishlistProduct | null) {
+  const images = product?.product_images;
+  if (!images || !Array.isArray(images) || images.length === 0) return null;
+  return images.find((img) => img.is_cover)?.url || images[0]?.url || null;
+}
+
 export default async function AccountWishlistPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -34,31 +57,27 @@ export default async function AccountWishlistPage() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Wishlist fetch error:', error);
-  }
-
-  const wishlistItems = items ?? [];
-
-  const getImageUrl = (product: any) => {
-    const images = product?.product_images;
-    if (!images || !Array.isArray(images) || images.length === 0) return null;
-    
-    // Find cover image or first image
-    const coverImage = images.find((img: any) => img.is_cover)?.url || images[0]?.url;
-    return coverImage;
-  };
+  const wishlistItems = (items ?? []) as WishlistRow[];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="border-b border-sage/20 pb-4">
-        <h1 className="text-3xl font-heading font-semibold text-charcoal uppercase tracking-widest">My Wishlist</h1>
-        <p className="text-muted-foreground text-sm mt-1">Your curated collection of favorites.</p>
+      <div className="border-b border-labelwink-cream-border pb-4">
+        <h1 className="text-3xl font-heading font-semibold text-labelwink-dark uppercase tracking-widest">My Wishlist</h1>
+        <p className="text-muted-foreground text-base mt-1">Your curated collection of favorites.</p>
       </div>
+
+      {error && (
+        <div
+          role="alert"
+          className="rounded-none border border-destructive/30 bg-destructive/10 px-4 py-3 text-base text-destructive"
+        >
+          We couldn&apos;t load your wishlist. Please refresh the page or try again shortly.
+        </div>
+      )}
       
-      {wishlistItems.length > 0 ? (
+      {!error && wishlistItems.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {wishlistItems.map((item: any) => {
+          {wishlistItems.map((item) => {
             const product = item.products;
             if (!product) return null;
             const discount = product.compare_at_price && product.price
@@ -68,7 +87,7 @@ export default async function AccountWishlistPage() {
 
             return (
               <div key={item.id} className="group relative flex flex-col gap-4">
-                <div className="relative aspect-[3/4] overflow-hidden bg-sage/5 rounded-none border border-sage/10">
+                <div className="relative aspect-[3/4] overflow-hidden bg-labelwink-cream-card rounded-none border border-labelwink-cream-border">
                   <Link href={`/products/${product.slug}`} className="absolute inset-0 block">
                     {imgUrl ? (
                       <Image
@@ -79,30 +98,29 @@ export default async function AccountWishlistPage() {
                         sizes="(max-width: 768px) 50vw, 25vw"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-sage/40">
-                        <Heart className="w-8 h-8" />
+                      <div className="w-full h-full flex items-center justify-center text-brand-faint">
+                        <Heart className="w-8 h-8" aria-hidden />
                       </div>
                     )}
                   </Link>
                   
-                  {/* Remove from wishlist */}
                   <WishlistRemoveButton productId={item.product_id} />
                   
                   {discount > 0 && (
-                    <div className="absolute top-3 left-3 bg-destructive text-cream text-[9px] font-bold px-2 py-1 uppercase tracking-widest">
+                    <div className="absolute top-3 left-3 bg-destructive text-white text-xs font-bold px-2 py-1 uppercase tracking-widest">
                       {discount}% OFF
                     </div>
                   )}
                 </div>
 
                 <div className="flex flex-col gap-1.5 px-1">
-                  <Link href={`/products/${product.slug}`} className="font-bold text-[13px] uppercase tracking-wider text-charcoal hover:text-teal transition-colors line-clamp-1">
+                  <Link href={`/products/${product.slug}`} className="font-bold text-sm uppercase tracking-wider text-labelwink-dark hover:text-labelwink-green transition-colors line-clamp-1">
                     {product.name}
                   </Link>
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="font-bold text-charcoal">₹{product.price?.toLocaleString() ?? '—'}</span>
-                    {product.compare_at_price > product.price && (
-                      <span className="text-muted-foreground line-through text-[11px] font-medium opacity-60">₹{product.compare_at_price.toLocaleString()}</span>
+                  <div className="flex items-center gap-3 text-base">
+                    <span className="font-bold text-labelwink-dark">₹{product.price?.toLocaleString() ?? '—'}</span>
+                    {product.compare_at_price != null && product.price != null && product.compare_at_price > product.price && (
+                      <span className="text-muted-foreground line-through text-sm font-medium">₹{product.compare_at_price.toLocaleString()}</span>
                     )}
                   </div>
                 </div>
@@ -110,23 +128,23 @@ export default async function AccountWishlistPage() {
             );
           })}
         </div>
-      ) : (
-        <div className="bg-white border-2 border-dashed border-sage/30 rounded-none p-20 text-center space-y-6">
-          <div className="w-20 h-20 bg-sage/10 rounded-full flex items-center justify-center mx-auto">
-            <Heart className="w-10 h-10 text-sage/40" />
+      ) : !error ? (
+        <div className="bg-white border-2 border-dashed border-labelwink-cream-border rounded-none p-12 md:p-20 text-center space-y-6">
+          <div className="w-20 h-20 bg-labelwink-cream-card rounded-full flex items-center justify-center mx-auto">
+            <Heart className="w-10 h-10 text-brand-faint" aria-hidden />
           </div>
           <div className="max-w-xs mx-auto">
-            <h3 className="text-xl font-heading font-semibold text-charcoal mb-2">Your wishlist is empty</h3>
-            <p className="text-sm text-muted-foreground mb-8">Start favoriting products and they'll appear here.</p>
+            <h2 className="text-xl font-heading font-semibold text-labelwink-dark mb-2">Your wishlist is empty</h2>
+            <p className="text-base text-muted-foreground mb-8">Start favoriting products and they&apos;ll appear here.</p>
             <Link
               href="/products"
-              className={buttonVariants({ className: 'w-full h-14 bg-charcoal text-cream rounded-none uppercase tracking-widest text-xs font-bold shadow-xl flex items-center justify-center' })}
+              className={buttonVariants({ className: 'w-full min-h-11 h-14 bg-labelwink-dark text-white rounded-none uppercase tracking-widest text-sm font-bold shadow-xl flex items-center justify-center focus-visible:ring-2 focus-visible:ring-labelwink-gold focus-visible:ring-offset-2' })}
             >
               Explore Products
             </Link>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

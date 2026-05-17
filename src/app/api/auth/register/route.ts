@@ -1,11 +1,55 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { verifyOTP, normalizePhone } from '@/lib/msg91';
 import { createAdminSupabaseClient } from '@/lib/supabase/admin';
 import { sendEmail } from '@/lib/brevo';
+// ✅ AUDIT FIX #3 - Zod Input Validation
+import { z } from 'zod';
+// ✅ AUDIT FIX #4 - Rate Limiting on Auth Endpoints
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+
+const RegisterSchema = z.object({
+  email: z.string().email({ message: 'Invalid email address' }),
+  phone: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile').optional(),
+  otp: z.string().min(4).max(6),
+  first_name: z.string().min(2).max(100).trim(),
+  last_name: z.string().max(100).trim().optional().nullable(),
+  alt_phone: z.string().optional().nullable(),
+  ref_code: z.string().optional().nullable(),
+});
 
 export async function POST(request: Request) {
   try {
-    const { phone, otp, first_name, last_name, email, alt_phone, ref_code } = await request.json();
+    // ✅ AUDIT FIX #4 - Rate Limiting
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ?? '127.0.0.1';
+    
+    // Only ratelimit if Redis env vars are present to avoid crashing
+    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+      const ratelimit = new Ratelimit({
+        redis: Redis.fromEnv(),
+        limiter: Ratelimit.slidingWindow(5, '1 m'),
+        analytics: true,
+      });
+      const { success } = await ratelimit.limit(`register:${ip}`);
+      if (!success) {
+        return NextResponse.json(
+          { error: 'Too many attempts. Please wait and try again.' },
+          { status: 429, headers: { 'Retry-After': '60' } }
+        );
+      }
+    }
+
+    const body = await request.json();
+    
+    // ✅ AUDIT FIX #3 - Validation
+    const parsed = RegisterSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const { phone, otp, first_name, last_name, email, alt_phone, ref_code } = parsed.data;
 
     if (!phone || !otp || !first_name || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -19,10 +63,22 @@ export async function POST(request: Request) {
     const supabaseAdmin = createAdminSupabaseClient();
     const normalizedPhone = normalizePhone(phone);
 
+    // 1. Check duplicate phone
+    const { data: existingPhoneProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('phone', normalizedPhone)
+      .maybeSingle();
+
+    if (existingPhoneProfile) {
+      return NextResponse.json({ error: 'An account with this phone number already exists' }, { status: 400 });
+    }
+
+    // 2. Check duplicate email
     const { data: existingEmailProfile } = await supabaseAdmin
       .from('profiles')
       .select('id')
-      .eq('email', email)
+      .eq('email', email.trim().toLowerCase())
       .maybeSingle();
 
     if (existingEmailProfile) {

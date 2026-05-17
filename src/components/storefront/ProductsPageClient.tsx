@@ -48,6 +48,7 @@ export function ProductsPageClient({ initialTitle }: { initialTitle?: string }) 
 
   const getParam = (k: string) => sp.get(k) ?? ''
   const getArray = (k: string) => sp.get(k)?.split(',').filter(Boolean) ?? []
+  const collection = getParam('collection')
 
   const [q, setQ] = useState(getParam('q'))
   const [sort, setSort] = useState(getParam('sort') || 'newest')
@@ -76,17 +77,22 @@ export function ProductsPageClient({ initialTitle }: { initialTitle?: string }) 
     const params = buildParams({
       q, sort, size: sizes, color: colors, occasion: occasions,
       fabric: fabrics, sleeve, min_price: minPrice || undefined,
-      max_price: maxPrice || undefined, ...overrides,
+      max_price: maxPrice || undefined,
+      collection: collection || undefined,
+      ...overrides,
     })
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-  }, [q, sort, sizes, colors, occasions, fabrics, sleeve, minPrice, maxPrice, pathname, router])
+  }, [q, sort, sizes, colors, occasions, fabrics, sleeve, minPrice, maxPrice, collection, pathname, router])
 
   useEffect(() => {
-    fetch('/api/storefront/products/filters')
+    const filtersUrl = collection
+      ? `/api/storefront/products/filters?collection=${encodeURIComponent(collection)}`
+      : '/api/storefront/products/filters'
+    fetch(filtersUrl)
       .then(r => r.json())
       .then(setFilterOptions)
       .catch(() => {})
-  }, [])
+  }, [collection])
 
   const fetchProducts = useCallback(async (append = false) => {
     const currentPage = append ? page + 1 : 1
@@ -95,7 +101,8 @@ export function ProductsPageClient({ initialTitle }: { initialTitle?: string }) 
     const params = buildParams({
       q, sort, size: sizes, color: colors, occasion: occasions[0] ?? undefined,
       fabric: fabrics[0] ?? undefined, sleeve, min_price: minPrice || undefined,
-      max_price: maxPrice || undefined, page: currentPage, per_page: PER_PAGE,
+      max_price: maxPrice || undefined, collection: collection || undefined,
+      page: currentPage, per_page: PER_PAGE,
     })
 
     try {
@@ -113,7 +120,7 @@ export function ProductsPageClient({ initialTitle }: { initialTitle?: string }) 
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [q, sort, sizes, colors, occasions, fabrics, sleeve, minPrice, maxPrice, page])
+  }, [q, sort, sizes, colors, occasions, fabrics, sleeve, minPrice, maxPrice, collection, page])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -129,9 +136,20 @@ export function ProductsPageClient({ initialTitle }: { initialTitle?: string }) 
   useEffect(() => {
     pushURL()
     fetchProducts()
-  }, [sort, sizes, colors, occasions, fabrics, sleeve, minPrice, maxPrice])
+  }, [sort, sizes, colors, occasions, fabrics, sleeve, minPrice, maxPrice, collection])
+
+  const collectionLabel = collection
+    ? (initialTitle?.replace(/ Collection$/, '') ||
+        collection.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()))
+    : ''
 
   const pills: { label: string; remove: () => void }[] = [
+    ...(collection
+      ? [{
+          label: `Collection: ${collectionLabel}`,
+          remove: () => router.replace('/products', { scroll: false }),
+        }]
+      : []),
     ...sizes.map(s => ({ label: `Size: ${s}`, remove: () => setSizes(prev => prev.filter(x => x !== s)) })),
     ...colors.map(c => ({ label: `Color: ${c}`, remove: () => setColors(prev => prev.filter(x => x !== c)) })),
     ...occasions.map(o => ({ label: `Occasion: ${o}`, remove: () => setOccasions(prev => prev.filter(x => x !== o)) })),
@@ -185,7 +203,9 @@ export function ProductsPageClient({ initialTitle }: { initialTitle?: string }) 
       </div>
 
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px 24px' }}>
-        <p style={{ fontSize: '12px', color: '#6B6B5A', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px' }}>Home / Products</p>
+        <p style={{ fontSize: '12px', color: '#6B6B5A', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px' }}>
+          Home / Products{collection ? ` / ${collectionLabel}` : ''}
+        </p>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '24px', borderBottom: '1px solid #FAF5E9', paddingBottom: '16px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: 600, color: '#1C3829' }}>{initialTitle || 'All Products'}</h1>
           <span style={{ fontSize: '14px', color: '#6B6B5A' }}>{total} products</span>

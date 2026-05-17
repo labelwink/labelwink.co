@@ -1,5 +1,7 @@
+import { LeafPattern } from '@/components/ui/LeafPattern'
+
 export const metadata = {
-  title: 'Size Guide | Label Wink',
+  title: 'Size Guide',
   description: "Find your perfect fit with the Label Wink size guide. Standard Indian women's ethnic wear measurements.",
 }
 
@@ -36,170 +38,106 @@ const howToMeasure = [
 
 export default function SizeGuidePage() {
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#faf8f4' }}>
-
-      {/* Hero */}
-      <div style={{
-        background: '#1e3d29',
-        padding: '64px 24px',
-        textAlign: 'center',
-      }}>
-        <h1 style={{
-          fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: '40px',
-          fontWeight: 400,
-          color: '#ffffff',
-          letterSpacing: '0.05em',
-          margin: '0 0 12px',
-        }}>
-          Size Guide
-        </h1>
-        <p style={{
-          fontSize: '16px',
-          color: '#9aab9e',
-          margin: 0,
-        }}>
-          Find your perfect fit
-        </p>
-      </div>
-
-      {/* Content */}
-      <div style={{ maxWidth: '896px', margin: '0 auto', padding: '64px 16px' }}>
-
-        {/* Intro */}
-        <p style={{
-          fontSize: '15px',
-          color: '#5a7060',
-          textAlign: 'center',
-          maxWidth: '480px',
-          margin: '0 auto 48px',
-          lineHeight: 1.7,
-        }}>
-          We recommend measuring over your innerwear for the most accurate fit.
-          When in doubt, size up for a relaxed fit.
-        </p>
-
-        {/* Table title */}
-        <h2 style={{
-          fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: '22px',
-          fontWeight: 400,
-          color: '#1a2e1e',
-          marginBottom: '20px',
-        }}>
-          Women&apos;s Ethnic Wear
-        </h2>
-
-        {/* Size table */}
-        <div style={{
-          background: '#ffffff',
-          border: '1px solid #e8e2d6',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          marginBottom: '48px',
-        }}>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#1e3d29' }}>
-                  {['Size', 'Chest', 'Waist', 'Hip', 'Length'].map(h => (
-                    <th key={h} style={{
-                      color: '#ffffff',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                      padding: '14px 20px',
-                      textAlign: 'left',
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {sizes.map((row, i) => (
-                  <tr key={row.size} style={{
-                    borderBottom: '1px solid #f5f2ec',
-                    background: i % 2 === 1 ? '#faf8f4' : '#ffffff',
-                  }}>
-                    <td style={{
-                      padding: '14px 20px',
-                      fontSize: '14px',
-                      fontWeight: 600,
-                      color: '#2d5a3d',
-                    }}>
-                      {row.size}
-                    </td>
-                    <td style={{ padding: '14px 20px', fontSize: '14px', color: '#1a2e1e' }}>{row.chest}</td>
-                    <td style={{ padding: '14px 20px', fontSize: '14px', color: '#1a2e1e' }}>{row.waist}</td>
-                    <td style={{ padding: '14px 20px', fontSize: '14px', color: '#1a2e1e' }}>{row.hip}</td>
-                    <td style={{ padding: '14px 20px', fontSize: '14px', color: '#1a2e1e' }}>{row.length}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* How to Measure */}
-        <h2 style={{
-          fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: '22px',
-          fontWeight: 400,
-          color: '#1a2e1e',
-          marginBottom: '24px',
-        }}>
-          How to Measure
-        </h2>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '24px',
-          marginBottom: '32px',
-        }}>
-          {howToMeasure.map(({ label, icon, desc }) => (
-            <div key={label} style={{
-              background: '#ffffff',
-              border: '1px solid #e8e2d6',
-              borderRadius: '12px',
-              padding: '24px',
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: '32px', marginBottom: '12px' }}>{icon}</div>
-              <h3 style={{
-                fontSize: '15px',
-                fontWeight: 600,
-                color: '#1a2e1e',
-                margin: '0 0 8px',
-              }}>
-                {label}
-              </h3>
-              <p style={{
-                fontSize: '14px',
-                color: '#5a7060',
-                lineHeight: 1.6,
-                margin: 0,
-              }}>
-                {desc}
+    <div className="relative min-h-screen bg-[#FDF8F0] pt-8 md:pt-16">
+      <LeafPattern opacity={0.06} id="size-guide-page" />
+      
+      {/* Content Area */}
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 pb-24 relative z-10">
+        <div className="relative bg-white shadow-2xl border border-labelwink-cream-border overflow-hidden">
+          <LeafPattern opacity={0.04} id="size-guide-card" />
+          
+          <div className="relative z-10 p-6 md:p-16">
+            {/* Header Banner */}
+            <div className="bg-[#1C3829] text-white p-8 md:p-12 rounded-none mb-12 text-center relative overflow-hidden">
+              <p className="text-[#c9a84c] font-semibold text-xs tracking-widest uppercase mb-2">
+                LABELWINK
+              </p>
+              <h1 className="font-serif text-3xl md:text-4xl mb-4 tracking-wide">
+                Size Guide
+              </h1>
+              <p className="text-white/80 max-w-xl mx-auto text-sm md:text-base">
+                Find your perfect fit with standard Indian women&apos;s ethnic wear measurements.
               </p>
             </div>
-          ))}
-        </div>
 
-        {/* Tip box */}
-        <div style={{
-          background: '#fdf6e3',
-          border: '1px solid #f0e4b8',
-          borderRadius: '10px',
-          padding: '16px',
-          fontSize: '14px',
-          color: '#a0842e',
-          lineHeight: 1.6,
-        }}>
-          💡 <strong>Tip:</strong> All our garments have 1–2 inch ease built in for comfortable wear.
+            {/* Intro Description */}
+            <p className="text-sm md:text-base text-[#1C3829]/80 text-center max-w-xl mx-auto mb-12 leading-relaxed">
+              We recommend measuring over your innerwear for the most accurate fit.
+              When in doubt, size up for a relaxed fit.
+            </p>
+
+            {/* Table section */}
+            <h2 className="font-serif text-xl md:text-2xl text-[#1C3829] mb-6">
+              Women&apos;s Ethnic Wear
+            </h2>
+
+            {/* Size table */}
+            <div className="bg-white border border-[#e8e2d6] rounded-none overflow-hidden mb-12 shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-[#1C3829]">
+                      {['Size', 'Chest', 'Waist', 'Hip', 'Length'].map(h => (
+                        <th 
+                          key={h} 
+                          className="text-white text-xs font-semibold uppercase tracking-wider px-6 py-4 text-left whitespace-nowrap"
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#f5f2ec]">
+                    {sizes.map((row, i) => (
+                      <tr 
+                        key={row.size} 
+                        className={i % 2 === 1 ? 'bg-[#faf8f4]' : 'bg-white'}
+                      >
+                        <td className="px-6 py-4 text-sm font-semibold text-[#2d5a3d]">
+                          {row.size}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-[#1C3829]">{row.chest}</td>
+                        <td className="px-6 py-4 text-sm text-[#1C3829]">{row.waist}</td>
+                        <td className="px-6 py-4 text-sm text-[#1C3829]">{row.hip}</td>
+                        <td className="px-6 py-4 text-sm text-[#1C3829]">{row.length}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* How to Measure */}
+            <h2 className="font-serif text-xl md:text-2xl text-[#1C3829] mb-6">
+              How to Measure
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              {howToMeasure.map(({ label, icon, desc }) => (
+                <div 
+                  key={label} 
+                  className="bg-white border border-[#e8e2d6] rounded-none p-6 text-center shadow-sm hover:border-[#1C3829]/30 transition-all duration-300"
+                >
+                  <div className="text-4xl mb-4">{icon}</div>
+                  <h3 className="text-sm md:text-base font-semibold text-[#1C3829] mb-2">
+                    {label}
+                  </h3>
+                  <p className="text-xs md:text-sm text-[#1C3829]/70 leading-relaxed">
+                    {desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Tip box */}
+            <div className="bg-[#fdf6e3] border border-[#f0e4b8] rounded-none p-6 text-sm text-[#a0842e] leading-relaxed flex items-start gap-3">
+              <span className="text-lg leading-none">💡</span>
+              <div>
+                <strong>Tip:</strong> All our garments have 1–2 inch ease built in for comfortable wear.
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>

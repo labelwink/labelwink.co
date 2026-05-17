@@ -36,7 +36,7 @@ export default function WorkflowButton({
     else if (color === 'blue') baseClass += 'bg-blue-600 text-white hover:bg-blue-700 ';
     else if (color === 'gold') baseClass += 'bg-[#c9a84c] text-[#ffffff] hover:bg-[#b5953e] ';
     else if (color === 'red') baseClass += 'bg-red-600 text-white hover:bg-red-700 ';
-    else baseClass += 'bg-white text-[#faf7f2] hover:bg-black ';
+    else baseClass += 'bg-[#1b3a34] text-white hover:bg-[#16312b] ';
   }
 
   if (disabled || loading) {

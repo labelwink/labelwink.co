@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
     .from('orders')
     .select(
       `id, 
+       order_number,
        status, 
        total:total_amount, 
        customer_name, 
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
     // or we just rely on PostgREST's cast if supported. 
     // Here we include the new customer fields in search.
     query = query.or(
-      `customer_name.ilike.%${search}%,customer_email.ilike.%${search}%,customer_phone.ilike.%${search}%,shipping_name.ilike.%${search}%,invoice_number.ilike.%${search}%,id.ilike.%${search}%`
+      `customer_name.ilike.%${search}%,customer_email.ilike.%${search}%,customer_phone.ilike.%${search}%,shipping_name.ilike.%${search}%,invoice_number.ilike.%${search}%,id.ilike.%${search}%,order_number.ilike.%${search}%`
     )
   }
   if (from) query = query.gte('created_at', from)

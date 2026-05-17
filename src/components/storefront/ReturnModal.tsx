@@ -179,7 +179,7 @@ export function ReturnModal({ orderId, items, onSuccess, onClose }: ReturnModalP
               <button
                 onClick={() => setStep(2)}
                 disabled={selectedItems.length === 0}
-                className="w-full mt-4 py-3 bg-white text-white rounded-lg text-sm font-bold uppercase tracking-widest disabled:opacity-40 hover:bg-black transition-colors"
+                className="w-full mt-4 min-h-11 py-3 bg-labelwink-green text-white rounded-lg text-base font-bold uppercase tracking-widest disabled:opacity-40 hover:bg-labelwink-green-hover transition-colors"
               >
                 Continue
               </button>
@@ -215,7 +215,7 @@ export function ReturnModal({ orderId, items, onSuccess, onClose }: ReturnModalP
                 <button
                   onClick={() => setStep(3)}
                   disabled={!reason}
-                  className="flex-1 py-3 bg-white text-white rounded-lg text-sm font-bold uppercase tracking-widest disabled:opacity-40 hover:bg-black transition-colors"
+                  className="flex-1 min-h-11 py-3 bg-labelwink-green text-white rounded-lg text-base font-bold uppercase tracking-widest disabled:opacity-40 hover:bg-labelwink-green-hover transition-colors"
                 >
                   Continue
                 </button>

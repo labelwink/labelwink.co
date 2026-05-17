@@ -10,6 +10,7 @@ import { AuthModalProvider } from '@/components/auth/OTPLoginModal'
 import { MobileBottomNav } from '@/components/storefront/MobileBottomNav'
 import { AbandonedCartTracker } from '@/components/cart/AbandonedCartTracker'
 import ClearServiceWorker from '@/components/ClearServiceWorker'
+import { HashScroll } from '@/components/layout/HashScroll'
 
 function getNavigation() {
   try {
@@ -64,6 +65,7 @@ export default async function StorefrontLayout({ children }: { children: React.R
     <AuthModalProvider>
       {/* Cleans up old service workers in browsers that cached them. Remove after 1 week. */}
       <ClearServiceWorker />
+      <HashScroll />
       <div className="sticky top-0 left-0 right-0 z-50 w-full">
         <AnnouncementBar
           enabled={announcementEnabled}

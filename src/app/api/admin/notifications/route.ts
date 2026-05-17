@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     }
 
     if (unread === 'true') {
-      query = query.eq('read', false)
+      query = query.eq('is_read', false)
     }
 
     const { data, error } = await query
@@ -42,7 +42,16 @@ export async function GET(req: NextRequest) {
 
     const rows = data || []
     const hasMore = rows.length > limit
-    const items = hasMore ? rows.slice(0, limit) : rows
+    const itemsRaw = hasMore ? rows.slice(0, limit) : rows
+
+    // Map database columns to fields the frontend expects (is_read, data, body)
+    const items = itemsRaw.map((n: any) => ({
+      ...n,
+      is_read: !!n.is_read,
+      data: n.metadata || null,
+      body: n.body || n.message || '',
+    }))
+
     const nextCursor = hasMore ? items[items.length - 1]?.created_at : null
 
     return NextResponse.json({
@@ -64,12 +73,12 @@ export async function PATCH(req: NextRequest) {
   const supabase = createAdminClient()
   const body = await req.json()
 
-  let query = supabase.from('admin_notifications').update({ read: true } as any)
+  let query = supabase.from('admin_notifications').update({ is_read: true } as any)
 
   if (body.id) {
     query = query.eq('id', body.id)
   } else if (body.mark_all) {
-    query = query.eq('read', false)
+    query = query.eq('is_read', false)
   } else {
     return NextResponse.json({ error: 'Provide id or mark_all' }, { status: 400 })
   }

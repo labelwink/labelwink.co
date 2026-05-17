@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
   let query = supabase
     .from('reviews')
     .select(
-      `id, rating, comment, status, created_at, updated_at, user_id,
+      `id, rating, review_text, status, created_at, updated_at, user_id,
+       photos, is_verified_purchase, admin_reply, admin_replied_at, rejection_reason,
        products ( id, name, slug ),
        profiles ( id, full_name, email )`,
       { count: 'exact' }
@@ -31,11 +32,24 @@ export async function GET(req: NextRequest) {
   const { data, count, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Map: expose a 'title' field for UI compatibility (derived from comment)
-  const reviews = (data ?? []).map((r: any) => ({
-    ...r,
-    title: r.comment?.slice(0, 50) || 'No comment',
-  }))
+  // Map: expose 'title' and 'body' fields for UI compatibility (derived from review_text)
+  const reviews = (data ?? []).map((r: any) => {
+    let t = 'Review'
+    let b = r.review_text || ''
+    if (r.review_text && r.review_text.includes(' - ')) {
+      const parts = r.review_text.split(' - ')
+      t = parts[0]
+      b = parts.slice(1).join(' - ')
+    } else if (r.review_text) {
+      t = r.review_text.slice(0, 50)
+    }
+    return {
+      ...r,
+      comment: r.review_text,
+      title: t,
+      body: b,
+    }
+  })
 
   // Pending count for badge (cheap query)
   const { count: pendingCount } = await supabase

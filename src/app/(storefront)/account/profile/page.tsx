@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { User, Loader2 } from 'lucide-react';
@@ -20,12 +20,11 @@ export default function ProfilePage() {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
-      // Split full_name for form convenience
-      const nameParts = (data.full_name || '').split(' ');
+      // Prefer first_name/last_name from DB if they exist, otherwise split full_name
       setProfile({
         ...data,
-        first_name: nameParts[0] || '',
-        last_name: nameParts.slice(1).join(' ') || '',
+        first_name: data.first_name || (data.full_name || '').split(' ')[0] || '',
+        last_name: data.last_name || (data.full_name || '').split(' ').slice(1).join(' ') || '',
       });
     } catch {
       toast.error('Failed to load profile');
@@ -37,16 +36,23 @@ export default function ProfilePage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const full_name = [profile.first_name, profile.last_name].filter(Boolean).join(' ');
       const res = await fetch('/api/storefront/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          full_name,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
           phone: profile.phone,
         })
       });
       if (!res.ok) throw new Error('Update failed');
+      
+      const updated = await res.json();
+      setProfile({
+        ...updated,
+        first_name: updated.first_name || (updated.full_name || '').split(' ')[0] || '',
+        last_name: updated.last_name || (updated.full_name || '').split(' ').slice(1).join(' ') || '',
+      });
       toast.success('✅ Profile updated');
     } catch {
       toast.error('Failed to update profile');

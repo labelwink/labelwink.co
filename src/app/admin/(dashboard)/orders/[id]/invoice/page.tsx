@@ -79,22 +79,29 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             </tr>
           </thead>
           <tbody>
-            {order_items.map((item: any, i: number) => (
-              <tr key={item.id}>
-                <td className="border border-gray-300 p-2">{i+1}</td>
-                <td className="border border-gray-300 p-2">
-                  <p className="font-medium">{item.product_name}</p>
-                  <p className="text-gray-500 text-xs">
-                    Size: {item.size}
-                    {item.color ? ` | Color: ${item.color}` : ''}
-                  </p>
-                </td>
-                <td className="border border-gray-300 p-2 text-center">{settings.hsn_code}</td>
-                <td className="border border-gray-300 p-2 text-center">{item.quantity}</td>
-                <td className="border border-gray-300 p-2 text-right">{formatIndianCurrency(item.unit_price)}</td>
-                <td className="border border-gray-300 p-2 text-right font-medium">{formatIndianCurrency(item.total_price)}</td>
-              </tr>
-            ))}
+            {order_items.map((item: any, i: number) => {
+              const itemSize = item.variant_size ?? item.size ?? '—';
+              const itemColor = item.variant_color ?? item.color;
+              const unitPrice = item.price_at_purchase ?? item.unit_price ?? item.price ?? 0;
+              const lineTotal = unitPrice * (item.quantity ?? 1);
+
+              return (
+                <tr key={item.id}>
+                  <td className="border border-gray-300 p-2">{i+1}</td>
+                  <td className="border border-gray-300 p-2">
+                    <p className="font-medium">{item.product_name ?? 'Product'}</p>
+                    <p className="text-gray-500 text-xs">
+                      Size: {itemSize}
+                      {itemColor ? ` | Color: ${itemColor}` : ''}
+                    </p>
+                  </td>
+                  <td className="border border-gray-300 p-2 text-center">{settings.hsn_code}</td>
+                  <td className="border border-gray-300 p-2 text-center">{item.quantity}</td>
+                  <td className="border border-gray-300 p-2 text-right">{formatIndianCurrency(unitPrice)}</td>
+                  <td className="border border-gray-300 p-2 text-right font-medium">{formatIndianCurrency(lineTotal)}</td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
 
@@ -117,30 +124,28 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                   {invoice.shipping === 0 ? 'FREE' : formatIndianCurrency(invoice.shipping)}
                 </td>
               </tr>
-              <tr className="border-t border-gray-200">
                 {invoice.cgst > 0 ? (
-                  <>
-                    <tr>
-                      <td className="py-1 pr-4 text-gray-600">CGST (6%)</td>
-                      <td className="py-1 text-right">{formatIndianCurrency(invoice.cgst)}</td>
-                    </tr>
-                    <tr>
-                      <td className="py-1 pr-4 text-gray-600">SGST (6%)</td>
-                      <td className="py-1 text-right">{formatIndianCurrency(invoice.sgst)}</td>
-                    </tr>
-                  </>
-                ) : invoice.igst > 0 ? (
-                  <tr>
-                    <td className="py-1 pr-4 text-gray-600">IGST (12%)</td>
-                    <td className="py-1 text-right">{formatIndianCurrency(invoice.igst)}</td>
+                <>
+                  <tr className="border-t border-gray-200">
+                    <td className="py-1 pr-4 text-gray-600">CGST (6%)</td>
+                    <td className="py-1 text-right">{formatIndianCurrency(invoice.cgst)}</td>
                   </tr>
-                ) : (
                   <tr>
-                    <td className="py-1 pr-4 text-gray-600">GST</td>
-                    <td className="py-1 text-right text-gray-500">Nil (≤ ₹1,000)</td>
+                    <td className="py-1 pr-4 text-gray-600">SGST (6%)</td>
+                    <td className="py-1 text-right">{formatIndianCurrency(invoice.sgst)}</td>
                   </tr>
-                )}
-              </tr>
+                </>
+              ) : invoice.igst > 0 ? (
+                <tr className="border-t border-gray-200">
+                  <td className="py-1 pr-4 text-gray-600">IGST (12%)</td>
+                  <td className="py-1 text-right">{formatIndianCurrency(invoice.igst)}</td>
+                </tr>
+              ) : (
+                <tr className="border-t border-gray-200">
+                  <td className="py-1 pr-4 text-gray-600">GST</td>
+                  <td className="py-1 text-right text-gray-500">Nil (≤ ₹1,000)</td>
+                </tr>
+              )}
               <tr className="border-t-2 border-gray-800">
                 <td className="py-2 pr-4 font-bold text-base">Grand Total</td>
                 <td className="py-2 text-right font-bold text-base text-[#c9a84c]">

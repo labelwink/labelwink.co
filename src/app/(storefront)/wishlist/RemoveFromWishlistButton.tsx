@@ -16,8 +16,8 @@ export function RemoveFromWishlistButton({ productId }: { productId: string }) {
         method: 'DELETE'
       })
       router.refresh()
-    } catch (e) {
-      console.error('Failed to remove from wishlist', e)
+    } catch {
+      // User can retry; page refresh shows current state
     } finally {
       setLoading(false)
     }
@@ -27,7 +27,7 @@ export function RemoveFromWishlistButton({ productId }: { productId: string }) {
     <button
       onClick={handleRemove}
       disabled={loading}
-      className="text-xs text-[#5a7060] hover:text-red-500 underline transition-colors"
+      className="min-h-11 inline-flex items-center justify-center px-3 text-base text-brand-muted hover:text-destructive underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-labelwink-green focus-visible:ring-offset-2"
     >
       {loading ? 'Removing...' : 'Remove'}
     </button>

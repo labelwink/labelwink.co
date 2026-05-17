@@ -20,10 +20,17 @@ interface OrderItem {
   id: string
   quantity: number
   price: number
-  size: string
+  size: string | null
   color: string | null
+  variant_size?: string | null
+  variant_color?: string | null
+  price_at_purchase?: number
+  mrp_at_purchase?: number
   product_id: string | null
-  products: { name: string; id: string } | null
+  product_name?: string | null
+  products?: { name: string; id: string } | null
+  image_url?: string | null
+  image_cloudinary_id?: string | null
 }
 
 interface StatusHistory {
@@ -61,6 +68,7 @@ interface ShippingAddress {
 
 interface Order {
   id: string
+  order_number?: string | null
   status: string
   total: number
   subtotal: number
@@ -80,8 +88,8 @@ interface Order {
   shiprocket_order_id: string | null
   shiprocket_awb: string | null
   shiprocket_awb_code?: string | null
-  shiprocket_shipment_id?: string | null
   shiprocket_courier_name?: string | null
+  shiprocket_shipment_id?: string | null
   fulfillment_status?: string | null
   admin_note: string | null
   shipping_address: ShippingAddress | null
@@ -143,6 +151,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [savingNote,     setSavingNote]     = useState(false)
   const [dispatching,    setDispatching]    = useState(false)
   const [generatingAWB,  setGeneratingAWB]  = useState(false)
+  const [cancellingOrder, setCancellingOrder] = useState(false)
+  const [syncingTracking, setSyncingTracking] = useState(false)
+  const [trackingData,   setTrackingData]   = useState<any>(null)
   const [note,           setNote]           = useState('')
   
   const [tracking, setTracking] = useState({
@@ -294,6 +305,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       if (data.success) {
         showToast(`AWB Generated: ${data.awb}`, 'success')
         await updateStatus('packed')
+        // Auto-sync tracking info from Shiprocket
+        setTimeout(() => syncTracking(true), 2000)
       } else {
         showToast(data.error || 'Failed to generate AWB', 'error')
       }
@@ -319,6 +332,44 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       showToast('Network error', 'error')
     } finally {
       setDispatching(false)
+    }
+  }
+
+  const handleCancelOrder = async () => {
+    if (!confirm('Cancel this order? This cannot be undone.')) return
+    setCancellingOrder(true)
+    try {
+      const res  = await fetch(`/api/admin/orders/${id}/cancel`, { method: 'POST' })
+      const data = await res.json()
+      if (data.success) {
+        showToast('Order cancelled', 'success')
+        await fetchData(id)
+      } else {
+        showToast(data.error ?? 'Cancel failed', 'error')
+      }
+    } catch {
+      showToast('Network error', 'error')
+    } finally {
+      setCancellingOrder(false)
+    }
+  }
+
+  const syncTracking = async (silent = false) => {
+    setSyncingTracking(true)
+    try {
+      const res  = await fetch(`/api/admin/orders/${id}/sync-tracking`, { method: 'POST' })
+      const data = await res.json()
+      if (data.success) {
+        setTrackingData(data)
+        if (!silent) showToast('Tracking synced from Shiprocket ✓', 'success')
+        await fetchData(id)
+      } else {
+        if (!silent) showToast(data.error || 'Sync failed', 'error')
+      }
+    } catch {
+      if (!silent) showToast('Network error', 'error')
+    } finally {
+      setSyncingTracking(false)
     }
   }
 
@@ -492,7 +543,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           <nav className="text-xs text-[#9ca3af] flex items-center gap-1">
             <Link href="/admin/orders" className="hover:text-[#1a1a1a]">Orders</Link>
             <ChevronRight size={11} />
-            <span className="font-mono font-semibold text-[#1a1a1a]">#{id.slice(0, 8).toUpperCase()}</span>
+            <span className="font-mono font-semibold text-[#1a1a1a]">#{order.order_number || id.slice(0, 8).toUpperCase()}</span>
           </nav>
           <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${badgeCls}`}>
             {statusKey.replace(/_/g, ' ')}
@@ -602,20 +653,26 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#f3f4f6]">
-                  {items.map(item => (
-                    <tr key={item.id}>
-                      <td className="py-2.5 font-medium text-[#1a1a1a]">
-                        {item.products?.name ?? '—'}
-                        {item.color && <span className="text-xs text-[#9ca3af] ml-1">· {item.color}</span>}
-                      </td>
-                      <td className="py-2.5 text-center text-[#6b7280]">{item.size || '—'}</td>
-                      <td className="py-2.5 text-center">{item.quantity}</td>
-                      <td className="py-2.5 text-right text-[#6b7280]">{formatCurrency(item.price)}</td>
-                      <td className="py-2.5 text-right font-semibold">
-                        {formatCurrency(item.price * item.quantity)}
-                      </td>
-                    </tr>
-                  ))}
+                  {items.map(item => {
+                    const unitPrice = item.price_at_purchase ?? item.price ?? 0;
+                    const size = item.variant_size ?? item.size;
+                    const color = item.variant_color ?? item.color;
+
+                    return (
+                      <tr key={item.id}>
+                        <td className="py-2.5 font-medium text-[#1a1a1a]">
+                          {item.product_name ?? item.products?.name ?? '—'}
+                          {color && <span className="text-xs text-[#9ca3af] ml-1">· {color}</span>}
+                        </td>
+                        <td className="py-2.5 text-center text-[#6b7280]">{size || '—'}</td>
+                        <td className="py-2.5 text-center">{item.quantity}</td>
+                        <td className="py-2.5 text-right text-[#6b7280]">{formatCurrency(unitPrice)}</td>
+                        <td className="py-2.5 text-right font-semibold">
+                          {formatCurrency(unitPrice * (item.quantity ?? 1))}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
                 <tfoot className="border-t-2 border-[#e5e7eb] text-sm">
                   <tr><td colSpan={4} className="pt-2.5 text-[#6b7280]">Subtotal</td><td className="pt-2.5 text-right">{formatCurrency(order.subtotal ?? 0)}</td></tr>
@@ -776,11 +833,28 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               {order.status === 'packed' && (
                 <div className="flex flex-col gap-3">
                   <div className="grid grid-cols-2 gap-2">
-                    <WorkflowButton variant="outline" size="sm" onClick={() => window.open(`/admin/orders/${id}/invoice`, '_blank')}>
-                      🖨️ Print GST Invoice
+                    <WorkflowButton variant="outline" size="sm" onClick={() => (order as any).invoice_signed_url ? window.open((order as any).invoice_signed_url, '_blank') : window.open(`/admin/orders/${id}/invoice`, '_blank')}>
+                      🖨️ View GST Invoice
                     </WorkflowButton>
-                    <WorkflowButton variant="outline" size="sm" onClick={() => window.open(`/admin/orders/${id}/label`, '_blank')}>
-                      🏷️ Print Dispatch Label
+                    <WorkflowButton variant="outline" size="sm" onClick={() => (order as any).label_signed_url ? window.open((order as any).label_signed_url, '_blank') : window.open(`/admin/orders/${id}/label`, '_blank')}>
+                      🏷️ View Dispatch Label
+                    </WorkflowButton>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 mt-1">
+                    <WorkflowButton 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={async () => {
+                        const res = await fetch(`/api/admin/orders/${id}/generate-docs`, { method: 'POST' })
+                        if (res.ok) {
+                          showToast('Documents regenerated', 'success')
+                          fetchData(id)
+                        } else {
+                          showToast('Failed to regenerate docs', 'error')
+                        }
+                      }}
+                    >
+                      🔄 Regenerate Documents
                     </WorkflowButton>
                   </div>
                   
@@ -804,7 +878,20 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                       )}
                     </div>
                   )}
-                  
+
+                  {/* Sync button available any time a SR order exists */}
+                  {(order as any).shiprocket_order_id && (
+                    <WorkflowButton
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2"
+                      loading={syncingTracking}
+                      onClick={() => syncTracking()}
+                    >
+                      📡 Sync Tracking from Shiprocket
+                    </WorkflowButton>
+                  )}
+
                   {!order.tracking_number && (
                     <p className="text-xs text-gray-500 text-center mt-1">Print invoice and label before generating AWB</p>
                   )}
@@ -813,24 +900,81 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
               {(order.status === 'dispatched' || order.status === 'shipped') && (
                 <div className="space-y-4">
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 text-center">
-                    <p className="text-xs font-bold text-gray-500 uppercase">AWB / Tracking Number</p>
-                    <p className="font-mono text-xl font-bold mt-1 tracking-wider">{order.tracking_number || 'N/A'}</p>
-                    <p className="text-sm mt-1">{order.shipping_carrier || 'Shiprocket'}</p>
+                  {/* AWB / Tracking card */}
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p className="text-xs font-bold text-gray-500 uppercase mb-2">Shipment Details</p>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">AWB</span>
+                        <span className="font-mono font-bold">{order.tracking_number || '—'}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Courier</span>
+                        <span className="font-medium">{(order as any).shiprocket_courier_name || order.shipping_carrier || '—'}</span>
+                      </div>
+                      {(order as any).shiprocket_status && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">SR Status</span>
+                          <span className="font-bold text-blue-700 uppercase text-xs bg-blue-50 px-2 py-0.5 rounded">
+                            {(order as any).shiprocket_status}
+                          </span>
+                        </div>
+                      )}
+                      {(order as any).estimated_delivery && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">Est. Delivery</span>
+                          <span className="font-bold text-emerald-700">{new Date((order as any).estimated_delivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                        </div>
+                      )}
+                      {(order as any).shiprocket_last_synced_at && (
+                        <p className="text-[10px] text-gray-400 mt-2">
+                          Last synced: {new Date((order as any).shiprocket_last_synced_at).toLocaleString('en-IN')}
+                        </p>
+                      )}
+                    </div>
                     {order.tracking_url && (
-                      <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="text-[#1b3a34] font-bold text-xs hover:underline mt-2 inline-block">
-                        Track Package →
+                      <a href={order.tracking_url} target="_blank" rel="noopener noreferrer"
+                        className="text-[#1b3a34] font-bold text-xs hover:underline mt-3 inline-block">
+                        Track on Shiprocket →
                       </a>
                     )}
                   </div>
-                  <WorkflowButton variant="outline" className="w-full" onClick={refreshTracking}>
-                    🔄 Refresh Tracking Status
+
+                  {/* Activity feed from last sync */}
+                  {(() => {
+                    const acts = (order as any).shiprocket_tracking_data?.activities ?? []
+                    return acts.length > 0 ? (
+                      <div className="bg-white border border-gray-200 rounded-lg p-4">
+                        <p className="text-xs font-bold text-gray-500 uppercase mb-3">Tracking Activity</p>
+                        <div className="space-y-3 max-h-48 overflow-y-auto">
+                          {acts.slice(0, 8).map((a: any, i: number) => (
+                            <div key={i} className="flex gap-3 text-xs">
+                              <div className="w-2 h-2 rounded-full bg-[#1b3a34] mt-1 flex-shrink-0" />
+                              <div>
+                                <p className="font-medium text-gray-800">{a.activity || a.SR_Status || a.description || '—'}</p>
+                                <p className="text-gray-400">{a.date || a.timestamp || ''}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null
+                  })()}
+
+                  <WorkflowButton
+                    variant="outline"
+                    className="w-full"
+                    loading={syncingTracking}
+                    onClick={() => syncTracking()}
+                  >
+                    🔄 Sync from Shiprocket
                   </WorkflowButton>
                   <WorkflowButton variant="outline" className="w-full" onClick={() => updateStatus('delivered')}>
                     ✅ Mark as Delivered (Manual)
                   </WorkflowButton>
                 </div>
               )}
+
 
               {order.status === 'delivered' && (
                 <div className="text-center">
@@ -844,6 +988,27 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               )}
             </div>
           </Card>
+
+          {/* Cancel Order – admin can cancel any non-terminal order */}
+          {!['shipped', 'delivered', 'cancelled', 'return_requested', 'dispatched'].includes(order.status) && (
+            <Card title="Cancel Order" icon={XCircle} className="no-print border-red-200">
+              <div className="space-y-3">
+                <p className="text-xs text-gray-500">
+                  Cancelling will also cancel the Shiprocket shipment (if created) and update order status to Cancelled.
+                </p>
+                <WorkflowButton
+                  color="red"
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  loading={cancellingOrder}
+                  onClick={handleCancelOrder}
+                >
+                  ✕ Cancel This Order
+                </WorkflowButton>
+              </div>
+            </Card>
+          )}
 
           {/* Return Request Details */}
           {returnReq && (

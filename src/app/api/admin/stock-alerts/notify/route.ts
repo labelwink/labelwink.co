@@ -16,7 +16,20 @@ export async function POST(req: NextRequest) {
     // 1. Fetch pending alerts — use 'notified' column (actual DB column)
     const { data: alerts, error: alertErr } = await sb
       .from('stock_alerts')
-      .select(`*, products(name, slug, product_images(url, is_cover, sort_order))`)
+      .select(`
+        *,
+        profiles (email, full_name),
+        product_variants (
+          id,
+          size,
+          products (
+            id,
+            name,
+            slug,
+            product_images (url, is_cover, sort_order)
+          )
+        )
+      `)
       .eq('variant_id', variant_id)
       .eq('notified', false)
 
@@ -28,20 +41,39 @@ export async function POST(req: NextRequest) {
     // 2. Process each alert
     let notified_count = 0
     for (const alert of alerts) {
-      const p = Array.isArray(alert.products) ? alert.products[0] : alert.products
+      const variant = alert.product_variants
+      if (!variant) continue
+      
+      const p = variant.products
       if (!p) continue
+
+      const profile = alert.profiles
+      const recipientEmail = alert.email || profile?.email
+      if (!recipientEmail) continue
+
+      const targetSize = alert.size || variant.size || ''
 
       // Get cover image from product_images join
       const images: any[] = Array.isArray(p.product_images) ? p.product_images : []
       const coverImg = images.find((i: any) => i.is_cover) || images[0]
       const image = coverImg?.url || ''
       
-      await sendBackInStockEmail(alert, p.name, alert.size, image, p.slug)
+      await sendBackInStockEmail(
+        { ...alert, email: recipientEmail },
+        p.name,
+        targetSize,
+        image,
+        p.slug
+      )
       
       // Update as notified using correct column name
       await sb
         .from('stock_alerts')
-        .update({ notified: true, notified_at: new Date().toISOString() })
+        .update({ 
+          notified: true, 
+          is_active: false, 
+          notified_at: new Date().toISOString() 
+        })
         .eq('id', alert.id)
         
       notified_count++

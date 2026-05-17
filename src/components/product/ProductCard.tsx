@@ -144,12 +144,21 @@ export function ProductCard({
         
         {/* Action Button */}
         <div className="mt-1">
-          <Link
-            href={`/products/${slug}`}
-            className={`flex items-center justify-center w-full bg-labelwink-green text-white hover:bg-labelwink-green-hover text-xs font-bold uppercase tracking-[0.2em] py-3.5 rounded-xl transition-all duration-300 shadow-lg shadow-labelwink-green/10 ${isOutOfStock ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'active:scale-[0.98]'}`}
-          >
-            {isOutOfStock ? 'Out of Stock' : 'View Product'}
-          </Link>
+          {isOutOfStock ? (
+            <Link
+              href={`/products/${slug}?notify=true`}
+              className="flex items-center justify-center w-full bg-[#FAF5E9] text-[#1C3829] border border-[#1C3829]/30 hover:border-[#1C3829] hover:bg-[#FAF5E9]/80 text-xs font-bold uppercase tracking-[0.2em] py-3.5 rounded-xl transition-all duration-300 shadow-sm active:scale-[0.98]"
+            >
+              Notify Me
+            </Link>
+          ) : (
+            <Link
+              href={`/products/${slug}`}
+              className="flex items-center justify-center w-full bg-labelwink-green text-white hover:bg-labelwink-green-hover text-xs font-bold uppercase tracking-[0.2em] py-3.5 rounded-xl transition-all duration-300 shadow-lg shadow-labelwink-green/10 active:scale-[0.98]"
+            >
+              View Product
+            </Link>
+          )}
         </div>
       </div>
     </div>
