@@ -134,7 +134,7 @@ export async function PATCH(req: NextRequest) {
       .from('returns')
       .update(updates)
       .eq('id', id)
-      .select()
+      .select('*, orders(id, order_number, customer_email, customer_name)')
       .single();
 
     if (error) {
@@ -148,6 +148,51 @@ export async function PATCH(req: NextRequest) {
         message: `Return for order ${data.order_id} updated to ${status}`,
         entity_id: data.order_id
       });
+
+      // Send customer email + Telegram on approval or rejection
+      const order = Array.isArray(data.orders) ? data.orders[0] : data.orders;
+      const customerEmail = order?.customer_email;
+      const customerName  = order?.customer_name;
+      const orderNumber   = order?.order_number;
+      const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co';
+
+      if (status === 'approved' || status === 'rejected') {
+        // Admin Telegram alert
+        try {
+          const emoji = status === 'approved' ? '✅' : '❌';
+          const msg = `${emoji} <b>Return ${status === 'approved' ? 'Approved' : 'Rejected'}</b>\n` +
+            `🆔 #${orderNumber || data.order_id.slice(0, 8).toUpperCase()}\n` +
+            `👤 ${customerName || 'Customer'}\n` +
+            `👉 <a href="${SITE_URL}/admin/orders/${data.order_id}">View Order</a>`;
+          await sendTelegramMessage(msg);
+        } catch { /* non-fatal */ }
+
+        // Customer email
+        if (customerEmail) {
+          try {
+            await fetch(`${SITE_URL}/api/send-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-internal-secret': process.env.INTERNAL_SECRET || '',
+              },
+              body: JSON.stringify({
+                to:    customerEmail,
+                type:  status === 'approved' ? 'return_approved' : 'return_rejected',
+                title: '',
+                body:  '',
+                data: {
+                  order_id:     data.order_id,
+                  order_number: orderNumber,
+                  customerName,
+                },
+              }),
+            });
+          } catch (emailErr) {
+            console.error('[Returns PATCH] Customer email failed:', emailErr);
+          }
+        }
+      }
     }
 
     return NextResponse.json(data);

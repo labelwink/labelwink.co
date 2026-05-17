@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/server'
+import { sendTelegramMessage } from '@/lib/telegram'
 
 export const runtime = 'nodejs'
 
 /**
- * POST /api/shiprocket/webhook
+ * POST /api/shipping/webhook
  *
  * Shiprocket pushes shipment status updates to this URL.
  * Configure in Shiprocket Dashboard → Settings → Webhooks.
- *
- * The Shiprocket webhook sends a JSON body with keys like:
- *   awb, order_id (their internal ID), current_status, shipment_track_activities, etc.
+ * URL: https://demo.labelwink.co/api/shipping/webhook
  */
 export async function POST(req: NextRequest) {
   // ── Security Check ───────────────────────────────────────────────────────────
@@ -32,10 +31,10 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient()
 
-  // Shiprocket sends their internal order_id and the AWB code
   const srOrderId   = (body.order_id   || body.shiprocket_order_id || body.id) as string | undefined
   const awbCode     = (body.awb        || body.awb_code) as string | undefined
   const srStatus    = (body.current_status || body.status) as string | undefined
+  const courier     = (body.courier_name  || body.courier) as string | undefined
   const trackingUrl = awbCode ? `https://shiprocket.co/tracking/${awbCode}` : undefined
 
   if (!srOrderId && !awbCode) {
@@ -55,34 +54,36 @@ export async function POST(req: NextRequest) {
   }
   const mappedStatus = srStatus ? STATUS_MAP[srStatus] : undefined
 
-  // ── Find order by shiprocket_order_id or by AWB ─────────────────────────────
-  let orderId: string | null = null
-  let orderNumber: string | null = null
+  // ── Find order with full customer details ─────────────────────────────────
+  let order: any = null
 
   if (srOrderId) {
     const { data } = await supabase
       .from('orders')
-      .select('id, order_number')
+      .select('id, order_number, customer_name, customer_email')
       .eq('shiprocket_order_id', String(srOrderId))
       .maybeSingle()
-    orderId = data?.id ?? null
-    orderNumber = data?.order_number ?? null
+    order = data
   }
 
-  if (!orderId && awbCode) {
+  if (!order && awbCode) {
     const { data } = await supabase
       .from('orders')
-      .select('id, order_number')
+      .select('id, order_number, customer_name, customer_email')
       .eq('shiprocket_awb', String(awbCode))
       .maybeSingle()
-    orderId = data?.id ?? null
-    orderNumber = data?.order_number ?? null
+    order = data
   }
 
-  if (!orderId) {
+  if (!order) {
     console.warn('[ShiprocketWebhook] No matching order for', { srOrderId, awbCode })
     return NextResponse.json({ ok: true })
   }
+
+  const orderId     = order.id
+  const orderNumber = order.order_number
+  const customerEmail = order.customer_email
+  const customerName  = order.customer_name
 
   // ── Build patch ──────────────────────────────────────────────────────────────
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
@@ -93,19 +94,63 @@ export async function POST(req: NextRequest) {
 
   await supabase.from('orders').update(patch as any).eq('id', orderId)
 
-  // ── Admin notification if shipped/delivered ──────────────────────────────────
+  // ── Send customer email + admin Telegram on key events ────────────────────
   if (mappedStatus === 'shipped' || mappedStatus === 'delivered') {
+    const label = mappedStatus === 'delivered' ? 'Delivered' : 'Shipped'
+    const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co'
+
+    // Admin notification in DB
     try {
-      const label = mappedStatus === 'delivered' ? 'Delivered' : 'Shipped'
-      const bodyText = awbCode ? `AWB: ${awbCode}` : `Status: ${srStatus}`
       await supabase.from('admin_notifications').insert({
-        type:  mappedStatus === 'delivered' ? 'order_delivered' : 'order_shipped',
-        title: `Order ${label} — #${orderNumber || orderId.slice(0, 8).toUpperCase()}`,
-        message: bodyText,
-        metadata:  { order_id: orderId, order_number: orderNumber, awb: awbCode, shiprocket_status: srStatus },
+        type:    mappedStatus === 'delivered' ? 'order_delivered' : 'order_shipped',
+        title:   `Order ${label} — #${orderNumber || orderId.slice(0, 8).toUpperCase()}`,
+        message: awbCode ? `AWB: ${awbCode}` : `Status: ${srStatus}`,
+        metadata: { order_id: orderId, order_number: orderNumber, awb: awbCode, shiprocket_status: srStatus },
       } as any)
     } catch { /* non-fatal */ }
+
+    // Telegram alert to admin
+    try {
+      const emoji = mappedStatus === 'delivered' ? '✅' : '📦'
+      const msg = `${emoji} <b>Order ${label}</b>\n` +
+        `🆔 #${orderNumber || orderId.slice(0, 8).toUpperCase()}\n` +
+        `👤 ${customerName || 'Customer'}\n` +
+        (awbCode ? `📬 AWB: <code>${awbCode}</code>\n` : '') +
+        (courier ? `🚚 Courier: ${courier}\n` : '') +
+        `👉 <a href="${SITE_URL}/admin/orders/${orderId}">View Order</a>`
+      await sendTelegramMessage(msg)
+    } catch { /* non-fatal */ }
+
+    // Customer email notification
+    if (customerEmail) {
+      try {
+        const emailType = mappedStatus === 'delivered' ? 'order_delivered' : 'order_shipped'
+        await fetch(`${SITE_URL}/api/send-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-internal-secret': process.env.INTERNAL_SECRET || '',
+          },
+          body: JSON.stringify({
+            to:    customerEmail,
+            type:  emailType,
+            title: '',
+            body:  '',
+            data: {
+              order_id:     orderId,
+              order_number: orderNumber,
+              customerName,
+              awb:    awbCode,
+              courier,
+            },
+          }),
+        })
+      } catch (emailErr) {
+        console.error('[ShiprocketWebhook] Customer email failed:', emailErr)
+      }
+    }
   }
 
   return NextResponse.json({ ok: true })
 }
+

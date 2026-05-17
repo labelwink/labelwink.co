@@ -16,81 +16,87 @@ const FROM_EMAIL     = process.env.BREVO_FROM_EMAIL || 'orders@labelwink.co'
 const FROM_NAME      = process.env.BREVO_FROM_NAME  || 'Label Wink'
 const SITE_URL       = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co'
 
-const DARK_GREEN = '#1a3a34'
-const TEAL       = '#016a6e'
-const CREAM      = '#faf7f2'
+import {
+  templateWelcomeEmail,
+  templateOrderConfirmed,
+  templateOrderShipped,
+  templateOrderDelivered,
+  templateReturnAccepted,
+  templateOffersEmail,
+  wrapEmailLayout
+} from '@/lib/email-templates'
 
-function btn(href: string, label: string) {
-  return `<a href="${href}" style="display:inline-block;background:${DARK_GREEN};color:#fff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;margin-top:20px;">${label}</a>`
-}
-
-function wrap(inner: string): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
-<body style="margin:0;padding:40px 0;background:${CREAM};font-family:'Helvetica Neue',Arial,sans-serif;">
-<div style="max-width:560px;margin:0 auto;">
-  <div style="background:${DARK_GREEN};padding:24px 32px;border-radius:12px 12px 0 0;text-align:center;">
-    <img src="${SITE_URL}/logo.png" alt="Label Wink" height="36" style="height:36px;width:auto;" />
-  </div>
-  <div style="background:#fff;padding:36px 32px;">${inner}</div>
-  <div style="background:${CREAM};border:1px solid #ece8e0;border-top:0;border-radius:0 0 12px 12px;padding:20px 32px;text-align:center;">
-    <p style="font-size:11px;color:#999;margin:0;">© ${new Date().getFullYear()} Label Wink · <a href="${SITE_URL}" style="color:${TEAL};">labelwink.co</a></p>
-  </div>
-</div></body></html>`
-}
-
-interface Payload { to: string; type: string; title: string; body: string; data?: Record<string, string> }
+interface Payload { to: string; type: string; title: string; body: string; data?: any }
 
 function buildHtml(p: Payload): string {
-  const shortId   = p.data?.order_number ? p.data.order_number : (p.data?.order_id ? p.data.order_id.slice(0, 8).toUpperCase() : '')
-  const orderLink = p.data?.order_id ? `${SITE_URL}/account/orders/${p.data.order_id}` : `${SITE_URL}/account/orders`
-  const awb       = p.data?.awb ?? ''
-
   const T = p.type
-  let body = ''
 
-  if (T === 'order_confirmed') {
-    body = `<h1 style="font-size:22px;color:${DARK_GREEN};margin:0 0 12px;">Order Confirmed! 🎉</h1>
-      <p style="color:#555;line-height:1.6;">Your order <strong style="color:${DARK_GREEN};">#${shortId}</strong> has been confirmed and is being prepared for dispatch.</p>
-      <p style="color:#888;font-size:13px;">We'll notify you once it's shipped.</p>
-      ${btn(orderLink, 'Track Order')}`
+  if (T === 'welcome_email') {
+    return templateWelcomeEmail(p.data?.customerName)
+  } else if (T === 'order_confirmed') {
+    return templateOrderConfirmed({
+      orderId: p.data?.order_id,
+      orderNumber: p.data?.order_number || p.data?.order_id?.slice(0, 8).toUpperCase(),
+      totalAmount: p.data?.totalAmount || '0.00',
+      items: p.data?.items || [],
+      customerName: p.data?.customerName || p.to
+    })
   } else if (T === 'order_shipped') {
-    body = `<h1 style="font-size:22px;color:${DARK_GREEN};margin:0 0 12px;">Your Order Is On Its Way! 📦</h1>
-      <p style="color:#555;line-height:1.6;">Your order <strong style="color:${DARK_GREEN};">#${shortId}</strong> has been shipped.${awb ? ` AWB: <strong>${awb}</strong>` : ''}</p>
-      ${btn(orderLink, 'Track Shipment')}`
+    return templateOrderShipped({
+      orderId: p.data?.order_id,
+      orderNumber: p.data?.order_number || p.data?.order_id?.slice(0, 8).toUpperCase(),
+      awb: p.data?.awb,
+      courier: p.data?.courier,
+      customerName: p.data?.customerName || p.to
+    })
   } else if (T === 'order_delivered') {
-    body = `<h1 style="font-size:22px;color:${DARK_GREEN};margin:0 0 12px;">Order Delivered! ✨</h1>
-      <p style="color:#555;line-height:1.6;">Your Label Wink order <strong>#${shortId}</strong> has been delivered. We hope you love it!</p>
-      <p style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;font-size:13px;color:#92400e;margin:16px 0 0;">🌟 Wink Points have been credited to your account!</p>
-      ${btn(`${SITE_URL}/products`, 'Shop Again')}`
+    return templateOrderDelivered({
+      orderId: p.data?.order_id,
+      orderNumber: p.data?.order_number || p.data?.order_id?.slice(0, 8).toUpperCase(),
+      customerName: p.data?.customerName || p.to
+    })
   } else if (T === 'return_approved') {
-    body = `<h1 style="font-size:22px;color:${DARK_GREEN};margin:0 0 12px;">Return Approved ✅</h1>
-      <p style="color:#555;line-height:1.6;">Your return has been approved. Store credit has been added to your account as Wink Points.</p>
-      ${btn(`${SITE_URL}/account`, 'View Account')}`
+    return templateReturnAccepted({
+      orderId: p.data?.order_id,
+      orderNumber: p.data?.order_number || p.data?.order_id?.slice(0, 8).toUpperCase(),
+      customerName: p.data?.customerName || p.to
+    })
   } else if (T === 'return_rejected') {
-    body = `<h1 style="font-size:22px;color:${DARK_GREEN};margin:0 0 12px;">Return Update</h1>
-      <p style="color:#555;line-height:1.6;">Unfortunately we could not approve your return. Please contact our support team.</p>
-      ${btn('mailto:support@labelwink.co', 'Contact Support')}`
-  } else if (T === 'back_in_stock') {
-    const productUrl = p.data?.product_url ?? SITE_URL
-    const prodName   = p.data?.product_name ?? 'The item'
-    body = `<h1 style="font-size:22px;color:${DARK_GREEN};margin:0 0 12px;">Back In Stock! 🎉</h1>
-      <p style="color:#555;line-height:1.6;">Good news! <strong>${prodName}</strong> is back in stock. Limited quantities — don't miss out!</p>
-      ${btn(productUrl, 'Shop Now')}`
+    const content = `
+      <h1 style="font-size:24px;color:#1B3A2D;margin:0 0 12px;">Return Update</h1>
+      <p style="color:#5a7060;line-height:1.6;">Unfortunately we could not approve your return for order #${p.data?.order_number || ''}. Please contact our support team.</p>
+      <div style="text-align: center;">
+        <a href="mailto:support@labelwink.co" style="display:inline-block;background:#1B3A2D;color:#fff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;margin-top:20px;">Contact Support</a>
+      </div>
+    `
+    return wrapEmailLayout(content, 'Update on your return request')
+  } else if (T === 'offers_email') {
+    return templateOffersEmail({
+      offerTitle: p.data?.offerTitle,
+      offerDescription: p.data?.offerDescription,
+      couponCode: p.data?.couponCode
+    })
   } else {
-    body = `<h1 style="font-size:22px;color:${DARK_GREEN};margin:0 0 12px;">${p.title}</h1>
-      <p style="color:#555;line-height:1.6;">${p.body}</p>${btn(SITE_URL, 'Visit Label Wink')}`
+    const content = `
+      <h1 style="font-size:22px;color:#1B3A2D;margin:0 0 12px;">${p.title}</h1>
+      <p style="color:#5a7060;line-height:1.6;">${p.body}</p>
+      <div style="text-align: center;">
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}" style="display:inline-block;background:#1B3A2D;color:#fff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;margin-top:20px;">Visit Label Wink</a>
+      </div>
+    `
+    return wrapEmailLayout(content, p.title)
   }
-
-  return wrap(body)
 }
 
 const SUBJECTS: Record<string, string> = {
-  order_confirmed: 'Your Label Wink order is confirmed ✅',
+  welcome_email:   'Welcome to LabelWink! 🎉',
+  order_confirmed: 'Your LabelWink order is confirmed ✅',
   order_shipped:   'Your order has been shipped 📦',
   order_delivered: 'Order delivered — enjoy your pieces! ✨',
-  return_approved: 'Your return request has been approved',
+  return_approved: 'Your return request has been approved ✅',
   return_rejected: 'Update on your return request',
   back_in_stock:   "Back in stock — grab it before it's gone! 🎉",
+  offers_email:    'Exclusive offer just for you! 🛍️',
 }
 
 export async function POST(req: NextRequest) {
