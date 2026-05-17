@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import Image from 'next/image'
 
 interface ProductImageZoomProps {
@@ -13,8 +14,26 @@ export function ProductImageZoom({ images, currentIndex, onIndexChange }: Produc
   const [showZoom, setShowZoom] = useState(false)
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 })
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const touchStartX = useRef<number>(0)
+
+  // Required for createPortal (SSR safety)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Lock body scroll when lightbox is open
+  useEffect(() => {
+    if (lightboxOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [lightboxOpen])
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const el = containerRef.current
@@ -38,6 +57,145 @@ export function ProductImageZoom({ images, currentIndex, onIndexChange }: Produc
   }
 
   const currentImage = images[currentIndex] || ''
+
+  // The lightbox rendered via portal so it escapes any parent
+  // CSS transform / filter / will-change that would trap position:fixed
+  const lightbox = lightboxOpen ? (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 99999,
+        background: 'rgba(0,0,0,0.92)',
+        display: 'flex',
+        flexDirection: 'column',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      }}
+    >
+      {/* Top bar: counter + close */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 16px',
+        flexShrink: 0,
+      }}>
+        <div style={{
+          color: 'white',
+          fontSize: '14px',
+          background: 'rgba(0,0,0,0.4)',
+          padding: '4px 12px',
+          borderRadius: '999px',
+        }}>
+          {currentIndex + 1} / {images.length}
+        </div>
+        <button
+          onClick={() => setLightboxOpen(false)}
+          style={{
+            color: 'white',
+            width: '40px',
+            height: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(255,255,255,0.2)',
+            borderRadius: '50%',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '20px',
+          }}
+          aria-label="Close"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Image area: flex-1 takes the remaining height */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0 56px',
+          minHeight: 0,
+          overflow: 'hidden',
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={currentImage}
+          alt="Product full view"
+          style={{
+            maxWidth: '100%',
+            maxHeight: '100%',
+            objectFit: 'contain',
+            display: 'block',
+          }}
+        />
+      </div>
+
+      {/* Prev arrow */}
+      {currentIndex > 0 && (
+        <button
+          onClick={() => onIndexChange(currentIndex - 1)}
+          style={{
+            position: 'absolute',
+            left: '12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: 'white',
+            background: 'rgba(255,255,255,0.2)',
+            border: 'none',
+            borderRadius: '50%',
+            width: '40px',
+            height: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '20px',
+            cursor: 'pointer',
+          }}
+          aria-label="Previous"
+        >
+          ‹
+        </button>
+      )}
+
+      {/* Next arrow */}
+      {currentIndex < images.length - 1 && (
+        <button
+          onClick={() => onIndexChange(currentIndex + 1)}
+          style={{
+            position: 'absolute',
+            right: '12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: 'white',
+            background: 'rgba(255,255,255,0.2)',
+            border: 'none',
+            borderRadius: '50%',
+            width: '40px',
+            height: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '20px',
+            cursor: 'pointer',
+          }}
+          aria-label="Next"
+        >
+          ›
+        </button>
+      )}
+    </div>
+  ) : null
 
   return (
     <>
@@ -110,75 +268,22 @@ export function ProductImageZoom({ images, currentIndex, onIndexChange }: Produc
             }`}
           >
             <div className="relative w-full h-full">
-              <Image 
-                src={img} 
-                alt={`Thumbnail ${i + 1}`} 
+              <Image
+                src={img}
+                alt={`Thumbnail ${i + 1}`}
                 fill
                 sizes="64px"
-                className="object-cover" 
+                className="object-cover"
               />
             </div>
           </button>
         ))}
       </div>
 
-      {/* Mobile Lightbox */}
-      {lightboxOpen && (
-        <div className="fixed inset-0 bg-black/90 z-[100] flex items-center justify-center">
-          {/* Counter */}
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/40 px-3 py-1 rounded-full">
-            {currentIndex + 1} / {images.length}
-          </div>
-
-          {/* Close */}
-          <button
-            onClick={() => setLightboxOpen(false)}
-            className="fixed top-4 right-4 text-white w-10 h-10 flex items-center justify-center bg-white/20 rounded-full text-xl"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-
-          {/* Image */}
-          <div
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
-            className="max-w-[90vw] max-h-[80vh]"
-          >
-            <div className="relative w-[90vw] h-[80vh]">
-              <Image
-                src={currentImage}
-                alt="Product full view"
-                fill
-                sizes="90vw"
-                className="object-contain"
-              />
-            </div>
-          </div>
-
-          {/* Prev */}
-          {currentIndex > 0 && (
-            <button
-              onClick={() => onIndexChange(currentIndex - 1)}
-              className="fixed left-3 top-1/2 -translate-y-1/2 text-white bg-white/20 rounded-full w-10 h-10 flex items-center justify-center text-lg"
-              aria-label="Previous"
-            >
-              ‹
-            </button>
-          )}
-
-          {/* Next */}
-          {currentIndex < images.length - 1 && (
-            <button
-              onClick={() => onIndexChange(currentIndex + 1)}
-              className="fixed right-3 top-1/2 -translate-y-1/2 text-white bg-white/20 rounded-full w-10 h-10 flex items-center justify-center text-lg"
-              aria-label="Next"
-            >
-              ›
-            </button>
-          )}
-        </div>
-      )}
+      {/* Lightbox rendered via portal directly into document.body
+          This escapes any parent CSS transform/filter/will-change
+          that would break position:fixed on mobile */}
+      {mounted && createPortal(lightbox, document.body)}
     </>
   )
 }

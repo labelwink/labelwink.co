@@ -92,14 +92,14 @@ export function Navbar() {
         <LeafPattern opacity={0.05} id="header" />
         <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between gap-6">
           {/* LEFT: Logo */}
-          <Link href="/">
-            <div className="flex items-center gap-2">
+          <Link href="/" className="flex-shrink-0">
+            <div className="flex items-center">
               <Image
                 src="/logo.png"
                 alt="LabelWink"
-                width={140}
-                height={40}
-                className="h-10 w-auto object-contain"
+                width={120}
+                height={34}
+                style={{ width: 'auto', height: '34px', objectFit: 'contain' }}
                 priority
               />
             </div>
