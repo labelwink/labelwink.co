@@ -96,13 +96,14 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
     // Step 1: Reuse existing Shiprocket order if we already created one for this order
     let srOrderId: number | string | null = order.shiprocket_order_id || null
     let shipmentId: number | string | null = (order as any).shiprocket_shipment_id || null
+    let srData: any = null  // declared at outer scope so it's accessible after the if/else
 
     if (srOrderId && shipmentId) {
       console.log('[shiprocket/live] Reusing existing Shiprocket order:', srOrderId, 'shipment:', shipmentId)
     } else {
       // Create fresh order in Shiprocket
       console.log('[shiprocket/live] Creating new Shiprocket order for:', id)
-      const srData = await createShiprocketOrder(order)
+      srData = await createShiprocketOrder(order)
       console.log('[shiprocket/live] Create response:', JSON.stringify(srData))
 
       srOrderId  = srData.order_id
@@ -161,7 +162,7 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
       shiprocket_order_id: String(srOrderId),
       tracking_number: awb_code,
       shipping_carrier: courierName,
-      label_url: srData.label_url || null,
+      label_url: srData?.label_url || null,
       ...(action === 'dispatch' ? { status: 'shipped' } : {}),
     }).eq('id', id)
 
