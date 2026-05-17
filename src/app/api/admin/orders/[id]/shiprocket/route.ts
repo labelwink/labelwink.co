@@ -58,10 +58,10 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
       if (action === 'dispatch') {
         await supabase.from('system_logs').insert({
           level: 'info',
-          category: 'shipping',
+          module: 'shipping',
           message: `[TEST] Order ${invoice_number} dispatched. AWB: ${test_awb}`,
-          context: { order_id: id, awb: test_awb, mode: 'test' },
-        })
+          details: { order_id: id, awb: test_awb, mode: 'test' },
+        }).catch(() => {})
 
         if (customer_email) {
           sendDispatchEmail({
@@ -84,9 +84,6 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
             store_name: storeName,
           }).catch(e => console.error('[shiprocket/test] SMS:', e.message))
         }
-
-        const teleMsg = `📬 <b>Order Dispatched [TEST MODE]</b>\n📄 Invoice: ${invoice_number}\n🏷️ AWB: ${test_awb}\n👤 Customer: ${customer_name}\n📍 ${order.shipping_city ?? ''}, ${order.shipping_state ?? ''}`
-        sendTelegramMessage(teleMsg).catch(e => console.error('[shiprocket/test] telegram:', e.message))
       }
 
       return NextResponse.json({ success: true, awb: test_awb, mode: 'test', shiprocket_order_id: sr_order_id })
@@ -169,10 +166,10 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
     if (action === 'dispatch') {
       await supabase.from('system_logs').insert({
         level: 'info',
-        category: 'shipping',
+        module: 'shipping',
         message: `Order ${invoice_number} dispatched via Shiprocket LIVE. AWB: ${awb_code}`,
-        context: { order_id: id, awb: awb_code, sr_order_id: srOrderId, shipment_id: shipmentId },
-      })
+        details: { order_id: id, awb: awb_code, sr_order_id: srOrderId, shipment_id: shipmentId },
+      }).catch(() => {})
 
       if (customer_email) {
         sendDispatchEmail({
@@ -194,16 +191,13 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
           store_name: storeName,
         }).catch(e => console.error('[shiprocket/live] SMS:', e.message))
       }
-
-      const teleMsg = `📬 <b>Order Dispatched</b>\n📄 Invoice: ${invoice_number}\n🏷️ AWB: ${awb_code}\n🚚 Courier: ${courierName}\n👤 Customer: ${customer_name}\n📍 ${order.shipping_city ?? ''}, ${order.shipping_state ?? ''}`
-      sendTelegramMessage(teleMsg).catch(e => console.error('[shiprocket/live] telegram:', e.message))
     } else {
       await supabase.from('system_logs').insert({
         level: 'info',
-        category: 'shipping',
+        module: 'shipping',
         message: `AWB generated for order ${invoice_number}: ${awb_code}`,
-        context: { order_id: id, awb: awb_code, shipment_id: shipmentId },
-      })
+        details: { order_id: id, awb: awb_code, shipment_id: shipmentId },
+      }).catch(() => {})
     }
 
     return NextResponse.json({ success: true, awb: awb_code, shiprocket_order_id: srOrderId, shipment_id: shipmentId })

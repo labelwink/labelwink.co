@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   if (srOrderId) {
     const { data } = await supabase
       .from('orders')
-      .select('id, order_number, customer_name, customer_email')
+      .select('id, order_number, customer_name, customer_email, user_id')
       .eq('shiprocket_order_id', String(srOrderId))
       .maybeSingle()
     order = data
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
   if (!order && awbCode) {
     const { data } = await supabase
       .from('orders')
-      .select('id, order_number, customer_name, customer_email')
+      .select('id, order_number, customer_name, customer_email, user_id')
       .eq('shiprocket_awb', String(awbCode))
       .maybeSingle()
     order = data
@@ -99,27 +99,28 @@ export async function POST(req: NextRequest) {
     const label = mappedStatus === 'delivered' ? 'Delivered' : 'Shipped'
     const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co'
 
-    // Admin notification in DB
-    try {
-      await supabase.from('admin_notifications').insert({
-        type:    mappedStatus === 'delivered' ? 'order_delivered' : 'order_shipped',
-        title:   `Order ${label} — #${orderNumber || orderId.slice(0, 8).toUpperCase()}`,
-        message: awbCode ? `AWB: ${awbCode}` : `Status: ${srStatus}`,
-        metadata: { order_id: orderId, order_number: orderNumber, awb: awbCode, shiprocket_status: srStatus },
-      } as any)
-    } catch { /* non-fatal */ }
-
-    // Telegram alert to admin
-    try {
-      const emoji = mappedStatus === 'delivered' ? '✅' : '📦'
-      const msg = `${emoji} <b>Order ${label}</b>\n` +
-        `🆔 #${orderNumber || orderId.slice(0, 8).toUpperCase()}\n` +
-        `👤 ${customerName || 'Customer'}\n` +
-        (awbCode ? `📬 AWB: <code>${awbCode}</code>\n` : '') +
-        (courier ? `🚚 Courier: ${courier}\n` : '') +
-        `👉 <a href="${SITE_URL}/admin/orders/${orderId}">View Order</a>`
-      await sendTelegramMessage(msg)
-    } catch { /* non-fatal */ }
+    // Customer storefront notification in DB
+    if (order.user_id) {
+      try {
+        const statusTitles: Record<string, string> = {
+          shipped: 'Order Shipped 🚚',
+          delivered: 'Order Delivered 🎉'
+        };
+        const statusMessages: Record<string, string> = {
+          shipped: `Your order #${orderNumber} has been shipped!${awbCode ? ` Tracking AWB: ${awbCode}.` : ''}`,
+          delivered: `Your order #${orderNumber} has been delivered. Enjoy your gorgeous pieces!`
+        };
+        await supabase.from('notifications').insert({
+          user_id: order.user_id,
+          type: mappedStatus === 'delivered' ? 'order_delivered' : 'order_shipped',
+          title: statusTitles[mappedStatus] || 'Order Updated',
+          message: statusMessages[mappedStatus] || `Your order #${orderNumber} is now ${mappedStatus}.`,
+          data: { order_id: orderId, order_number: orderNumber, awb: awbCode }
+        });
+      } catch (custNotifErr) {
+        console.error('[ShiprocketWebhook] Customer storefront notification failed:', custNotifErr);
+      }
+    }
 
     // Customer email notification
     if (customerEmail) {

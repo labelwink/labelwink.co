@@ -133,6 +133,27 @@ export async function POST(
               status: 'sent',
               sent_at: new Date().toISOString()
             });
+
+            // Find user profile to insert storefront alert
+            const { data: profile } = await supabaseAdmin
+              .from('profiles')
+              .select('id')
+              .eq('email', email)
+              .maybeSingle();
+
+            if (profile?.id) {
+              try {
+                await supabaseAdmin.from('notifications').insert({
+                  user_id: profile.id,
+                  type: 'offer',
+                  title: campaign.subject || 'Exclusive Offer! 🛍️',
+                  message: campaign.preview_text || `We have a special offer just for you. Check your email!`,
+                  data: { campaign_id: id }
+                });
+              } catch (custNotifErr) {
+                console.error('[CampaignSend] Customer storefront notification failed:', custNotifErr);
+              }
+            }
             
             sentCount++;
           }));

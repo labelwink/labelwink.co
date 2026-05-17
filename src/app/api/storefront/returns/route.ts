@@ -157,6 +157,29 @@ export async function PATCH(req: NextRequest) {
       const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://labelwink.co';
 
       if (status === 'approved' || status === 'rejected') {
+        // Customer storefront notification
+        const { data: returnObj } = await supabase
+          .from('returns')
+          .select('user_id')
+          .eq('id', id)
+          .single();
+
+        if (returnObj?.user_id) {
+          try {
+            await supabase.from('notifications').insert({
+              user_id: returnObj.user_id,
+              type: `return_${status}`,
+              title: status === 'approved' ? 'Return Approved ✅' : 'Return Rejected ❌',
+              message: status === 'approved'
+                ? `Your return request for order #${orderNumber} has been approved. The refund is being processed.`
+                : `Your return request for order #${orderNumber} has been rejected. Note: ${admin_note || 'N/A'}.`,
+              data: { return_id: id, order_id: data.order_id, order_number: orderNumber }
+            });
+          } catch (custNotifErr) {
+            console.error('[Returns PATCH] Customer return storefront notification failed:', custNotifErr);
+          }
+        }
+
         // Admin Telegram alert
         try {
           const emoji = status === 'approved' ? '✅' : '❌';

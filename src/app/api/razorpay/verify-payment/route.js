@@ -161,7 +161,7 @@ export async function POST(request) {
           .single();
 
         if (fetchErr || !variant) {
-          console.warn(`[verify-payment] Variant ${variantId} not found for stock decrement:`, fetchErr?.message);
+          console.warn("[verify-payment] Variant not found for stock decrement. Variant ID:", variantId, "Error:", fetchErr?.message);
           continue;
         }
 
@@ -175,7 +175,7 @@ export async function POST(request) {
           .eq('id', variantId);
 
         if (updErr) {
-          console.error(`[verify-payment] Failed to update stock for variant ${variantId}:`, updErr.message);
+          console.error("[verify-payment] Failed to update stock for variant. Variant ID:", variantId, "Error:", updErr.message);
           continue;
         }
 
@@ -281,7 +281,7 @@ export async function POST(request) {
 
           console.log(`[verify-payment] Successfully recorded coupon usage for code: ${upperCoupon}`);
         } else {
-          console.warn(`[verify-payment] Coupon ${upperCoupon} not found or error:`, discFetchError?.message);
+          console.warn("[verify-payment] Coupon not found or error. Code:", upperCoupon, "Error:", discFetchError?.message);
         }
       } catch (couponUseErr) {
         console.error('[verify-payment] Non-fatal coupon usage tracking error:', couponUseErr);
@@ -311,6 +311,19 @@ export async function POST(request) {
       });
     } catch (notifErr) {
       console.error('[verify-payment] Notification failed:', notifErr);
+    }
+
+    // Insert customer storefront notification
+    try {
+      await supabaseAdmin.from('notifications').insert({
+        user_id: finalUserId,
+        type: 'order_confirmed',
+        title: 'Order Confirmed! ✅',
+        message: `Your order #${order.order_number || order.id.slice(0, 8).toUpperCase()} has been successfully confirmed.`,
+        data: { order_id: order.id, order_number: order.order_number }
+      });
+    } catch (custNotifErr) {
+      console.error('[verify-payment] Customer storefront notification failed:', custNotifErr);
     }
 
     // Create Shiprocket order — failure must NOT block payment response

@@ -75,12 +75,35 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const invoice_number = order.invoices?.[0]?.invoice_number || order.invoice_number || 'PENDING'
 
-    await supabase.from('admin_notifications').insert({
-      type: 'order_status_update',
-      title: 'Order Status Updated',
-      message: `Order ${invoice_number} → ${status}`,
-      metadata: { entity_type: 'order', entity_id: id, order_id: id }
-    })
+    if (order.user_id) {
+      try {
+        const statusTitles: Record<string, string> = {
+          confirmed: 'Order Confirmed ✅',
+          packed: 'Order Packed 📦',
+          shipped: 'Order Shipped 🚚',
+          delivered: 'Order Delivered 🎉',
+          cancelled: 'Order Cancelled ❌',
+          refunded: 'Order Refunded 💰'
+        };
+        const statusMessages: Record<string, string> = {
+          confirmed: `Your order #${order.order_number} has been confirmed!`,
+          packed: `Your order #${order.order_number} has been packed and is ready to be shipped.`,
+          shipped: `Your order #${order.order_number} has been shipped!`,
+          delivered: `Your order #${order.order_number} has been delivered. Thank you for shopping with us!`,
+          cancelled: `Your order #${order.order_number} has been cancelled.`,
+          refunded: `A refund has been processed for your order #${order.order_number}.`
+        };
+        await supabase.from('notifications').insert({
+          user_id: order.user_id,
+          type: `order_${status}`,
+          title: statusTitles[status] || 'Order Updated',
+          message: statusMessages[status] || `Your order #${order.order_number} status is now ${status}.`,
+          data: { order_id: id, order_number: order.order_number }
+        });
+      } catch (custNotifErr) {
+        console.error('Customer status notification failed:', custNotifErr);
+      }
+    }
 
     if (status === 'delivered') {
       const { data: settings } = await supabase.from('shop_settings').select('store_name').single();

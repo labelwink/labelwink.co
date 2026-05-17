@@ -183,6 +183,19 @@ export async function POST(request: Request) {
       htmlContent: templateWelcomeEmail(`${first_name} ${last_name || ''}`.trim())
     });
 
+    // Insert welcome storefront notification
+    try {
+      await supabaseAdmin.from('notifications').insert({
+        user_id,
+        type: 'welcome',
+        title: 'Welcome to LabelWink! 🎉',
+        message: `Hi ${first_name}, thank you for joining LabelWink! Explore our exclusive collections and enjoy grace in every thread.`,
+        data: { welcome: true }
+      });
+    } catch (custNotifErr) {
+      console.error('Welcome storefront notification failed:', custNotifErr);
+    }
+
     return NextResponse.json({ success: true, user_id, email });
   } catch (error: any) {
     console.error('Register error:', error);

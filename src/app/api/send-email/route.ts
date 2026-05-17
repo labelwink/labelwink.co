@@ -66,7 +66,7 @@ function buildHtml(p: Payload): string {
       <h1 style="font-size:24px;color:#1B3A2D;margin:0 0 12px;">Return Update</h1>
       <p style="color:#5a7060;line-height:1.6;">Unfortunately we could not approve your return for order #${p.data?.order_number || ''}. Please contact our support team.</p>
       <div style="text-align: center;">
-        <a href="mailto:support@labelwink.co" style="display:inline-block;background:#1B3A2D;color:#fff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;margin-top:20px;">Contact Support</a>
+        <a href="mailto:Support@labelwink.co" style="display:inline-block;background:#1B3A2D;color:#fff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;margin-top:20px;">Contact Support</a>
       </div>
     `
     return wrapEmailLayout(content, 'Update on your return request')

@@ -110,8 +110,10 @@ export async function PATCH(req: NextRequest, { params }: RouteCtx) {
             stock_qty: Number(v.stock_qty) ?? 0,
             sku: skuToUse,
             low_stock_threshold: v.low_stock_threshold ?? 5,
-            price: productData.price !== undefined ? Number(productData.price) : (v.price !== undefined ? Number(v.price) : 0),
-            compare_at_price: productData.compare_at_price !== undefined ? Number(productData.compare_at_price) : (v.compare_at_price !== undefined ? Number(v.compare_at_price) : 0),
+            // Always use per-variant price — never fall back to product-level price
+            price: v.price !== undefined && v.price !== null ? Number(v.price) : 0,
+            compare_at_price: v.compare_at_price !== undefined && v.compare_at_price !== null ? Number(v.compare_at_price) : null,
+            is_active: v.is_active ?? true,
           },
           { onConflict: 'product_id,size' }
         )

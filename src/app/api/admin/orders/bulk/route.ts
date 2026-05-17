@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     let successCount = 0
 
     for (const id of order_ids) {
-      const { data: order, error: fetchErr } = await supabase.from('orders').select('status, invoices(invoice_number)').eq('id', id).single()
+      const { data: order, error: fetchErr } = await supabase.from('orders').select('status, order_number, user_id, invoices(invoice_number)').eq('id', id).single()
       if (fetchErr || !order) {
         failed.push({ order_id: id, error: 'Not found' })
         continue
@@ -49,12 +49,29 @@ export async function POST(req: NextRequest) {
       })
 
       const invoice_number = order.invoices?.[0]?.invoice_number || 'PENDING'
-      await supabase.from('admin_notifications').insert({
-        type: 'order_status_update',
-        title: 'Order Status Updated',
-        message: `Order ${invoice_number} → ${targetStatus} (Bulk)`,
-        metadata: { entity_type: 'order', entity_id: id, order_id: id }
-      })
+      if (order?.user_id) {
+        try {
+          const statusTitles: Record<string, string> = {
+            confirmed: 'Order Confirmed ✅',
+            packed: 'Order Packed 📦',
+            cancelled: 'Order Cancelled ❌'
+          };
+          const statusMessages: Record<string, string> = {
+            confirmed: `Your order #${order.order_number} has been confirmed!`,
+            packed: `Your order #${order.order_number} has been packed and is ready to be shipped.`,
+            cancelled: `Your order #${order.order_number} has been cancelled.`
+          };
+          await supabase.from('notifications').insert({
+            user_id: order.user_id,
+            type: `order_${targetStatus}`,
+            title: statusTitles[targetStatus] || 'Order Updated',
+            message: statusMessages[targetStatus] || `Your order #${order.order_number} status is now ${targetStatus}.`,
+            data: { order_id: id, order_number: order.order_number }
+          });
+        } catch (custNotifErr) {
+          console.error('Customer bulk status notification failed:', custNotifErr);
+        }
+      }
       successCount++
     }
 

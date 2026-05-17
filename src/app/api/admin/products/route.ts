@@ -12,6 +12,9 @@ const VariantSchema = z.object({
   color: z.string().optional().default(''),
   stock_qty: z.coerce.number().int().min(0, 'Stock must be ≥ 0'),
   sku: z.string().optional().nullable(),
+  price: z.coerce.number().min(0).optional().nullable(),
+  compare_at_price: z.coerce.number().min(0).optional().nullable(),
+  is_active: z.boolean().optional().default(true),
   low_stock_threshold: z.coerce.number().int().min(0).optional().default(5),
 })
 
@@ -247,7 +250,10 @@ export async function POST(req: NextRequest) {
         color: v.color || '',
         stock_qty: v.stock_qty,
         sku: (v.sku && retryCount === 0) ? v.sku : await generateUniqueSKU(supabase, slug, v.size),
-        price: Number(productData.price) || 0,
+        // Use per-variant price; fall back to product price only if variant price not set
+        price: v.price !== undefined && v.price !== null ? Number(v.price) : (Number(productData.price) || 0),
+        compare_at_price: v.compare_at_price !== undefined && v.compare_at_price !== null ? Number(v.compare_at_price) : null,
+        is_active: v.is_active ?? true,
         low_stock_threshold: v.low_stock_threshold ?? 5,
       })))
 

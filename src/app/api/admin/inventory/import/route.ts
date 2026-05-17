@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       try {
         const { data: variant, error: varErr } = await sb
           .from('product_variants')
-          .select('id, stock_qty, size, product_id, products(name)')
+          .select('id, stock_qty, size, product_id, low_stock_threshold, products(name)')
           .eq('sku', sku)
           .single()
 
@@ -83,11 +83,35 @@ export async function POST(req: NextRequest) {
 
           if (logErr) console.error('Failed to log inventory adjustment:', logErr)
 
+          const threshold = variant.low_stock_threshold || 5
+          const productName = Array.isArray(variant.products) ? variant.products[0]?.name : (variant.products as { name: string } | null)?.name
+          const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shop.hawklab.in'
+
           if (previous_qty > 0 && stock_qty === 0) {
-            const productName = Array.isArray(variant.products) ? variant.products[0]?.name : (variant.products as { name: string } | null)?.name
-            const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shop.hawklab.in'
             const msg = `⚠️ <b>Out of Stock Alert</b>\n📦 ${productName} (Size: ${variant.size}) is now out of stock!\n👉 <a href="${SITE_URL}/admin/inventory">Restock Now</a>`
             await sendTelegramMessage(msg)
+
+            try {
+              await sb.from('admin_notifications').insert({
+                type: 'out_of_stock',
+                title: 'Out of Stock Alert',
+                message: `Variant ${variant.size || ''} of product "${productName}" is now out of stock!`,
+                metadata: { variant_id: variant.id, product_id: variant.product_id }
+              })
+            } catch (e) { console.error('Import out of stock notif failed:', e) }
+          }
+          else if (stock_qty <= threshold && previous_qty > threshold) {
+            const msg = `⚠️ <b>Low Stock Alert</b>\n📦 ${productName} (Size: ${variant.size}) is low on stock (${stock_qty} left)!\n👉 <a href="${SITE_URL}/admin/inventory">Restock Now</a>`
+            await sendTelegramMessage(msg)
+
+            try {
+              await sb.from('admin_notifications').insert({
+                type: 'low_stock',
+                title: 'Low Stock Alert',
+                message: `Variant ${variant.size || ''} of product "${productName}" is low on stock (${stock_qty} left).`,
+                metadata: { variant_id: variant.id, product_id: variant.product_id, current_stock: stock_qty }
+              })
+            } catch (e) { console.error('Import low stock notif failed:', e) }
           }
         }
         success_count++

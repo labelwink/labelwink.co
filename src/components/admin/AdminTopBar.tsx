@@ -69,6 +69,28 @@ export function AdminTopBar() {
     fetchNotifications()
   }
 
+  const clearRead = async () => {
+    try {
+      const res = await fetch('/api/admin/notifications?mode=read', { method: 'DELETE' })
+      if (res.ok) {
+        setNotifications(prev => prev.filter(n => !n.is_read))
+      }
+    } catch (e) {
+      console.error('Failed to clear read admin notifications:', e)
+    }
+  }
+
+  const clearAll = async () => {
+    try {
+      const res = await fetch('/api/admin/notifications?mode=all', { method: 'DELETE' })
+      if (res.ok) {
+        setNotifications([])
+      }
+    } catch (e) {
+      console.error('Failed to clear all admin notifications:', e)
+    }
+  }
+
   const handleNotifClick = (notif: AdminNotification) => {
     markRead(notif.id)
     setOpen(false)
@@ -219,6 +241,47 @@ export function AdminTopBar() {
                   })
                 )}
               </div>
+              {notifications.length > 0 && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '8px 16px',
+                  borderTop: '1px solid #f5f2ec',
+                  background: '#fbfaf8',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                }}>
+                  <button
+                    onClick={clearRead}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#5a7060',
+                      transition: 'color 150ms',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#1a2e1e'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#5a7060'; }}
+                  >
+                    Clear Read
+                  </button>
+                  <button
+                    onClick={clearAll}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#c0392b',
+                      transition: 'color 150ms',
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#962d22'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = '#c0392b'; }}
+                  >
+                    Clear All
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

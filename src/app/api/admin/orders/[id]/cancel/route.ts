@@ -44,9 +44,9 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
   // Log
   await supabase.from('system_logs').insert({
     level: 'info',
-    category: 'order',
+    module: 'order',
     message: `Order ${order.order_number || id.slice(0, 8).toUpperCase()} cancelled by admin`,
-    context: { order_id: id },
+    details: { order_id: id },
   }).catch(() => {})
 
   return NextResponse.json({ success: true })

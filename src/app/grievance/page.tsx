@@ -11,9 +11,9 @@ export default async function GrievancePage() {
   const settings = legalSettings || {
     site_name: 'LabelWink',
     legal_entity_name: 'LabelWink Pvt Ltd',
-    grievance_officer_name: 'Rahul Sharma',
+    grievance_officer_name: 'SHIVA SHAKKTHI',
     grievance_officer_designation: 'Grievance Officer',
-    grievance_officer_email: 'grievance@labelwink.co',
+    grievance_officer_email: 'help@labelwink.co',
     grievance_officer_phone: '+91 9876543210',
     grievance_hours: 'Monday–Friday, 10 AM – 6 PM IST',
     grievance_acknowledgement_sla: '48 hours',

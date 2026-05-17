@@ -3,10 +3,21 @@
 
 const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
 
+function hasCloudinaryHost(url: string): boolean {
+  if (!url) return false
+  try {
+    const hasProtocol = /^(https?:)?\/\//i.test(url)
+    const parsed = new URL(hasProtocol ? url : `https://${url}`)
+    return parsed.hostname === 'res.cloudinary.com' || parsed.hostname.endsWith('.cloudinary.com')
+  } catch {
+    return false
+  }
+}
+
 // ── Raw ID extractor ───────────────────────────────────────────────────────
 export function toCloudinaryId(urlOrId: string): string {
   if (!urlOrId) return ''
-  if (!urlOrId.includes('cloudinary.com')) return urlOrId
+  if (!hasCloudinaryHost(urlOrId)) return urlOrId
   const parts = urlOrId.split('/upload/')
   const id = parts[1]?.replace(/^v\d+\//, '') ?? urlOrId
   // Remove file extension if present
@@ -23,7 +34,7 @@ export function cloudinaryOptimize(
   transforms: string = 'f_auto,q_auto:best,dpr_auto'
 ): string {
   if (!urlOrId) return '/placeholder-product.jpg'
-  if (urlOrId.startsWith('/') && !urlOrId.includes('cloudinary.com')) return urlOrId
+  if (urlOrId.startsWith('/')) return urlOrId
   
   const id = toCloudinaryId(urlOrId)
   const cloud = CLOUD_NAME || 'dcmbwtreb'
@@ -36,7 +47,7 @@ export function cloudinaryUrl(
   transforms: string = 'f_auto,q_auto:best'
 ): string {
   if (!publicId) return '/placeholder-product.jpg'
-  if (publicId.startsWith('/') && !publicId.includes('cloudinary.com')) return publicId
+  if (publicId.startsWith('/')) return publicId
   
   if (!CLOUD_NAME) {
     console.warn('[Cloudinary] NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME not set')
@@ -55,7 +66,7 @@ export function getCloudinaryUrl(
   options: { width?: number; height?: number; quality?: string | number } = {}
 ): string {
   if (!publicIdOrUrl) return '/placeholder-product.jpg'
-  if (publicIdOrUrl.startsWith('/') && !publicIdOrUrl.includes('cloudinary.com')) return publicIdOrUrl
+  if (publicIdOrUrl.startsWith('/')) return publicIdOrUrl
 
   const { width, height, quality = 'auto:best' } = options
   const t: string[] = ['f_auto', `q_${quality}`]

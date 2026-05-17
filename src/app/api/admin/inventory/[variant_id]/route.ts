@@ -99,6 +99,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ va
         const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shop.hawklab.in'
         const msg = `⚠️ <b>Out of Stock Alert</b>\n📦 ${productName} (Size: ${variant.size}) is now out of stock!\n👉 <a href="${SITE_URL}/admin/inventory">Restock Now</a>`
         await sendTelegramMessage(msg)
+
+        try {
+          await sb.from('admin_notifications').insert({
+            type: 'out_of_stock',
+            title: 'Out of Stock Alert',
+            message: `Variant ${variant.size || ''} of product "${productName}" is now out of stock!`,
+            metadata: { variant_id: variantId, product_id: updatedVariant.product_id }
+          })
+        } catch (e) {
+          console.error('Failed to insert out of stock admin notification:', e)
+        }
       }
 
       // 4b. Send Telegram alert if low stock
@@ -108,6 +119,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ va
         const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://shop.hawklab.in'
         const msg = `⚠️ <b>Low Stock Alert</b>\n📦 ${productName} (Size: ${variant.size}) is low on stock (${updates.stock_qty} left)!\n👉 <a href="${SITE_URL}/admin/inventory">Restock Now</a>`
         await sendTelegramMessage(msg)
+
+        try {
+          await sb.from('admin_notifications').insert({
+            type: 'low_stock',
+            title: 'Low Stock Alert',
+            message: `Variant ${variant.size || ''} of product "${productName}" is low on stock (${updates.stock_qty} left).`,
+            metadata: { variant_id: variantId, product_id: updatedVariant.product_id, current_stock: updates.stock_qty }
+          })
+        } catch (e) {
+          console.error('Failed to insert low stock admin notification:', e)
+        }
       }
 
       // 5. Send Back in Stock alerts

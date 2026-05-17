@@ -227,8 +227,8 @@ export default function OrderConfirmationContent() {
 
           <p className="text-center text-xs text-[#5a7060] mt-6">
             Need help? Email us at{' '}
-            <a href="mailto:hello@labelwink.com" className="underline text-[#1B3A2D]">
-              hello@labelwink.com
+            <a href="mailto:Support@labelwink.co" className="underline text-[#1B3A2D]">
+              Support@labelwink.co
             </a>
           </p>
         </div>

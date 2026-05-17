@@ -13,7 +13,7 @@ const PRODUCT_SELECT = `
   size_chart_data,
   product_images (url, alt, is_cover, sort_order),
   product_variants (
-    id, size, color, stock_qty, price, sku, image_url,
+    id, size, color, stock_qty, price, mrp, compare_at_price, sku, image_url,
     is_active, low_stock_threshold
   )
 `

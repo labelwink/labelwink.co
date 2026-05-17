@@ -76,7 +76,7 @@ export default function PrintInvoicePage({ params }: { params: Promise<{ id: str
           <div>
             <div className="text-2xl font-bold text-[#1C3829] mb-1">LabelWink</div>
             <p className="text-xs text-gray-500">GST Registered · GSTIN: PENDING</p>
-            <p className="text-xs text-gray-500">support@labelwink.co</p>
+            <p className="text-xs text-gray-500">Support@labelwink.co</p>
           </div>
           <div className="text-right">
             <div className="text-xl font-bold text-gray-900 mb-1">TAX INVOICE</div>

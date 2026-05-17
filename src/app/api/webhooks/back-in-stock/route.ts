@@ -78,6 +78,20 @@ export async function POST(req: Request) {
             data:  { product_url: shopUrl, product_name },
           }),
         })
+
+        // Insert customer storefront notification
+        try {
+          await supabase.from('notifications').insert({
+            user_id: profile.id,
+            type: 'restock',
+            title: 'Product Back in Stock! 🎉',
+            message: `"${product_name}" is back in stock! Grab yours now before it sells out again.`,
+            data: { product_id, product_name, product_url: shopUrl }
+          });
+        } catch (custNotifErr) {
+          console.error('[BackInStock] Customer storefront notification failed:', custNotifErr);
+        }
+
         sent++
       } catch { /* non-fatal */ }
     }

@@ -1,10 +1,10 @@
-﻿import Link from 'next/link'
+import Link from 'next/link'
 import Image from 'next/image'
 import { createAdminClient } from '@/lib/supabase/server'
 
 export default async function NotFound() {
   const supabase = createAdminClient()
-  let storeEmail = process.env.NEXT_PUBLIC_STORE_EMAIL || 'support@labelwink.co'
+  let storeEmail = process.env.NEXT_PUBLIC_STORE_EMAIL || 'Support@labelwink.co'
   let logoUrl: string | null = null
 
   try {

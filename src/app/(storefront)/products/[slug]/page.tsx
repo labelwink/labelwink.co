@@ -251,21 +251,12 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 border-b border-[#E8DFC8] pb-6">
-            <span className="text-4xl font-heading font-bold text-[#1B3A2D]">
-              {displayPrice
-                ? `₹${Number(displayPrice).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                : 'Price not available'}
+
+          {product.product_variants && product.product_variants.length > 0 && (
+            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${allOutOfStock ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+              {allOutOfStock ? 'Out of Stock' : 'In Stock'}
             </span>
-            {displayMrp && displayPrice && displayMrp > displayPrice && (
-              <span className="text-xl text-[#6B6B5A] line-through">₹{Number(displayMrp).toLocaleString('en-IN')}</span>
-            )}
-            {product.product_variants && product.product_variants.length > 0 && (
-              <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${allOutOfStock ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                {allOutOfStock ? 'Out of Stock' : 'In Stock'}
-              </span>
-            )}
-          </div>
+          )}
 
           {product.short_description && product.short_description.length > 3 && (
             <p className="text-[#444] text-sm leading-relaxed">{product.short_description}</p>

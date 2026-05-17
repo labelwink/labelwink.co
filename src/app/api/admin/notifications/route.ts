@@ -90,3 +90,34 @@ export async function PATCH(req: NextRequest) {
   }
   return NextResponse.json({ success: true })
 }
+
+// DELETE — clear read or clear all notifications
+export async function DELETE(req: NextRequest) {
+  const guard = await requireAdmin()
+  if (guard instanceof NextResponse) return guard
+
+  const supabase = createAdminClient()
+  const { searchParams } = new URL(req.url)
+  const mode = searchParams.get('mode') // 'read' or 'all'
+
+  if (mode !== 'read' && mode !== 'all') {
+    return NextResponse.json({ error: 'Provide mode=read or mode=all' }, { status: 400 })
+  }
+
+  let query = supabase.from('admin_notifications').delete()
+  if (mode === 'read') {
+    query = query.eq('is_read', true)
+  } else {
+    // Mode is all, delete all (using a dummy check that is always true, since supabase .delete() requires a filter unless it's a specific pattern, but eq('is_read', true/false) or eq(1,1) is safer)
+    // Actually, .neq('id', '00000000-0000-0000-0000-000000000000') matches all valid UUID ids
+    query = query.neq('id', '00000000-0000-0000-0000-000000000000')
+  }
+
+  const { error } = await query
+  if (error) {
+    console.error('[admin/notifications] DELETE error:', error.message)
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true })
+}

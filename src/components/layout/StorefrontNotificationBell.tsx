@@ -1,14 +1,14 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Bell, Package, RotateCcw, Star, X, CheckCheck } from 'lucide-react';
+import { Bell, Package, RotateCcw, Star, X, CheckCheck, Percent, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import Link from 'next/link';
 
 interface OrderNotification {
   id: string;
-  type: 'order_confirmed' | 'order_shipped' | 'order_delivered' | 'return_approved' | 'return_rejected' | 'review_approved';
+  type: 'order_confirmed' | 'order_shipped' | 'order_delivered' | 'return_approved' | 'return_rejected' | 'review_approved' | 'payment_failed' | 'welcome' | 'restock' | 'offer';
   title: string;
   body: string;
   is_read: boolean;
@@ -33,6 +33,10 @@ const ICON_MAP: Record<string, React.ElementType> = {
   return_approved: RotateCcw,
   return_rejected: RotateCcw,
   review_approved: Star,
+  payment_failed:  X,
+  welcome:         Star,
+  restock:         Package,
+  offer:           Percent,
 };
 
 const COLOR_MAP: Record<string, string> = {
@@ -42,6 +46,10 @@ const COLOR_MAP: Record<string, string> = {
   return_approved:  'bg-emerald-100 text-emerald-600',
   return_rejected:  'bg-red-100 text-red-600',
   review_approved:  'bg-amber-100 text-amber-600',
+  payment_failed:   'bg-red-100 text-red-600',
+  welcome:          'bg-pink-100 text-pink-600',
+  restock:          'bg-indigo-100 text-indigo-600',
+  offer:            'bg-orange-100 text-orange-600',
 };
 
 export function StorefrontNotificationBell() {
@@ -82,11 +90,16 @@ export function StorefrontNotificationBell() {
           {
             event: 'INSERT',
             schema: 'public',
-            table: 'customer_notifications',
+            table: 'notifications',
             filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
-            setNotifications(prev => [payload.new as OrderNotification, ...prev]);
+            const raw = payload.new as any;
+            const notif: OrderNotification = {
+              ...raw,
+              body: raw.message || raw.body || '',
+            };
+            setNotifications(prev => [notif, ...prev]);
           }
         )
         .subscribe();
@@ -109,11 +122,34 @@ export function StorefrontNotificationBell() {
   const markRead = async (id?: string) => {
     if (!user) return;
     if (id) {
-      await supabase.from('customer_notifications').update({ is_read: true }).eq('id', id).eq('user_id', user.id);
+      await supabase.from('notifications').update({ is_read: true }).eq('id', id).eq('user_id', user.id);
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
     } else {
-      await supabase.from('customer_notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
+      await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id).eq('is_read', false);
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    }
+  };
+
+  const clearRead = async () => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('is_read', true);
+    if (!error) {
+      setNotifications(prev => prev.filter(n => !n.is_read));
+    }
+  };
+
+  const clearAll = async () => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', user.id);
+    if (!error) {
+      setNotifications([]);
     }
   };
 
@@ -169,7 +205,7 @@ export function StorefrontNotificationBell() {
                 <div className="text-center py-12 flex flex-col items-center gap-2">
                   <Bell className="w-8 h-8 text-[#1a2e1e]" />
                   <p className="text-sm text-[#5a7060]">No notifications yet</p>
-                  <p className="text-xs text-[#5a7060]">Order updates will appear here</p>
+                  <p className="text-xs text-[#5a7060]">Updates will appear here</p>
                 </div>
               ) : notifications.map(n => {
                 const Icon = ICON_MAP[n.type] ?? Bell;
@@ -195,7 +231,24 @@ export function StorefrontNotificationBell() {
               })}
             </div>
 
-            <div className="px-4 py-2 border-t border-gray-100 bg-gray-50">
+            {notifications.length > 0 && (
+              <div className="flex justify-between items-center px-4 py-2 border-t border-gray-100 bg-gray-50 text-[10px] font-bold">
+                <button
+                  onClick={clearRead}
+                  className="text-gray-500 hover:text-gray-800 transition-colors flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" /> Clear Read
+                </button>
+                <button
+                  onClick={clearAll}
+                  className="text-red-500 hover:text-red-700 transition-colors flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" /> Clear All
+                </button>
+              </div>
+            )}
+
+            <div className="px-4 py-2 border-t border-gray-100 bg-white">
               <Link
                 href="/account/orders"
                 onClick={() => setOpen(false)}

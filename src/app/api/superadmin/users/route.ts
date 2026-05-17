@@ -2,6 +2,8 @@ import { requireSuperAdmin } from '@/lib/requireSuperAdmin'
 import { createAdminClient } from '@/lib/supabase/server'
 import { createAdminSupabaseClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import crypto from 'crypto'
+
 
 const VALID_ROLES = ['customer', 'employee', 'admin', 'super_admin'] as const
 
@@ -67,8 +69,8 @@ export async function POST(req: NextRequest) {
 
   // Generate a secure temporary password — user can reset via email
   const tempPassword =
-    Math.random().toString(36).slice(-8) +
-    Math.random().toString(36).slice(-8).toUpperCase() +
+    crypto.randomBytes(8).toString('hex') +
+    crypto.randomBytes(8).toString('hex').toUpperCase() +
     '@1!'
 
   const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({

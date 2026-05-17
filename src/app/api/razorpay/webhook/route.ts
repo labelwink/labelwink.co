@@ -130,14 +130,56 @@ export async function POST(req: NextRequest) {
     const razorpayOrderId = payment?.order_id as string | undefined;
 
     if (razorpayOrderId) {
-      await supabase
+      const { data: order } = await supabase
         .from('orders')
-        .update({
-          payment_status: 'failed',
-          updated_at:     new Date().toISOString(),
-        } as any)
+        .select('id, order_number, user_id, customer_name, customer_email, total_amount')
         .eq('razorpay_order_id', razorpayOrderId)
-        .neq('payment_status', 'paid'); // don't downgrade paid orders
+        .maybeSingle();
+
+      if (order) {
+        await supabase
+          .from('orders')
+          .update({
+            payment_status: 'failed',
+            updated_at:     new Date().toISOString(),
+          } as any)
+          .eq('id', order.id)
+          .neq('payment_status', 'paid'); // don't downgrade paid orders
+
+        // Admin notification on website (admin_notifications)
+        try {
+          await supabase.from('admin_notifications').insert({
+            type: 'payment_failed',
+            title: `Payment Failed — #${order.order_number || order.id.slice(0, 8).toUpperCase()}`,
+            message: `Payment failed for order of ₹${order.total_amount} by ${order.customer_name || order.customer_email || 'Customer'}`,
+            metadata: { order_id: order.id, razorpay_order_id: razorpayOrderId }
+          } as any);
+        } catch (e) { console.error('Admin failure notification failed:', e); }
+
+        // Telegram alert to admin
+        try {
+          const { sendTelegramMessage } = await import('@/lib/telegram');
+          await sendTelegramMessage(
+            `❌ <b>Payment Failed</b>\n` +
+            `💰 Amount: ₹${order.total_amount}\n` +
+            `👤 Customer: ${order.customer_name || order.customer_email}\n` +
+            `🆔 Order ID: <code>${order.id}</code>`
+          );
+        } catch (e) { console.error('Telegram message failed:', e); }
+
+        // Customer storefront notification (notifications)
+        if (order.user_id) {
+          try {
+            await supabase.from('notifications').insert({
+              user_id: order.user_id,
+              type: 'payment_failed',
+              title: 'Payment Failed ❌',
+              message: `Payment for your order #${order.order_number || order.id.slice(0, 8).toUpperCase()} of ₹${order.total_amount} has failed. Please try again.`,
+              data: { order_id: order.id, razorpay_order_id: razorpayOrderId }
+            } as any);
+          } catch (e) { console.error('Customer failure notification failed:', e); }
+        }
+      }
     }
   }
 

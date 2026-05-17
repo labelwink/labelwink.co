@@ -34,3 +34,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local developer scratch and database backups
+/scratch/
+*.sql
+audit.json
+

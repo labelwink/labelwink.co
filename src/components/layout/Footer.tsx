@@ -100,7 +100,7 @@ export function Footer(_props?: { columns?: any[]; social?: any; tagline?: strin
       .catch(() => { });
   }, []);
 
-  const storeEmail = settings.legal?.support_email || settings.store_email || 'support@labelwink.co';
+  const storeEmail = settings.legal?.support_email || settings.store_email || 'Support@labelwink.co';
   const socialLinks = {
     instagram: 'https://www.instagram.com/labelwink/',
     facebook: settings.social_links?.facebook,
@@ -150,10 +150,10 @@ export function Footer(_props?: { columns?: any[]; social?: any; tagline?: strin
               
               <div className="pt-2 border-t border-white/10">
                 <strong className="text-[#c9a84c] block mb-1 font-medium">
-                  {settings.legal?.grievance_officer_designation || 'Grievance Officer'}: {settings.legal?.grievance_officer_name || 'Rahul Sharma'}
+                  {settings.legal?.grievance_officer_designation || 'Grievance Officer'}: {settings.legal?.grievance_officer_name || 'SHIVA SHAKKTHI'}
                 </strong>
-                <a href={`mailto:${settings.legal?.grievance_officer_email || 'grievance@labelwink.co'}`} className="hover:text-white transition-colors block">
-                  {settings.legal?.grievance_officer_email || 'grievance@labelwink.co'}
+                <a href={`mailto:${settings.legal?.grievance_officer_email || 'help@labelwink.co'}`} className="hover:text-white transition-colors block">
+                  {settings.legal?.grievance_officer_email || 'help@labelwink.co'}
                 </a>
                 <span className="block mt-1">
                   {settings.legal?.grievance_officer_phone || '+91 9876543210'}
