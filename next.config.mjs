@@ -45,7 +45,7 @@ const nextConfig = {
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
           "img-src 'self' res.cloudinary.com images.unsplash.com data: blob:",
           "font-src 'self' fonts.gstatic.com",
-          "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.brevo.com https://api.cloudinary.com https://accounts.google.com api.razorpay.com checkout.razorpay.com" + (process.env.NODE_ENV === 'development' ? " ws://localhost:3000" : ""),
+          "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.brevo.com https://api.cloudinary.com https://accounts.google.com api.razorpay.com checkout.razorpay.com https://vitals.vercel-insights.com" + (process.env.NODE_ENV === 'development' ? " ws://localhost:3000" : ""),
           "frame-src https://api.razorpay.com https://accounts.google.com checkout.razorpay.com",
           "frame-ancestors 'none'",
           "base-uri 'self'",
