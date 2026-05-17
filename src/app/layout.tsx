@@ -6,6 +6,7 @@ import { Toaster } from 'sonner'
 import { createAdminClient } from '@/lib/supabase/server'
 import CookieBanner from '@/components/ui/CookieBanner'
 import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -108,6 +109,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Toaster position="bottom-right" richColors closeButton />
         <CookieBanner />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )
